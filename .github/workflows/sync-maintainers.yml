@@ -1,0 +1,134 @@
+name: Sync Skill Maintainers
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  sync-maintainers:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Detect changed skills
+        id: detect
+        run: |
+          SKILLS=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} \
+            | grep '^skills/[^/]*\/' \
+            | sed 's|^skills/||' | cut -d'/' -f1 \
+            | sort -u | grep -v '^$' | tr '\n' ' ' | sed 's/ $//')
+          echo "skills=$SKILLS" >> $GITHUB_OUTPUT
+          echo "Changed skills: $SKILLS"
+
+      - name: Get contributors
+        id: contributors
+        run: |
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          echo "author=$PR_AUTHOR" >> $GITHUB_OUTPUT
+
+          COAUTHORS=$(echo '${{ github.event.pull_request.body }}' \
+            | grep -i 'co-authored-by' \
+            | sed -E 's/.*co-authored-by:\s*([^<]+)\s*<[^>]+>.*/\1/' \
+            | tr -d ' ' | grep -v '^$' | tr '\n' ',' | sed 's/,$//')
+          echo "coauthors=$COAUTHORS" >> $GITHUB_OUTPUT
+
+      - name: Update maintainers
+        if: steps.detect.outputs.skills != ''
+        run: |
+          #!/bin/bash
+          set -e
+
+          AUTHOR="${{ steps.contributors.outputs.author }}"
+          COAUTHORS="${{ steps.contributors.outputs.coauthors }}"
+
+          # Build full list of maintainers (AUTHOR + COAUTHORS), deduped
+          ALL_MAINTAINERS="$AUTHOR"
+          if [ -n "$COAUTHORS" ]; then
+            ALL_MAINTAINERS="$ALL_MAINTAINERS,$COAUTHORS"
+          fi
+
+          IFS=' ' read -ra SKILL_ARRAY <<< "${{ steps.detect.outputs.skills }}"
+
+          for SKILL in "${SKILL_ARRAY[@]}"; do
+            META_FILE="skills/$SKILL/meta.json"
+
+            if [ ! -f "$META_FILE" ]; then
+              echo "No meta.json for skill: $SKILL — skipping"
+              continue
+            fi
+
+            echo "Updating $META_FILE with author: $AUTHOR"
+
+            # Read current maintainers array from meta.json
+            CURRENT=$(node -e "
+              const fs = require('fs');
+              const meta = JSON.parse(fs.readFileSync('$META_FILE', 'utf8'));
+              const existing = meta.maintainers || [];
+              const toAdd = '$ALL_MAINTAINERS'.split(',');
+              const merged = [...new Set([...existing, ...toAdd])];
+              // Sort: creator first, then alphabetically
+              const sorted = merged.sort((a, b) => {
+                if (a === '$AUTHOR') return -1;
+                if (b === '$AUTHOR') return 1;
+                return a.localeCompare(b);
+              });
+              console.log(JSON.stringify(sorted));
+            ")
+
+            # Update maintainers in meta.json, preserving formatting
+            node -e "
+              const fs = require('fs');
+              const meta = JSON.parse(fs.readFileSync('$META_FILE', 'utf8'));
+              meta.maintainers = JSON.parse('$CURRENT');
+              fs.writeFileSync('$META_FILE', JSON.stringify(meta, null, 2) + '\n', 'utf8');
+            "
+
+            # Update changelog if author is new
+            node -e "
+              const fs = require('fs');
+              const meta = JSON.parse(fs.readFileSync('$META_FILE', 'utf8'));
+              const author = '$AUTHOR';
+              const today = new Date().toISOString().split('T')[0];
+              const existing = meta.changelog || [];
+
+              // Check if this author was already listed in any changelog entry
+              const alreadyListed = existing.some(entry =>
+                entry.authors && entry.authors.includes(author)
+              );
+
+              if (!alreadyListed) {
+                existing.unshift({
+                  version: meta.version,
+                  date: today,
+                  changes: ['Added maintainer: @' + author],
+                  authors: [author],
+                  breaking: false
+                });
+                meta.changelog = existing;
+                fs.writeFileSync('$META_FILE', JSON.stringify(meta, null, 2) + '\n', 'utf8');
+              }
+            "
+
+            echo "Updated: $META_FILE"
+          done
+
+      - name: Commit and push changes
+        if: steps.detect.outputs.skills != ''
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(meta.json): sync maintainers from merged PR #${{ github.event.pull_request.number }}"
+            git push
+            echo "Maintainers updated and committed"
+          fi

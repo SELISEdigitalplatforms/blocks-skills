@@ -1,1 +1,10 @@
-blocks-uilm (alternate)/
+# Evaluation workspaces
+*-workspace/
+
+# Local eval outputs
+eval-viewer.html
+feedback.json
+benchmark.json
+
+# OS
+.DS_Store
