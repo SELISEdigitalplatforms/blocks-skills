@@ -6,32 +6,51 @@ Thanks for helping improve Blocks AI Skills! This guide covers how to add new ac
 
 ```
 skills/
-├── core/              ← Routing, conventions, frontend patterns
-├── _template/         ← Copy this to start a new domain
-├── identity-access/   ← Auth, users, roles, MFA
-├── communication/     ← Email, notifications, templates
-├── data-management/   ← Schemas, GraphQL, files
-├── localization/        ← Languages, translation keys
-├── ai-services/         ← AI agents, KB, models, chat
-├── logging-monitoring/  ← Logs, traces, analytics
-├── background-tasks/    ← Scheduled tasks (cron jobs)
-└── webhooks/            ← Event-driven webhooks
+├── blocks-idp/          ← Identity Provider: auth, users, roles, MFA, SSO
+├── blocks-uilm/         ← UI Localization: languages, translation keys, i18n files
+└── <new-domain>/        ← Add new domains here following the same structure
+    ├── SKILL.md         ← Domain definition with intent mapping
+    ├── README.md        ← Domain documentation
+    ├── meta.json        ← Version, name, description metadata
+    ├── contracts.md     ← TypeScript/C# type definitions
+    ├── actions/          ← Individual API actions
+    ├── flows/            ← Multi-step workflow documentation
+    ├── references/       ← Framework-specific implementation guides
+    └── evals/            ← Evaluation test cases
 ```
+
+## Domain Structure Details
+
+Each domain (`blocks-*`) follows this consistent structure:
+
+| Directory | Purpose |
+|-----------|---------|
+| `actions/` | Single API endpoint documentation with curl examples and responses |
+| `flows/` | Multi-step workflows combining multiple actions |
+| `references/` | Framework-specific guides (React, Angular, Flutter, etc.) |
+| `evals/` | Evaluation test cases (`evals.json`) |
+
+Core files in each domain:
+
+| File | Purpose |
+|------|---------|
+| `SKILL.md` | Intent-to-action mapping for AI routing |
+| `meta.json` | Domain metadata (version, description) |
+| `contracts.md` | TypeScript/C# type definitions |
 
 ## How to Add a New Action
 
-1. **Find the Swagger endpoint** for the API you want to cover
+1. **Find the API endpoint** from Swagger or tested API responses
 2. **Create** `skills/<domain>/actions/<action-name>.md`
 3. **Include these sections:**
-   - HTTP method + URL
-   - Required headers (with `$X_BLOCKS_KEY` and `Bearer $ACCESS_TOKEN`)
-   - Request body (with real field names and types)
+   - HTTP method + URL with `$API_BASE_URL` and service path
+   - Required headers (`$X_BLOCKS_KEY`, `Bearer $ACCESS_TOKEN`)
+   - Request body with real field names and types
    - Example curl command
-   - Success response (real JSON example)
+   - Success response (real JSON)
    - Error responses (status codes + meaning)
-4. **Add the action** to the domain's `SKILL.md` intent mapping table
+4. **Update `SKILL.md`** intent mapping table with the new action
 5. **Update `contracts.md`** with TypeScript request/response types
-6. **Run validation:** `./scripts/validate-skills.sh`
 
 ### Action File Template
 
@@ -58,22 +77,22 @@ skills/
 
 ## Example
 
-\`\`\`bash
+```bash
 curl -X POST "$API_BASE_URL/<service>/v1/<path>" \
   -H "Content-Type: application/json" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -d '{"field": "value"}'
-\`\`\`
+```
 
 ## Response
 
-\`\`\`json
+```json
 {
   "isSuccess": true,
   "data": {}
 }
-\`\`\`
+```
 
 ## Errors
 
@@ -90,54 +109,46 @@ curl -X POST "$API_BASE_URL/<service>/v1/<path>" \
 2. **Create** `skills/<domain>/flows/<flow-name>.md`
 3. **Document the step sequence** with decision branches
 4. **Reference existing actions** — don't duplicate action details in the flow
-5. **Add the flow** to the domain's `SKILL.md` intent mapping table
+5. **Update `SKILL.md`** intent mapping table with the new flow
 
 ## How to Add a New Domain
 
-Use the scaffolding script for a fully structured skeleton:
+1. **Create the directory structure:**
+   ```bash
+   mkdir -p skills/<domain-name>/{actions,flows,references,evals}
+   ```
 
-```bash
-node scripts/generate-skill.js <domain-name>
-# Example: node scripts/generate-skill.js payment-processing
-```
+2. **Create required files:**
+   - `meta.json` — version, name, description
+   - `SKILL.md` — purpose and intent mapping
+   - `README.md` — domain documentation
+   - `contracts.md` — TypeScript types
 
-This creates:
-- `skills/<domain>/meta.json` — with version 1.0.0
-- `skills/<domain>/SKILL.md` — with placeholders filled in
-- `skills/<domain>/contracts.md` — TypeScript/C# type template
-- `skills/<domain>/frontend.md` — generic frontend template
-- `skills/<domain>/actions/` and `skills/<domain>/flows/` directories
+3. **Add content:**
+   - Add action files to `actions/`
+   - Add flow files to `flows/` (if needed)
+   - Add framework guides to `references/`
+   - Create `evals/evals.json` with test cases
 
-Then:
-1. **Edit** `SKILL.md` with your domain purpose and intent mapping
-2. **Add** action files to `actions/`
-3. **Add** flow files to `flows/` (if needed)
-4. **Update** `skills/core/decision.md` to route to the new domain
-5. **Run:** `node scripts/generate-index.js`
-6. **Run:** `node scripts/validate-skills.js`
+## Reference Documentation
 
-## Testing Your Changes
-
-Test with Claude Code by asking natural-language prompts:
-
-```
-# For a new action:
-"Show me all users" → should use get-users action
-
-# For a new flow:
-"Build a login page with MFA" → should use login-flow
-
-# For a new domain:
-"Set up CI/CD pipeline" → should route to new domain
-```
+Add framework-specific guides in `references/`:
+- `react-vite.md` — React + Vite integration
+- `react-native.md` — React Native integration
+- `nextjs-app-router.md` — Next.js App Router
+- `angular.md` — Angular integration
+- `flutter.md` — Flutter integration
+- `blazor-dotnet.md` — Blazor/.NET integration
 
 ## Guidelines
 
 - Ground all actions in real Swagger docs or tested API responses
 - Use real JSON examples, not placeholder schemas
-- Keep SKILL.md under 500 lines — put heavy reference material in separate files
+- Keep SKILL.md focused — put heavy reference material in separate files
 - Match field names exactly as the API returns them
 - Don't add speculative features — only document what works today
+- Each action file should be self-contained with curl examples
+- Use consistent naming: kebab-case for files (`get-users.md`)
 
 ## License
 
