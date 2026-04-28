@@ -1,5 +1,5 @@
 # Evaluation workspaces
-*-workspace/
+workspace-*/
 
 # Local eval outputs
 eval-viewer.html
