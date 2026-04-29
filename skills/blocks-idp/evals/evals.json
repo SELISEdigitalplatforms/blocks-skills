@@ -1,0 +1,99 @@
+{
+  "evals": [
+    {
+      "id": "login-password-grant",
+      "description": "Agent correctly uses get-token with form-encoded body (not JSON) for password grant",
+      "category": "auth"
+    },
+    {
+      "id": "token-refresh-form-encoded",
+      "description": "Agent uses form-encoded (not JSON) body for refresh_token grant",
+      "category": "auth"
+    },
+    {
+      "id": "isSuccess-not-success",
+      "description": "Agent references isSuccess (not success) when checking response envelopes",
+      "category": "contracts"
+    },
+    {
+      "id": "itemId-not-id",
+      "description": "Agent uses itemId for user/org/credential operations (not id)",
+      "category": "contracts"
+    },
+    {
+      "id": "language-not-languageName",
+      "description": "Agent uses language for user fields (not languageName)",
+      "category": "contracts"
+    },
+    {
+      "id": "resend-otp-endpoint",
+      "description": "Agent uses /Mfa/ResendOtp (not /Mfa/ResendOTP)",
+      "category": "auth"
+    },
+    {
+      "id": "verify-otp-request-fields",
+      "description": "Agent uses verificationCode, mfaId, authType, projectKey, isFromTokenCall for verify-otp",
+      "category": "mfa"
+    },
+    {
+      "id": "generate-otp-request-fields",
+      "description": "Agent uses userId, projectKey, mfaType, sendPhoneNumberAsEmailDomain for generate-otp",
+      "category": "mfa"
+    },
+    {
+      "id": "paginated-list-envelope",
+      "description": "Agent handles {data, errors, totalCount} response envelope for list endpoints",
+      "category": "contracts"
+    },
+    {
+      "id": "oidc-client-management",
+      "description": "Agent correctly routes OIDC client CRUD operations to save/get/delete-oidc-client actions",
+      "category": "oidc"
+    },
+    {
+      "id": "client-credentials-grant",
+      "description": "Agent uses SaveClientCredential + Token endpoint for machine-to-machine auth",
+      "category": "auth"
+    },
+    {
+      "id": "sso-credential-management",
+      "description": "Agent correctly routes SSO credential CRUD to save/get/delete-sso-credential actions",
+      "category": "sso"
+    },
+    {
+      "id": "authorize-endpoint",
+      "description": "Agent constructs OIDC authorize URL with correct query params",
+      "category": "oidc"
+    },
+    {
+      "id": "openid-configuration",
+      "description": "Agent retrieves and uses openid-configuration for OIDC discovery",
+      "category": "oidc"
+    },
+    {
+      "id": "user-timeline-query",
+      "description": "Agent uses body (not query params) for GetUserTimelines endpoint",
+      "category": "iam"
+    },
+    {
+      "id": "sessions-query-params",
+      "description": "Agent uses Sort.Property and Sort.IsDescending query params for GetSessions",
+      "category": "iam"
+    },
+    {
+      "id": "signup-settings-toggle",
+      "description": "Agent uses isEmailPasswordSignUpEnabled and isSSoSignUpEnabled fields correctly",
+      "category": "iam"
+    },
+    {
+      "id": "permissions-grouped",
+      "description": "Agent uses GetPermissionsGroupBySeverity for permission grouping",
+      "category": "rbac"
+    },
+    {
+      "id": "organization-membership",
+      "description": "Agent correctly uses OrganizationMembership {organizationId, roles[], permissions[]} in user requests",
+      "category": "iam"
+    }
+  ]
+}

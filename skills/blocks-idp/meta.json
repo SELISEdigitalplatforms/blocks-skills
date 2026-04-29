@@ -1,0 +1,36 @@
+{
+  "name": "blocks-idp",
+  "version": "1.0.0",
+  "description": "Authentication, user management, MFA, RBAC, SSO/OIDC, session handling, and organization operations for SELISE Blocks IDP API",
+  "service": "idp",
+  "capability": "identity-access",
+  "apiPrefix": "/idp/v1",
+  "apiCaseConvention": "PascalCase",
+  "dependencies": [],
+  "ecosystems": ["javascript", "dotnet"],
+  "blocksVersion": "1.0.0",
+  "maintainers": ["kilo-agent", "thinleysangay", "rezwanx"],
+  "tags": ["auth", "mfa", "sso", "oidc", "rbac", "permissions", "roles", "sessions", "organization"],
+  "actionCount": 78,
+  "flowCount": 9,
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-04-27",
+      "changes": [
+        "Full standardization aligned to IDP v1 Swagger spec",
+        "All responses now use isSuccess (not success) envelope",
+        "All response schemas updated to {data, errors, totalCount} pattern",
+        "All 99 schemas documented in contracts.md",
+        "All 8 integer enums documented",
+        "25 new action files added (OIDC, SSO, client credentials, timeline, signup settings)",
+        "10 framework reference files in references/",
+        "2 new flows: oidc-sso-setup and client-credentials",
+        "frontend-blazor.md consolidated into references/blazor-dotnet.md",
+        "frontend-react.md consolidated into references/nextjs-app-router.md and references/react-vite.md",
+        "discover-project-slug.md archived as deprecated"
+      ],
+      "breaking": true
+    }
+  ]
+}
