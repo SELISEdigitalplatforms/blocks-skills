@@ -1,7 +1,7 @@
 ---
 name: blocks-idp
-description: "Use this skill for any request involving login, MFA setup, user creation, role/permission management, organization switching, SSO/OIDC configuration, session handling, password recovery, CAPTCHA, or access control on SELISE Blocks. Maps natural language intents to the correct flow or action and enforces security best practices."
-user-invocable: false
+description: "Use this skill for any request involving login, MFA setup, user creation, role/permission management, organization switching, SSO/OIDC configuration, session handling, password recovery, CAPTCHA, or access control on SELISE Blocks. Also triggers when developers mention 'blocks-idp', 'how to use blocks-idp', 'identity skill', 'authentication setup', 'auth skill', 'IDP', 'blocks auth', 'blocks authentication', 'blocks identity', or need to set up login, MFA, SSO, OIDC, user management, or RBAC on SELISE Blocks."
+user-invocable: true
 blocks-version: "1.0.0"
 ---
 
@@ -12,6 +12,20 @@ blocks-version: "1.0.0"
 Handles all authentication, user management, role/permission management, MFA, and organization operations for SELISE Blocks via the IDP v1 API.
 
 Must run get-token before any other action in a session.
+
+---
+
+## How to Answer "How do I use blocks-idp?"
+
+When a developer asks **"how to use blocks-idp"**, **"what does blocks-idp do"**, or **"how do I get started with blocks-idp"**:
+
+1. **Ask for their framework** — Next.js, React, Angular, Flutter, Blazor, etc.
+2. **Ask what they want to do** — set up login, configure MFA, add SSO, manage users, etc.
+3. **Point to the human overview** — direct them to `README.md` for a quick overview
+4. **Point to the AI guide** — direct them to `SKILL.md` for the full execution guide
+5. **Give a one-liner summary** — "blocks-idp handles all identity and access: authentication, MFA, SSO/OIDC, user management, and RBAC for SELISE Blocks"
+
+**Do NOT** generate a custom summary. The skill already has this information in `README.md` and `SKILL.md`. Link to those files instead of reproducing their content.
 
 ---
 
@@ -358,7 +372,6 @@ All endpoints are prefixed with: `$API_BASE_URL/idp/v1`
 | get-jwks | actions/get-jwks.md | OIDC JWKS endpoint |
 | acknowledge-user | actions/acknowledge-user.md | OIDC consent acknowledgment |
 | get-social-login-endpoint | actions/get-social-login-endpoint.md | Get social/OIDC provider authorization URL |
-| discover-project-slug | actions/discover-project-slug.md | Discover project slug for the current app |
 
 ### OIDC Client Management
 | Action | File | Description |

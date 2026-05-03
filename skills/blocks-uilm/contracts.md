@@ -1,8 +1,8 @@
 # Localization Contracts
 
-> All types confirmed against the UILM v1 Swagger spec at `https://api.seliseblocks.com/uilm/v1/swagger/v1/swagger.json`.
+> All types confirmed against the UILM v1 Swagger spec at `https://api.example.com/uilm/v1/swagger/v1/swagger.json`.
 >
-> **API Base URL pattern:** Environment variable contains the base URL (e.g. `https://api.seliseblocks.com`). All endpoints append `/uilm/v1/...`. Do NOT add `/api/v1` — the localization API uses `/uilm/v1` as its prefix. Example: `getUilmFile` → `https://api.seliseblocks.com/uilm/v1/Key/GetUilmFile?Language=en&ModuleName=common&ProjectKey=KEY`.
+> **API Base URL pattern:** Environment variable contains the base URL (e.g. `https://api.example.com`). All endpoints append `/uilm/v1/...`. Do NOT add `/api/v1` — the localization API uses `/uilm/v1` as its prefix. Example: `getUilmFile` → `https://api.example.com/uilm/v1/Key/GetUilmFile?Language=en&ModuleName=common&ProjectKey=KEY`.
 >
 > **Key Naming:** Use `SCREAMING_SNAKE_CASE` with semantic names. See the Translation Key Naming Conventions section in `SKILL.md`. Bad: `FOOTER_PRODUCT`, `FEATURE_SHIP_HOURS_TITLE`, `NAV_SIGN_IN`, `FOOTER_SERVICES`. Good: `SIGN_IN`, `DASHBOARD_OVERVIEW`, `PRODUCT`, `SERVICES`.
 

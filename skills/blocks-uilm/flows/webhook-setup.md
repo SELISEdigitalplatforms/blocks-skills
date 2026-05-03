@@ -75,7 +75,7 @@ On success (200), the webhook is registered. Test it by:
 ### Example: Create with HMAC
 
 ```bash
-curl --location "https://api.seliseblocks.com/uilm/v1/Config/SaveWebHook" \
+curl --location "https://api.example.com/uilm/v1/Config/SaveWebHook" \
   --header "x-blocks-key: TEST_KEY_123" \
   --header "Content-Type: application/json" \
   --data '{
@@ -93,7 +93,7 @@ curl --location "https://api.seliseblocks.com/uilm/v1/Config/SaveWebHook" \
 ### Example: Create without HMAC
 
 ```bash
-curl --location "https://api.seliseblocks.com/uilm/v1/Config/SaveWebHook" \
+curl --location "https://api.example.com/uilm/v1/Config/SaveWebHook" \
   --header "x-blocks-key: TEST_KEY_123" \
   --header "Content-Type: application/json" \
   --data '{

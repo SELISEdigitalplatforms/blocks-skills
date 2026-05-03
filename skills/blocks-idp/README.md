@@ -61,7 +61,7 @@ skills/blocks-idp/
 │   ├── role-permission-setup.md ← Create roles, permissions, assign to users
 │   ├── oidc-sso-setup.md       ← OIDC client, SSO credential, authorize URL
 │   └── client-credentials.md   ← Machine-to-machine OAuth2
-├── actions/                    ← 78 single-API operations with curl, schemas, errors
+├── actions/                    ← 72 single-API operations with curl, schemas, errors
 │   ├── get-token.md
 │   ├── get-users.md
 │   ├── create-user.md
@@ -206,7 +206,7 @@ src/components/protected-route.tsx ← Route guard
 
 ```bash
 # IDP API
-NEXT_PUBLIC_API_BASE_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_API_BASE_URL=https://api.example.com
 NEXT_PUBLIC_X_BLOCKS_KEY=your-project-key
 NEXT_PUBLIC_OIDC_CLIENT_ID=your-client-id
 NEXT_PUBLIC_OIDC_REDIRECT_URI=http://localhost:3000/api/auth/callback

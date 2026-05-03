@@ -10,7 +10,7 @@ Implementation guide for building authentication with the blocks-idp skill on An
 // environment.ts
 export const environment = {
   production: false,
-  apiBaseUrl: 'https://api.seliseblocks.com',
+  apiBaseUrl: 'https://api.example.com',
   xBlocksKey: 'your-x-blocks-key',
   projectKey: 'your-project-key',
   oidcClientId: 'your-oidc-client-id',
@@ -22,7 +22,7 @@ export const environment = {
 // environment.prod.ts
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.seliseblocks.com',
+  apiBaseUrl: 'https://api.example.com',
   xBlocksKey: 'your-prod-x-blocks-key',
   projectKey: 'your-project-key',
   oidcClientId: 'your-oidc-client-id',

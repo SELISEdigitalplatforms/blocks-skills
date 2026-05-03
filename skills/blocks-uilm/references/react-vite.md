@@ -162,7 +162,7 @@ Namespaces are registered dynamically — the `ns` array in `i18n.ts` starts wit
 
 ```env
 # .env
-VITE_BLOCKS_API_URL=https://api.seliseblocks.com
+VITE_BLOCKS_API_URL=https://api.example.com
 VITE_X_BLOCKS_KEY=your_project_key
 ```
 

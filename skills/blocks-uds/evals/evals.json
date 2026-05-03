@@ -1,0 +1,178 @@
+{
+  "skill_name": "blocks-uds",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Define a Product schema with name (String), price (Number), and category (String) fields. Use the blocks-uds skill. API base URL is https://api.example.com, projectKey is TEST_KEY_456.",
+      "expected_output": "Schema created via define-schema action. reload-configuration called after.",
+      "expectations": [
+        "Uses POST /schemas/define endpoint",
+        "Body includes collectionName, schemaName, projectKey, schemaType: 1",
+        "projectKey uses TEST_KEY_456 value, NOT 'TEST_KEY_456' string literal or project slug",
+        "Fields array has at least one field (causes 400 if empty)",
+        "Each field has name, type, isArray, isPIIData, isUniqueData, description",
+        "Calls reload-configuration after schema creation"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Query all products via GraphQL. The schema is called Product and the project slug is myproject.",
+      "expected_output": "GraphQL query sent to POST /uds/v1/myproject/gateway",
+      "expectations": [
+        "Uses POST /uds/v1/myproject/gateway — PROJECT_SLUG in URL path",
+        "Query name follows get{SchemaName}s pattern: getProducts",
+        "Uses skip/take or page/pageSize for pagination",
+        "Uses camelCase field names in GraphQL query to match schema",
+        "Handles {items, totalCount} response shape",
+        "x-blocks-key header included"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Create a new product record via GraphQL with name='Widget' and price=29.99.",
+      "expected_output": "GraphQL mutation sent to gateway endpoint",
+      "expectations": [
+        "Uses mutation keyword, not query",
+        "Mutation name follows create{SchemaName} pattern: createProduct",
+        "Uses input argument with ProductInput type",
+        "Returns created record fields in response"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Upload a profile image to S3. The file is a JPEG at /tmp/avatar.jpg. The user wants progress feedback.",
+      "expected_output": "Pre-signed URL obtained, then file PUT to S3 with progress tracking",
+      "expectations": [
+        "Calls POST /Files/GetPreSignedUrlForUpload to get uploadUrl and fileId",
+        "projectKey in request body uses $X_BLOCKS_KEY value",
+        "Accesses uploadUrl directly from response (not response.data.uploadUrl)",
+        "Uses XMLHttpRequest or fetch with upload.onprogress for progress tracking",
+        "PUT to uploadUrl with Content-Type: application/octet-stream"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Delete the file with fileId abc-123. Use the correct endpoint and method.",
+      "expected_output": "File deleted via POST /Files/DeleteFile with JSON body",
+      "expectations": [
+        "Uses POST method, NOT DELETE with query params",
+        "Request body contains {fileId: 'abc-123', projectKey: ...}",
+        "fileId is in body, NOT in URL query string",
+        "Uses x-blocks-key header for auth"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Set the Product schema to use Custom security (accessLevel: 2). Only users with the admin role should be able to read and create.",
+      "expected_output": "change-security action sets accessLevel: 2, then create-access-policy creates read+create policy for admin role",
+      "expectations": [
+        "Uses change-security action with accessLevel: 2 (integer, not string)",
+        "Immediately creates at least one access policy after setting Custom",
+        "Custom security with no policies locks everyone out",
+        "create-access-policy uses operation: 0 for Read, operation: 1 for Create",
+        "Uses ruleGroup with logicalOperator: 1 (Or) and role matching",
+        "projectKey in body uses $X_BLOCKS_KEY value"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Add a required validation to the email field on the User schema. If empty, show 'Email is required'. If invalid format, show 'Enter a valid email'.",
+      "expected_output": "Two validation rules created via create-validation action",
+      "expectations": [
+        "First rule: validationType: 0 (Required), errorMessage: 'Email is required'",
+        "Second rule: validationType: 1 (Email), errorMessage: 'Enter a valid email'",
+        "validationType uses integer, NOT string",
+        "Both rules have isActive: true",
+        "Includes schemaId, fieldName: 'email', projectKey in body"
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Connect a MongoDB database with connection string mongodb://localhost:27017/mydb to the project.",
+      "expected_output": "Data source added via add-data-source action",
+      "expectations": [
+        "Uses POST /data-sources/add endpoint",
+        "Body includes dbConnectionString, databaseName, projectKey",
+        "Uses $X_BLOCKS_KEY value for projectKey",
+        "Calls reload-configuration after adding data source"
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "Migrate the Product schema to add a new stock field of type Number.",
+      "expected_output": "save-schema-fields called with complete field list including the new stock field",
+      "expectations": [
+        "Sends complete field list — partial list removes existing fields",
+        "New stock field: { name: 'stock', type: 'Number', isArray: false, ... }",
+        "Uses deletableFieldNames if removing specific fields",
+        "schemaDefinitionItemId in body, not schemaId",
+        "Calls reload-configuration after migration"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "List all schemas in the project with their access levels. Show the first 10.",
+      "expected_output": "get-schemas action called with pagination",
+      "expectations": [
+        "Uses GET /schemas with PageNo=1, PageSize=10",
+        "projectKey as query param uses $X_BLOCKS_KEY value",
+        "Handles {data: {items[]}} response shape",
+        "Displays schemaName, accessLevel for each"
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "Create a contracts folder in the DMS. The parent folder ID is folder-789.",
+      "expected_output": "Folder created via create-folder action",
+      "expectations": [
+        "Uses POST /Files/CreateFolder with full request body",
+        "Body has multiple fields — NOT just Name and ParentDirectoryId",
+        "Required fields include: parentId, projectKey, configurationName, dmsWorkspaceId",
+        "Uses x-blocks-key header for auth"
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "Export all schema definitions from the project to a JSON file.",
+      "expected_output": "Schema exported via export-schema action",
+      "expectations": [
+        "Uses POST /schema-exchange/export",
+        "Body includes projectKey and messageCoRelationId (UUID)",
+        "exportOption: 3 (All) or appropriate value",
+        "Handles response with fileId or download URL"
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "After adding a new field to the Product schema, the GraphQL query still returns null for the new field. What went wrong?",
+      "expected_output": "reload-configuration not called after schema change",
+      "expectations": [
+        "Explains that schema changes require reload-configuration before GraphQL reflects them",
+        "Calls reload-configuration POST endpoint",
+        "projectKey passed as query param, not body"
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "The Product schema has accessLevel set to 2 (Custom) but now nobody can access it — not even admins. What happened?",
+      "expected_output": "Custom security with no access policies locks out all users including admins",
+      "expectations": [
+        "Explains that accessLevel: 2 requires at least one access policy",
+        "With no policies, even admins are locked out",
+        "Recommends creating an admin role policy immediately after setting Custom",
+        "create-access-policy with roleSlug matching admin role"
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "Update the MongoDB connection string for the existing data source. The new string is mongodb://prod:27017/proddb. Keep the data source active.",
+      "expected_output": "Data source updated via update-data-source action",
+      "expectations": [
+        "Uses PUT /data-sources/update",
+        "Body includes itemId, dbConnectionString, databaseName, isActive: true",
+        "Omitting isActive may deactivate the connection",
+        "Calls reload-configuration after update"
+      ]
+    }
+  ]
+}

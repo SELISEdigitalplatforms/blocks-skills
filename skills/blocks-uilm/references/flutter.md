@@ -80,7 +80,7 @@ For `getUilmFile`, use URL query parameters with capitalized keys: `Language`, `
 ```dart
 // lib/config/api_config.dart
 class ApiConfig {
-  static const String apiUrl = 'https://api.seliseblocks.com';
+  static const String apiUrl = 'https://api.example.com';
   static const String apiKey = 'your_api_key';
   static const String projectKey = 'your_project_key';
 }

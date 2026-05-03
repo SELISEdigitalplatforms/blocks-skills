@@ -75,7 +75,7 @@ Key patterns:
 ```typescript
 // environment.ts
 export const environment = {
-  blocksApiUrl: 'https://api.seliseblocks.com',
+  blocksApiUrl: 'https://api.example.com',
   blocksApiKey: 'your_api_key',
   blocksProjectKey: 'your_project_key',
 };

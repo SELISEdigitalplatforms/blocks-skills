@@ -40,14 +40,14 @@ Skip if `i18next` or `react-i18next` already exist in `package.json`.
 For **Next.js**:
 ```env
 # .env.local
-NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_BLOCKS_API_URL=https://api.example.com
 NEXT_PUBLIC_X_BLOCKS_KEY=your_project_key
 ```
 
 For **Vite + React**:
 ```env
 # .env
-VITE_BLOCKS_API_URL=https://api.seliseblocks.com
+VITE_BLOCKS_API_URL=https://api.example.com
 VITE_X_BLOCKS_KEY=your_project_key
 ```
 

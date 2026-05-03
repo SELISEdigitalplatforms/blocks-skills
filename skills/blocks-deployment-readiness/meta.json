@@ -1,0 +1,63 @@
+{
+  "name": "blocks-deployment-readiness",
+  "version": "1.0.0",
+  "description": "Prepare a SELISE Blocks project for deployment by checking and generating required configuration files — Dockerfile, nginx.conf, .env files, GitHub workflows, and build configuration.",
+  "service": "deployment",
+  "capability": "deployment-readiness",
+  "apiPrefix": null,
+  "fileConventions": {
+    "dockerfile": {
+      "stages": "Two-stage: node builder + nginx runtime",
+      "builderImage": "node:21.7.0-alpine",
+      "runtimeImage": "nginx:stable-alpine",
+      "requiredArg": "ci_build (dev/stg/prod)",
+      "buildCommand": "npm run build:${ci_build}",
+      "outputPath": "/app/build for Vite, /app/dist/<name> for Angular"
+    },
+    "nginx": {
+      "spaFallback": "try_files $uri $uri/ /index.html;",
+      "root": "/usr/share/nginx/html/",
+      "configPath": "/etc/nginx/conf.d/default.conf"
+    },
+    "envFiles": {
+      "required": ["VITE_API_BASE_URL", "VITE_X_BLOCKS_KEY", "VITE_PROJECT_SLUG", "VITE_BLOCKS_OIDC_CLIENT_ID"],
+      "optional": ["VITE_CAPTCHA_SITE_KEY", "VITE_CAPTCHA_TYPE", "VITE_BLOCKS_OIDC_REDIRECT_URI", "GENERATE_SOURCEMAP"],
+      "credentials": "Always use <placeholder> or <get from CLI>, never real values"
+    },
+    "setEnv": {
+      "envVar": "BUILD_ENV (dev/stg/prod)",
+      "action": "Copies .env.{env} to .env before build",
+      "scriptName": "set-env.cjs"
+    },
+    "githubWorkflows": {
+      "triggers": "dev branch → dev, stg branch → stg, main branch → prod",
+      "varsEnv": "SERVICE_NAME, REPO_NAME, DOCKERFILE, REPO_NAME required",
+      "secrets": "Always use ${{ secrets.SECRET_NAME }}, never hardcoded values"
+    },
+    "packageJson": {
+      "buildScripts": "build:dev, build:stg, build:prod",
+      "scriptPattern": "BUILD_ENV=<env> node set-env.cjs && vite build",
+      "envPrefix": "VITE_ (in vite.config.ts)"
+    }
+  },
+  "deploymentTargets": {
+    "primary": "Azure Container Registry (ACR) + Azure Kubernetes Service (AKS)",
+    "helmChart": "new-templates/ecap3-webclient",
+    "ciTool": "GitHub Actions"
+  },
+  "credentialSafety": {
+    "rule": "Never generate real credentials, always use @seliseblocks/cli",
+    "forbidden": ["API keys in templates", "Passwords in files", "Real Azure credentials in workflows"],
+    "required": ["${{ secrets.* }} pattern in GitHub workflows", "Placeholder comments in env templates"]
+  },
+  "dependencies": [],
+  "ecosystems": ["javascript", "typescript", "react", "angular"],
+  "blocksVersion": "1.0.0",
+  "maintainers": ["kilo-agent","thinleysangay"],
+  "tags": ["deployment", "dockerfile", "github-actions", "ci-cd", "env-files", "nginx", "azure", "acr", "aks", "helm"],
+  "actionCount": 5,
+  "flowCount": 1,
+  "evalCount": 15,
+  "referenceCount": 4,
+  "user-invocable": true
+}

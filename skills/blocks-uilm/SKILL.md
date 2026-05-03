@@ -1,8 +1,8 @@
 ---
 name: blocks-uilm
-description: "Use this skill for setting up languages, managing translation keys, AI-powered auto-translation, importing/exporting translation files, or configuring localization modules on SELISE Blocks. Triggers when users mention localization, i18n, translation setup, translation keys, language files, locale management, translate, import/export translations, or need i18n connected to the Blocks UILM API."
-user-invocable: false
-blocks-version: "1.1.0"
+description: "Use this skill for setting up languages, managing translation keys, AI-powered auto-translation, importing/exporting translation files, or configuring localization modules on SELISE Blocks. Also triggers when developers mention 'blocks-uilm', 'how to use blocks-uilm', 'localization skill', 'i18n setup', 'UILM', 'blocks i18n', 'blocks localization', 'translation skill', 'blocks translation', 'multilingual setup', or need i18n, translations, language setup, or locale management connected to the Blocks UILM API."
+user-invocable: true
+blocks-version: "1.0.0"
 ---
 
 # Blocks Localization Skill
@@ -10,6 +10,20 @@ blocks-version: "1.1.0"
 ## Purpose
 
 Handles all UI localization management for SELISE Blocks via the UILM v1 API. Covers language setup, translation module and key management, AI-assisted translation, file import/export, webhook configuration, and client-side i18n setup with runtime API integration.
+
+---
+
+## How to Answer "How do I use blocks-uilm?"
+
+When a developer asks **"how to use blocks-uilm"**, **"what does blocks-uilm do"**, or **"how do I get started with blocks-uilm"**:
+
+1. **Ask for their framework** — Next.js, React, Angular, Flutter, Blazor, etc.
+2. **Ask what they want to do** — set up languages, add translation keys, configure AI translation, import/export files, etc.
+3. **Point to the human overview** — direct them to `README.md` for a quick overview
+4. **Point to the AI guide** — direct them to `SKILL.md` for the full execution guide
+5. **Give a one-liner summary** — "blocks-uilm handles all localization: languages, translation keys, AI auto-translation, and file import/export for SELISE Blocks"
+
+**Do NOT** generate a custom summary. The skill already has this information in `README.md` and `SKILL.md`. Link to those files instead of reproducing their content.
 
 ---
 
@@ -283,7 +297,7 @@ Use this table to route user requests. Check `flows/` first — if a flow covers
 All endpoints are prefixed with: `{apiUrl}/uilm/v1`
 
 > [!WARNING]
-> The API uses `/uilm/v1` as its path prefix, **not** `/api/v1`. If the env var is `https://api.seliseblocks.com`, the full URL is `https://api.seliseblocks.com/uilm/v1/Key/GetUilmFile`. Appending `/api/v1` instead will result in 404s.
+> The API uses `/uilm/v1` as its path prefix, **not** `/api/v1`. If the env var is `https://api.example.com`, the full URL is `https://api.example.com/uilm/v1/Key/GetUilmFile`. Appending `/api/v1` instead will result in 404s.
 
 Use `x-blocks-key: {projectKey}` header for all authenticated requests. The API also accepts `Authorization: Bearer {token}` for JWT-based auth. Store credentials in environment variables — see Step 3 of the Pre-Flight Audit.
 
@@ -294,6 +308,53 @@ Use `x-blocks-key: {projectKey}` header for all authenticated requests. The API 
 > - `getUilmFile()` → returns `Record<string, string>` directly — NOT `{ translations: {...} }`
 >
 > Never access `.data` on the response. If your code does `response.json().then(r => r.data)`, that is wrong — just use `response.json()` directly.
+
+### HTTP Method Quick Reference
+
+Use this table to quickly determine the method, endpoint pattern, and body format for each action. Full details (request body fields, query params, response shapes) are in `actions/{action-name}.md`.
+
+| Action | Method | Endpoint Pattern | Body / Params |
+|--------|--------|-----------------|---------------|
+| get-languages | `GET` | `/Language/Gets?projectKey={key}` | Query param — no body |
+| save-language | `POST` | `/Language/Save` | `{ languageName, languageCode, isDefault, isRTL }` |
+| delete-language | `DELETE` | `/Language/Delete?LanguageName={name}&ProjectKey={key}` | Query params — no body |
+| set-default-language | `POST` | `/Language/SetDefaultLanguage` | `{ languageName, projectKey }` |
+| get-modules | `GET` | `/Module/Gets?projectKey={key}` | Query param — no body |
+| save-module | `POST` | `/Module/Save` | `{ moduleName, projectKey }` |
+| get-keys | `GET` | `/Key/Gets` | Query params — `moduleIds[]`, `keySearchText`, `isPartiallyTranslated` |
+| get-key | `GET` | `/Key/GetById?itemId={id}&projectKey={key}` | Query params — no body |
+| save-key | `POST` | `/Key/Save` | `{ keyName, moduleId, projectKey, resources[] }` |
+| save-keys | `POST` | `/Key/Saves` | `{ keys[], projectKey }` |
+| delete-key | `DELETE` | `/Key/Delete?itemId={id}&projectKey={key}` | Query params — no body |
+| get-key-timeline | `GET` | `/Key/GetKeyTimeline?EntityId={id}&projectKey={key}` | Query params — no body |
+| rollback-key | `POST` | `/Key/Rollback` | `{ itemId, versionNumber, projectKey }` |
+| translate-key | `POST` | `/Key/TranslateKey` | `{ itemId, moduleId, messageCoRelationId, projectKey }` |
+| translate-all | `POST` | `/Key/TranslateAll` | `{ moduleId, defaultLanguage, messageCoRelationId, projectKey }` |
+| get-uilm-file | `GET` | `/Key/GetUilmFile` | Query params — `culture`, `moduleName`, `projectKey` |
+| generate-uilm-file | `POST` | `/Key/GenerateUilmFile` | `{ culture, moduleName, projectKey }` |
+| export-uilm | `POST` | `/Export/ExportUilm` | `{ culture, appIds[], projectKey }` |
+| import-uilm | `POST` | `/Import/UilmImport` | `{ fileId, projectKey }` (fileId only — not multipart) |
+| get-exported-files | `GET` | `/Export/Gets?projectKey={key}` | Query param — no body |
+| get-generation-history | `GET` | `/Key/GetGenerationHistory?projectKey={key}` | Query param — no body |
+| save-webhook | `POST` | `/Webhook/Save` | `{ webhookUrl, events[], projectKey }` |
+
+**Example curl snippets by method:**
+
+```bash
+# GET — query params in URL
+curl "{apiUrl}/uilm/v1/Language/Gets?projectKey={key}" \
+  --header "x-blocks-key: {key}"
+
+# POST with JSON body
+curl "{apiUrl}/uilm/v1/Key/Save" \
+  --header "x-blocks-key: {key}" \
+  --header "Content-Type: application/json" \
+  --data '{ "keyName": "NAV_HOME", "moduleId": "common", "projectKey": "{key}", "resources": [] }'
+
+# DELETE — itemId in query param
+curl --request DELETE "{apiUrl}/uilm/v1/Key/Delete?itemId={id}&projectKey={key}" \
+  --header "x-blocks-key: {key}"
+```
 
 ---
 
@@ -566,25 +627,41 @@ ItemId,ModuleId,Module,KeyName,en-US,de-DE,fr-FR,it-IT
 ,,home,HERO_TITLE,"Build faster with SELISE Blocks","Schneller entwickeln mit SELISE Blocks","Construisez plus vite avec SELISE Blocks","Costruisci più velocemente avec SELISE Blocks"
 ```
 
-**Format specifications:**
-- **Header row** has exactly 5+ columns: `ItemId,ModuleId,Module,KeyName,en-US` (and any additional language columns)
-- **Data rows** must have exactly the same number of commas as the header — NO MORE, NO FEWER
-  - 2 commas before `Module` (one for empty `ItemId`, one for empty `ModuleId`)
-  - 1 comma between `Module` and `KeyName`
-  - 1 comma between `KeyName` and the first language value
-- **Wrong:** `,,,,KEY_NAME,"Value"` (4 commas before `Module`) — this skips the `Module` column entirely
-- **Correct:** `,,common,KEY_NAME,"Value"` (2 commas, then module name)
-- **Always double-quote all string values** — even English text and single words. Quotes prevent CSV parsing errors when values contain commas, quotes, or newlines
-- **Empty cells** for untranslated values — leave the cell empty (no placeholder like `-` or `""`)
-- **Module column** must be populated for every row — valid values: `common`, `home`, `auth`, `dashboard`, etc.
+**Column layout — each data row maps directly to a header column:**
+
+```
+Col 1: ItemId    ← leave empty (UILM assigns on import)
+Col 2: ModuleId  ← leave empty
+Col 3: Module    ← populated: common, home, auth, dashboard, etc.
+Col 4: KeyName   ← populated: NAV_HOME, HERO_TITLE, etc.
+Col 5+: en-US    ← populated: translated value, double-quoted
+         de-DE   ← populated or empty
+         fr-FR   ← populated or empty
+```
+
+**One data row labeled column-by-column:**
+
+```
+,,common,NAV_HOME,"Home",""
+↑  ↑   ↑      ↑       ↑     ↑
+1  2   3      4       5     6
+empty empty module  key  en-US de-DE (empty)
+```
+
+**Rules:**
+- **Always 2 commas before the Module column** — not 0, 1, or 3. Two commas = skipping ItemId + ModuleId.
+- **Always double-quote every string value** — key names and all translations. Quotes protect against commas, quotes, and newlines inside values.
+- **Leave untranslated cells empty** — no placeholder like `-`, `""`, or `N/A`.
+- **Module column is required** — every row must have `common`, `home`, `auth`, etc. in column 3.
 
 > [!WARNING]
-> Common mistakes when generating CSV:
-> 1. Forgetting the `Module` column — generating 4 commas (`,,,,KEY`) instead of 2 (`,,common,KEY`)
-> 2. Omitting double-quotes around values — `NAV_FEATURES,Features` instead of `NAV_FEATURES,"Features"`
-> 3. Putting the key name in the wrong column — the key must be in the 4th column (after `ItemId`, `ModuleId`, `Module`)
->
-> **Row structure checklist:** `ItemId,ModuleId,Module,KeyName,en-US` → `,,{module},{key},"{value}"`
+> Common mistakes:
+> - **Wrong:** `,,,,NAV_HOME,"Home"` — 4 commas before key means the Module column is skipped entirely. The key lands in the wrong column.
+> - **Right:** `,,common,NAV_HOME,"Home"` — 2 commas, then module, then key.
+> - **Wrong:** `,,common,NAV_HOME,Home` — unquoted value breaks parsing when the value contains a comma.
+> - **Right:** `,,common,NAV_HOME,"Home"` — all values quoted.
+
+**Row template:** `,,{module},{key},"{en-US}","{de-DE}"`
 
 ### JSON Format (flat key-value)
 
@@ -624,6 +701,22 @@ Generate a single compiled JSON file per language containing all modules:
 
 ## Troubleshooting
 
+### HTTP Status Codes
+
+| Status | Meaning | Common Triggers |
+|--------|---------|----------------|
+| **200** | Success | Normal response — no error |
+| **400** | Bad request | Missing required fields, wrong field names, invalid UUID for `messageCoRelationId`, using raw file instead of `fileId` for import, module/language not found |
+| **401** | Unauthorized | Missing or invalid `x-blocks-key` header. Fix: add `x-blocks-key: {projectKey}` to all requests |
+| **403** | Forbidden | Valid key but insufficient permissions for this operation |
+| **404** | Not found | Wrong endpoint path (`/api/v1/` instead of `/uilm/v1/`), wrong field name for module filter (`moduleName` instead of `moduleId`), or entity does not exist |
+| **409** | Conflict | Duplicate key name already exists in this module |
+| **429** | Rate limited | Too many requests. Retry after a delay |
+| **500** | Server error | AI service error (TranslateAll/TranslateKey), or internal UILM service failure. Retry the request |
+| **502/503/504** | Gateway error | UILM service unavailable. Check Blocks Portal status |
+
+### Problem → Cause → Fix
+
 | Problem | Likely Cause | Fix |
 |---------|-------------|-----|
 | Keys showing instead of values | Namespace argument passed to `useTranslation()` | Remove the namespace argument — always use `useTranslation()` with no arguments |
@@ -635,15 +728,19 @@ Generate a single compiled JSON file per language containing all modules:
 | Translations not loading at all | Namespace not registered via `addResourceBundle` | Ensure `i18n.addResourceBundle()` is called for each module when its translations are fetched |
 | Translations not updating on route change | `currentPathname` not updated in provider | Add `usePathname()` listener and reload modules on change |
 | Hydration mismatch errors | Language initialized during SSR render | Move all i18n initialization into `useEffect` |
-| Import failed (400) | Using raw file instead of `fileId` | `UilmImport` takes a `fileId` string, not multipart file upload |
-| Import failed (400) | Module or language not found | Run `language-setup` flow first to create them |
+| 400 on import | Using raw file instead of `fileId` | `UilmImport` takes a `fileId` string, not multipart file upload |
+| 400 on import | Module or language not found | Run `language-setup` flow first to create them |
+| 400 on translate | Missing `messageCoRelationId` | Generate a UUID and include it as `messageCoRelationId` in the request |
+| 400 on key save | Missing `moduleId` or `keyName` | Check request body fields — see `actions/save-key.md` |
+| 404 on GetKeys | Wrong module filter field | Use `moduleIds[]` (array, plural) with `moduleId` values — not `moduleName` |
+| 404 on any endpoint | Wrong path prefix | Use `/uilm/v1/` not `/api/v1/` |
 | GetUilmFile returns undefined | Wrong response structure | `getUilmFile` returns flat `{KEY: value}` directly — NOT `data.translations` |
 | GetKeys returns empty array | Wrong field name for module filter | Use `moduleIds[]` (array, plural) with `moduleId` values — not `moduleName` |
 | Missing translation values | Wrong field names | For key operations use `moduleId`; for module operations use `moduleName`. Use `resources[]` not `translations[]`. See `contracts.md` |
 | Keys look like `BTN_SIGN_IN` | Key names use UI-type prefixes | Rename keys to semantic names: `NAV_SIGN_IN`. See key naming conventions. |
 | Key not found on route | Key placed in wrong module | Move route-specific keys to the correct module. Only `common` keys are available everywhere. |
-| TranslateAll / TranslateKey fails 400 | Missing `messageCoRelationId` | Generate a UUID and include it as `messageCoRelationId` in the request |
-| 401 Unauthorized | Missing `x-blocks-key` header | Add `x-blocks-key: {projectKey}` to all requests |
+| 401 on all requests | Missing `x-blocks-key` header | Add `x-blocks-key: {projectKey}` to all requests |
+| 500 on translate | AI service error | Retry the request. If persistent, check Blocks Portal status |
 
 ---
 

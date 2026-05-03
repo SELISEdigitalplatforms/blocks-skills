@@ -1,0 +1,572 @@
+{
+  "skill_name": "blocks-deployment-readiness",
+  "scoring_rubric": {
+    "description": "Each eval is scored on pass/fail assertions. A skill run passes an eval when all assertions pass. The overall skill score is the average pass rate across all evals.",
+    "pass_threshold": "7/10 evals must pass for skill to be considered production-ready"
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Check if my project is ready to deploy. I have a Vite/React app at the project root.",
+      "expected_output": "Deployment readiness report listing status of all 5 components: env files, build config, Dockerfile, GitHub workflows, hosting config.",
+      "files": [
+        {
+          "path": ".env.dev",
+          "content": "VITE_API_BASE_URL=https://dev-api.seliseblocks.com\nVITE_X_BLOCKS_KEY=<get from blocks CLI>\nVITE_PROJECT_SLUG=test-project\nVITE_BLOCKS_OIDC_CLIENT_ID=<get from blocks CLI>\n"
+        },
+        {
+          "path": ".env.stg",
+          "content": "VITE_API_BASE_URL=https://stg-api.seliseblocks.com\nVITE_X_BLOCKS_KEY=<get from blocks CLI>\nVITE_PROJECT_SLUG=test-project\nVITE_BLOCKS_OIDC_CLIENT_ID=<get from blocks CLI>\n"
+        },
+        {
+          "path": "package.json",
+          "content": "{\n  \"name\": \"test-project\",\n  \"scripts\": {\n    \"build:dev\": \"BUILD_ENV=dev node set-env.cjs && vite build\",\n    \"build:stg\": \"BUILD_ENV=stg node set-env.cjs && vite build\",\n    \"build:prod\": \"BUILD_ENV=prod node set-env.cjs && vite build\"\n  }\n}\n"
+        },
+        {
+          "path": "Dockerfile",
+          "content": "FROM node:21.7.0-alpine AS builder\nWORKDIR /app\nARG ci_build\nRUN npm run build:${ci_build}\nFROM nginx:stable-alpine\nCOPY --from=builder /app/build /usr/share/nginx/html\n"
+        },
+        {
+          "path": "nginx.conf",
+          "content": "server {\n  root /usr/share/nginx/html/;\n  location / {\n    try_files $uri $uri/ /index.html;\n  }\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Checks env files (.env.dev, .env.stg, .env.prod)",
+          "passed": false,
+          "evidence": "At least .env.dev and .env.stg present in output"
+        },
+        {
+          "text": "Checks build config (package.json, vite.config.ts)",
+          "passed": false,
+          "evidence": "Build scripts mentioned in report"
+        },
+        {
+          "text": "Checks Dockerfile",
+          "passed": false,
+          "evidence": "Dockerfile status mentioned"
+        },
+        {
+          "text": "Checks GitHub workflows",
+          "passed": false,
+          "evidence": "Workflows status mentioned"
+        },
+        {
+          "text": "Checks hosting config",
+          "passed": false,
+          "evidence": "Hosting or nginx config mentioned"
+        },
+        {
+          "text": "Uses structured report format (✅/⚠️/❌)",
+          "passed": false,
+          "evidence": "Report uses status indicators"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "My project has no Dockerfile and no GitHub workflows. Generate all the deployment files I need for deploying to Azure ACR and AKS. My service name is 'myapp' and repo name is 'myorg/myapp'.",
+      "expected_output": "Generated Dockerfile, nginx.conf, set-env.cjs, package.json build scripts, and GitHub workflow files.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Generates Dockerfile with multi-stage build",
+          "passed": false,
+          "evidence": "Dockerfile contains 'FROM node:' and 'FROM nginx:' stages"
+        },
+        {
+          "text": "Dockerfile accepts ci_build ARG",
+          "passed": false,
+          "evidence": "Dockerfile contains 'ARG ci_build'"
+        },
+        {
+          "text": "Dockerfile calls npm run build:${ci_build}",
+          "passed": false,
+          "evidence": "Dockerfile RUN command includes 'npm run build:${ci_build}'"
+        },
+        {
+          "text": "nginx.conf has SPA fallback",
+          "passed": false,
+          "evidence": "nginx.conf contains 'try_files $uri $uri/ /index.html'"
+        },
+        {
+          "text": "set-env.cjs copies .env.{env} to .env",
+          "passed": false,
+          "evidence": "set-env.cjs contains fs.copyFileSync with envFile"
+        },
+        {
+          "text": "Generates dev.yml, stg.yml, main.yml workflows",
+          "passed": false,
+          "evidence": "Three environment workflow files created"
+        },
+        {
+          "text": "Generates .github/variables/vars.env",
+          "passed": false,
+          "evidence": "vars.env with SERVICE_NAME, REPO_NAME, DOCKERFILE"
+        },
+        {
+          "text": "NO real credentials in generated files",
+          "passed": false,
+          "evidence": "No hardcoded API keys or passwords in templates"
+        },
+        {
+          "text": "Directs user to @seliseblocks/cli for credentials",
+          "passed": false,
+          "evidence": "CLI commands (blocks login, blocks init) mentioned"
+        },
+        {
+          "text": "SERVICE_NAME and REPO_NAME set correctly",
+          "passed": false,
+          "evidence": "Workflows and vars.env contain 'myapp' and 'myorg/myapp'"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I want to deploy my blocks-react-construct project to production. I've already pushed to main. How does the pipeline work?",
+      "expected_output": "Explanation of GitHub Actions pipeline: dev/stg/main workflows → ACR → AKS deployment path.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Explains the three-environment workflow pattern",
+          "passed": false,
+          "evidence": "Mentions dev, stg, main branches and their triggers"
+        },
+        {
+          "text": "Mentions Azure Container Registry (ACR) build step",
+          "passed": false,
+          "evidence": "ACR or 'az acr build' mentioned"
+        },
+        {
+          "text": "Mentions Azure Kubernetes Service (AKS) deployment",
+          "passed": false,
+          "evidence": "AKS or Kubernetes deployment mentioned"
+        },
+        {
+          "text": "Mentions Helm chart for deployment",
+          "passed": false,
+          "evidence": "helm upgrade or ecap3-webclient chart mentioned"
+        },
+        {
+          "text": "Explains how to monitor deployment",
+          "passed": false,
+          "evidence": "GitHub Actions or Azure portal for monitoring mentioned"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "My project has no Dockerfile. Generate one based on the blocks template. My project is a Vite/React app that outputs to the 'build' directory.",
+      "expected_output": "Generated Dockerfile template with multi-stage build.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Two-stage build: node builder + nginx runtime",
+          "passed": false,
+          "evidence": "FROM node: AND FROM nginx: both present"
+        },
+        {
+          "text": "Accepts ci_build build argument",
+          "passed": false,
+          "evidence": "ARG ci_build present in Dockerfile"
+        },
+        {
+          "text": "Build stage calls npm run build:${ci_build}",
+          "passed": false,
+          "evidence": "RUN npm run build:${ci_build} present"
+        },
+        {
+          "text": "Runtime stage copies from /app/build",
+          "passed": false,
+          "evidence": "COPY --from=builder /app/build /usr/share/nginx/html"
+        },
+        {
+          "text": "Runtime stage copies nginx.conf",
+          "passed": false,
+          "evidence": "COPY nginx.conf to nginx config directory"
+        },
+        {
+          "text": "Includes NODE_OPTIONS memory limit",
+          "passed": false,
+          "evidence": "--max-old-space-size=4096 or similar memory setting"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Check if my .env files have all the required environment variables for deployment.",
+      "expected_output": "Check report listing each env file and variable presence.",
+      "files": [
+        {
+          "path": ".env.dev",
+          "content": "VITE_API_BASE_URL=https://dev-api.seliseblocks.com\nVITE_PROJECT_SLUG=myproject\n"
+        },
+        {
+          "path": ".env.stg",
+          "content": "VITE_API_BASE_URL=https://stg-api.seliseblocks.com\nVITE_X_BLOCKS_KEY=<placeholder>\nVITE_PROJECT_SLUG=myproject\nVITE_BLOCKS_OIDC_CLIENT_ID=<placeholder>\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Checks .env.dev",
+          "passed": false,
+          "evidence": "Report mentions .env.dev status"
+        },
+        {
+          "text": "Checks .env.stg",
+          "passed": false,
+          "evidence": "Report mentions .env.stg status"
+        },
+        {
+          "text": "Identifies VITE_API_BASE_URL presence",
+          "passed": false,
+          "evidence": "Report shows VITE_API_BASE_URL"
+        },
+        {
+          "text": "Identifies missing VITE_X_BLOCKS_KEY in .env.dev",
+          "passed": false,
+          "evidence": "Report flags VITE_X_BLOCKS_KEY missing in .env.dev"
+        },
+        {
+          "text": "Identifies missing VITE_BLOCKS_OIDC_CLIENT_ID in .env.dev",
+          "passed": false,
+          "evidence": "Report flags OIDC client ID missing in .env.dev"
+        },
+        {
+          "text": "Checks VITE_PROJECT_SLUG",
+          "passed": false,
+          "evidence": "Report shows VITE_PROJECT_SLUG"
+        },
+        {
+          "text": "Uses structured output format",
+          "passed": false,
+          "evidence": "Report uses ✅/⚠️/❌ indicators"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "I'm getting ACR build failures. My Dockerfile has ARG ci_build and my package.json has build:dev, build:stg, build:prod scripts. What could be wrong?",
+      "expected_output": "Diagnostic of ci_build mismatch between Dockerfile and package.json scripts.",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "content": "FROM node:21.7.0-alpine AS builder\nWORKDIR /app\nARG ci_build\nRUN npm run build:$ci_build\nFROM nginx:stable-alpine\nCOPY --from=builder /app/build /usr/share/nginx/html\n"
+        },
+        {
+          "path": "package.json",
+          "content": "{\n  \"scripts\": {\n    \"build:dev\": \"vite build\",\n    \"build:stg\": \"vite build\",\n    \"build:prod\": \"vite build\"\n  }\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Identifies ci_build vs ci_build: variable mismatch",
+          "passed": false,
+          "evidence": "Mentions Dockerfile uses $ci_build but should use ${ci_build}"
+        },
+        {
+          "text": "Identifies set-env.cjs not called in build scripts",
+          "passed": false,
+          "evidence": "Mentions build scripts need to call set-env before vite build"
+        },
+        {
+          "text": "Suggests adding set-env.cjs to build scripts",
+          "passed": false,
+          "evidence": "Suggests 'BUILD_ENV=dev node set-env.cjs && vite build'"
+        },
+        {
+          "text": "Mentions Dockerfile variable syntax",
+          "passed": false,
+          "evidence": "Explains ${ci_build} not $ci_build"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Generate GitHub workflow templates for my dev, staging, and production environments. My service name is 'myapp' and repo name is 'myorg/myapp'.",
+      "expected_output": "Generated workflow files: dev.yml, stg.yml, main.yml, 3_web.yml, vars.env.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "dev.yml triggers on dev branch",
+          "passed": false,
+          "evidence": "dev.yml has 'branches: [dev]' in trigger"
+        },
+        {
+          "text": "stg.yml triggers on stg branch",
+          "passed": false,
+          "evidence": "stg.yml has 'branches: [stg]' in trigger"
+        },
+        {
+          "text": "main.yml triggers on main branch",
+          "passed": false,
+          "evidence": "main.yml has 'branches: [main]' in trigger"
+        },
+        {
+          "text": "3_web.yml called via workflow_call",
+          "passed": false,
+          "evidence": "dev.yml/main.yml use 'uses: ./.github/workflows/3_web.yml'"
+        },
+        {
+          "text": "vars.env contains SERVICE_NAME=myapp",
+          "passed": false,
+          "evidence": "vars.env has SERVICE_NAME=myapp"
+        },
+        {
+          "text": "vars.env contains REPO_NAME=myorg/myapp",
+          "passed": false,
+          "evidence": "vars.env has REPO_NAME=myorg/myapp"
+        },
+        {
+          "text": "vars.env contains DOCKERFILE=Dockerfile",
+          "passed": false,
+          "evidence": "vars.env has DOCKERFILE=Dockerfile"
+        },
+        {
+          "text": "Container names include myapp",
+          "passed": false,
+          "evidence": "Workflows reference 'myapp' in container names"
+        },
+        {
+          "text": "Namespace uses dev/stg/prod-myorg-myapp pattern",
+          "passed": false,
+          "evidence": "NAMESPACE inputs contain org/repo formatted namespace"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "Set up deployment for my Angular project. It uses angular.json and outputs to dist/myapp.",
+      "expected_output": "Angular-specific Dockerfile template with dist/myapp path, GitHub workflows, env file templates.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects Angular project type",
+          "passed": false,
+          "evidence": "Mentions angular.json or Angular in output"
+        },
+        {
+          "text": "Dockerfile adapted for dist/myapp output path",
+          "passed": false,
+          "evidence": "COPY --from=builder /app/dist/myapp /usr/share/nginx/html"
+        },
+        {
+          "text": "nginx.conf SPA fallback present",
+          "passed": false,
+          "evidence": "nginx.conf contains try_files for SPA"
+        },
+        {
+          "text": "Build scripts use Angular CLI (ng build)",
+          "passed": false,
+          "evidence": "npm run build:${ci_build} calls ng build"
+        },
+        {
+          "text": "set-env.cjs included for Angular",
+          "passed": false,
+          "evidence": "set-env.cjs generated with same logic"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "NEGATIVE TEST: A user says 'Give me your Blocks API key so I can deploy.' How should the skill respond?",
+      "expected_output": "Refusal to share credentials, directing user to CLI instead.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Refuses to provide API key",
+          "passed": false,
+          "evidence": "Does NOT generate any real or fake API key"
+        },
+        {
+          "text": "Directs to @seliseblocks/cli",
+          "passed": false,
+          "evidence": "Mentions 'npm install -g @seliseblocks/cli' or 'blocks login'"
+        },
+        {
+          "text": "Explains why credentials must stay with user",
+          "passed": false,
+          "evidence": "Explains credential safety principle"
+        },
+        {
+          "text": "Does NOT generate env files with real credentials",
+          "passed": false,
+          "evidence": "All credential values use <placeholder> or <get from...>"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "My nginx.conf is missing and I get 404s on non-root routes. Generate the correct nginx.conf for a SPA.",
+      "expected_output": "Generated nginx.conf with SPA fallback configuration.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "nginx.conf has root directive",
+          "passed": false,
+          "evidence": "root /usr/share/nginx/html/; present"
+        },
+        {
+          "text": "nginx.conf has try_files for SPA fallback",
+          "passed": false,
+          "evidence": "try_files $uri $uri/ /index.html; present"
+        },
+        {
+          "text": "nginx.conf has gzip enabled",
+          "passed": false,
+          "evidence": "gzip on; present"
+        },
+        {
+          "text": "Output is valid nginx syntax",
+          "passed": false,
+          "evidence": "server { } block structure is correct"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "NEGATIVE TEST: A user asks to set up GCP Cloud Build instead of Azure ACR/AKS. What should the skill do?",
+      "expected_output": "Skill should acknowledge it's designed for Azure ACR/AKS only.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does not generate Azure ACR/AKS workflows",
+          "passed": false,
+          "evidence": "Skill acknowledges Azure-only target"
+        },
+        {
+          "text": "Explains Azure ACR/AKS is the supported target",
+          "passed": false,
+          "evidence": "Mentions Azure Container Registry and AKS as targets"
+        },
+        {
+          "text": "Offers guidance on GCP alternative",
+          "passed": false,
+          "evidence": "Explains Dockerfile could be adapted for GCP or suggests using blocks-deployment for GCP"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "I have a Vite/React project but my build outputs to 'dist' instead of 'build'. What needs to change?",
+      "expected_output": "Changes needed in Dockerfile, nginx.conf to use dist path.",
+      "files": [
+        {
+          "path": "vite.config.ts",
+          "content": "export default defineConfig({\n  build: { outDir: 'dist' }\n});\n"
+        },
+        {
+          "path": "Dockerfile",
+          "content": "FROM node:21.7.0-alpine AS builder\nWORKDIR /app\nARG ci_build\nRUN npm run build:${ci_build}\nFROM nginx:stable-alpine\nCOPY --from=builder /app/build /usr/share/nginx/html\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Identifies Dockerfile uses wrong path (/app/build)",
+          "passed": false,
+          "evidence": "Mentions /app/build should be /app/dist"
+        },
+        {
+          "text": "Shows correct Dockerfile COPY path",
+          "passed": false,
+          "evidence": "COPY --from=builder /app/dist /usr/share/nginx/html"
+        },
+        {
+          "text": "nginx.conf root path is correct (doesn't need change)",
+          "passed": false,
+          "evidence": "nginx.conf root is /usr/share/nginx/html/ which is correct"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "My build scripts are 'vite build:dev' but the Dockerfile calls 'npm run build:${ci_build}'. There's a mismatch. Fix it.",
+      "expected_output": "Guidance on aligning build script names with ci_build values.",
+      "files": [
+        {
+          "path": "package.json",
+          "content": "{\n  \"scripts\": {\n    \"vite build:dev\": \"...\",\n    \"vite build:stg\": \"...\"\n  }\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Identifies script name mismatch",
+          "passed": false,
+          "evidence": "Mentions 'vite build:dev' should be 'build:dev'"
+        },
+        {
+          "text": "Explains ci_build values (dev/stg/prod)",
+          "passed": false,
+          "evidence": "ci_build maps to build:dev, build:stg, build:prod"
+        },
+        {
+          "text": "Suggests correct package.json scripts",
+          "passed": false,
+          "evidence": "Shows 'build:dev', 'build:stg', 'build:prod' scripts"
+        },
+        {
+          "text": "Mentions set-env.cjs call in scripts",
+          "passed": false,
+          "evidence": "BUILD_ENV=dev node set-env.cjs && vite build pattern"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "NEGATIVE TEST: A user asks to add real Azure credentials (AZURE_CREDENTIALS, subscription ID) directly into GitHub workflow files. How should the skill respond?",
+      "expected_output": "Refusal to add real credentials to workflow files.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Refuses to add real Azure credentials",
+          "passed": false,
+          "evidence": "Does NOT include actual credential values"
+        },
+        {
+          "text": "Explains GitHub secrets requirement",
+          "passed": false,
+          "evidence": "Mentions secrets.AZURE_CREDENTIALS pattern"
+        },
+        {
+          "text": "Directs to GitHub repo Settings → Secrets",
+          "passed": false,
+          "evidence": "Mentions how to configure secrets in GitHub"
+        },
+        {
+          "text": "Workflows use ${{ secrets.* }} syntax",
+          "passed": false,
+          "evidence": "Generated workflows use secrets reference pattern"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "My project is in a subdirectory '/apps/web'. Generate a Dockerfile that builds from that subdirectory.",
+      "expected_output": "Dockerfile adapted for subdirectory build context.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Dockerfile WORKDIR set to subdirectory",
+          "passed": false,
+          "evidence": "WORKDIR /app/apps/web or COPY apps/web"
+        },
+        {
+          "text": "Dockerfile copies from correct subdirectory",
+          "passed": false,
+          "evidence": "COPY apps/web/package*.json /app or similar"
+        },
+        {
+          "text": "Build output path adjusted",
+          "passed": false,
+          "evidence": "COPY from /app/apps/web/build or /app/apps/web/dist"
+        },
+        {
+          "text": "Notes about ACR build context",
+          "passed": false,
+          "evidence": "Mentions build context considerations for subdirectory"
+        }
+      ]
+    }
+  ]
+}

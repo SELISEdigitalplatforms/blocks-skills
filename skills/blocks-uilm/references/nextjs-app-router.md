@@ -156,7 +156,7 @@ Namespaces are registered dynamically — the `ns` array in `i18n.ts` starts wit
 
 ```env
 # .env.local
-NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_BLOCKS_API_URL=https://api.example.com
 NEXT_PUBLIC_X_BLOCKS_KEY=your_project_key
 ```
 

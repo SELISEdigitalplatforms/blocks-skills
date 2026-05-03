@@ -28,7 +28,7 @@ dependencies:
 class EnvConfig {
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://api.seliseblocks.com',
+    defaultValue: 'https://api.example.com',
   );
   static const String xBlocksKey = String.fromEnvironment(
     'X_BLOCKS_KEY',
@@ -545,7 +545,7 @@ import 'dio_auth_interceptor.dart';
 class DioService {
   static Dio create({required SecureStorageService storage, required AuthBloc authBloc}) {
     final dio = Dio(BaseOptions(
-      baseUrl: 'https://api.seliseblocks.com',
+      baseUrl: 'https://api.example.com',
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
     ));
