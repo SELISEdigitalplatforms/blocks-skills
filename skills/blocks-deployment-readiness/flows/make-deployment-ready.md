@@ -15,7 +15,7 @@ When a user asks to prepare their project for deployment, check deployment readi
 - Azure credentials
 - GitHub tokens
 
-All credential setup must go through the `@seliseblocks/cli`. AI generates templates and guides, but credentials stay with the user.
+All credential setup must be done by the user directly or via the Blocks Cloud Portal. AI generates templates and guides, but credentials stay with the user.
 
 ---
 
@@ -24,11 +24,10 @@ All credential setup must go through the `@seliseblocks/cli`. AI generates templ
 Examine the project root to identify the framework:
 
 ```
+package.json + next.config.ts → Next.js (check for output: 'standalone')
 package.json + vite.config.ts → Vite/React project
 package.json + angular.json → Angular project
-package.json + next.config.js → Next.js project
 *.csproj → .NET/Blazor project
-pubspec.yaml → Flutter project
 ```
 
 Note the project name from `package.json` or repository name.
@@ -37,29 +36,29 @@ Note the project name from `package.json` or repository name.
 
 ## Step 2: Run Readiness Checks (Parallel)
 
-Run all 5 checks simultaneously to assess current state:
+Run all 4 checks simultaneously to assess current state:
 
 1. **Env files check** — `checks/check-env-files.md`
-   - Look for `.env.dev`, `.env.stg`, `.env.prod`
+   - Look for `.env.dev`, `.env.prod`
    - Verify required variables are present in each file
+   - Next.js: check for `NEXT_PUBLIC_BLOCKS_API_URL`, `NEXT_PUBLIC_X_BLOCKS_KEY`
+   - Vite: check for `VITE_API_BASE_URL`, `VITE_X_BLOCKS_KEY`, etc.
 
 2. **Build config check** — `checks/check-build-config.md`
-   - Verify `package.json` has `build:dev`, `build:stg`, `build:prod` scripts
-   - Verify `vite.config.ts` (or equivalent) exists
-   - Check for `set-env.cjs`
+   - Verify `package.json` has `build:dev`, `build:prod` scripts
+   - Next.js: verify `next.config.ts` has `output: 'standalone'`
+   - Vite: verify `vite.config.ts` exists
+   - Next.js: check for `start.sh`
 
 3. **Dockerfile check** — `checks/check-dockerfile.md`
-   - Verify `Dockerfile` exists with multi-stage build
-   - Verify `nginx.conf` exists
+   - Detect pattern: Next.js standalone vs Vite static
+   - Verify `Dockerfile` exists with correct pattern
+   - Verify `nginx.conf` exists with correct pattern
+   - Next.js: verify `start.sh` exists and is executable
 
-4. **GitHub workflows check** — `checks/check-github-workflows.md`
-   - Verify `.github/workflows/dev.yml`, `stg.yml`, `main.yml`
-   - Verify reusable workflows: `3_web.yml`, `3_stg_web.yml`, etc.
-   - Check `.github/variables/vars.env` exists
-
-5. **Hosting config check** — `checks/check-hosting-config.md`
-   - Verify domain/OIDC redirect URI configuration
-   - Verify nginx SPA fallback
+4. **Hosting config check** — `checks/check-hosting-config.md`
+   - Verify OIDC redirect URI configuration
+   - Verify nginx configuration
    - Verify build output directory
 
 ---
@@ -75,12 +74,11 @@ Present a structured deployment readiness report to the user:
 ✅ Deployment Ready — all components present
 
 ## Component Checks
-✅ Env files (.env.dev, .env.stg, .env.prod) — Present
-✅ Build scripts (build:dev, build:stg, build:prod) — Present
-✅ Dockerfile — Present, multi-stage build
-✅ nginx.conf — Present with SPA fallback
-✅ GitHub workflows (dev, stg, main) — Present
-✅ set-env.cjs — Present
+✅ Env files (.env.dev, .env.prod) — Present
+✅ Build scripts (build:dev, build:prod) — Present
+✅ Dockerfile — Present, Next.js standalone pattern
+✅ nginx.conf — Present with reverse proxy
+✅ start.sh — Present and executable
 ⚠️  OIDC redirect URIs — Need per-environment configuration
 ```
 
@@ -90,19 +88,18 @@ Or if incomplete:
 # Deployment Readiness Report: <project-name>
 
 ## Status Summary
-❌ Not Ready — 3 components missing
+❌ Not Ready — 2 components missing
 
 ## Component Checks
 ✅ Env files — Present
 ✅ Build scripts — Present
 ❌ Dockerfile — Missing
-❌ GitHub workflows — Missing
 ✅ nginx.conf — Present
-✅ set-env.cjs — Present
+❌ start.sh — Missing (Next.js)
 
 ## Missing Components
-1. Dockerfile — needed for ACR container build
-2. GitHub workflows — needed for CI/CD automation
+1. Dockerfile — needed for container build
+2. start.sh — needed for Next.js standalone
 ```
 
 ---
@@ -113,101 +110,61 @@ For each missing component, offer to generate from templates.
 
 ### Missing Env Files
 
+Generate templates with placeholder comments — NEVER real credentials:
+
 ```
-To set up environment files, use the Blocks CLI (recommended):
+To set up environment files, I can generate templates with placeholder values.
+Fill in the actual credentials via the Blocks Cloud Portal.
 
-1. npm install -g @seliseblocks/cli
-2. blocks login
-3. blocks init --env
-
-Or I can generate templates from references/env-variables.md
+Generate templates:
+- .env.dev — with NEXT_PUBLIC_* variables
+- .env.prod — with placeholder values
 ```
-
-Generate templates with placeholder comments — NEVER real credentials.
 
 ### Missing Dockerfile
 
-Generate from `references/dockerfile-template.md`. Adapt the path to match the project.
+Detect the correct pattern first, then generate from `references/dockerfile-template.md`:
+- Next.js: generate Next.js standalone Dockerfile with `start.sh`
+- Vite/Angular: generate Vite static Dockerfile
 
-### Missing GitHub Workflows
+### Missing start.sh (Next.js)
 
-Generate from `references/github-workflows.md`. Create all required workflow files.
+Generate the startup orchestrator:
 
-### Missing set-env.cjs
-
-Generate from the canonical example in `references/canonical-example.md`.
-
----
-
-## Step 5: Guide Credential Setup (CRITICAL)
-
-**This step is required before deployment can succeed.**
-
-Present clear guidance (never ask for credentials directly):
-
-```
-To deploy, you need to authenticate with Azure and SELISE Blocks.
-
-### Step 1: Install and login to CLI
-npm install -g @seliseblocks/cli
-blocks login
-
-### Step 2: Configure project credentials
-blocks config set --project-slug <your-project-slug>
-
-### Step 3: Set up GitHub Secrets
-Go to your GitHub repo → Settings → Secrets and add:
-- AZURE_AKS_BLOCKS_CREDENTIALS — Azure service principal credentials
-- AZURE_BLOCKS_CONTAINER_REGISTRY — Your ACR name
-- AKS_BLOCKS_DEV_CLUSTER — Your dev cluster name
-- (see references/github-workflows.md for full list)
-
-### Step 4: Verify CLI connection
-blocks status
-
-### Step 5: Get credentials from Cloud Portal
-Visit cloud.seliseblocks.com → your project → Settings
-Copy x-blocks-key and enter via: blocks config set --key <key>
+```sh
+#!/bin/sh
+set -e
+node server.js &
+sleep 2
+nginx -g 'daemon off;'
 ```
 
 ---
 
-## Step 6: Trigger Deployment
+## Step 5: Trigger Deployment
 
-When all checks pass and credentials are configured:
+When all checks pass:
 
 ```
 Your project is deployment-ready!
 
 ## To deploy:
-1. Push your code to the target branch:
-   - dev branch → deploys to dev environment
-   - stg branch → deploys to staging
-   - main branch → deploys to production
-
-2. GitHub Actions will automatically:
-   - Build the Docker image
-   - Push to Azure Container Registry
-   - Deploy to Azure Kubernetes Service
-
-3. Or trigger manually via CLI:
-   blocks deploy --env production
+1. Push your code to the target branch
+2. Contact your infrastructure team to trigger the build pipeline
 
 ## Monitor deployment:
-- GitHub Actions tab → view workflow runs
-- Azure portal → AKS cluster → workloads
+- Check with your CI/CD team for deployment status
 ```
 
 ---
 
-## Step 7: Verify Deployment
+## Step 6: Verify Deployment
 
 After deployment, help the user verify the deployment succeeded:
 
-1. Check GitHub Actions run completed successfully
-2. Verify the app is accessible at the expected URL
-3. Check browser console for environment variable loading
-4. Verify OIDC login works with the configured redirect URI
+1. Verify the app is accessible at the expected URL
+2. Check browser console for environment variable loading
+3. Verify OIDC login works with the configured redirect URI
 
 ## Troubleshooting
 

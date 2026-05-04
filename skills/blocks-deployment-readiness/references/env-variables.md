@@ -2,17 +2,6 @@
 
 Complete reference for all environment variables required for SELISE Blocks deployment.
 
-## Deployment Path and Env Files
-
-**Path 1 — Traditional CI/CD (GitHub Actions → ACR → AKS):**
-- `.env.dev`, `.env.stg`, `.env.prod` — all with **real** credentials from `@seliseblocks/cli`
-- Credentials are baked into the container at build time
-
-**Path 2 — Cloud Portal Direct (future):**
-- `.env.dev`, `.env.stg` — with **real** credentials from `@seliseblocks/cli`
-- `.env.prod` — **omit or use placeholder** `<get from cloud portal>` — portal injects real credentials at runtime
-- Never include real production credentials in the source code
-
 ---
 
 ## Framework Env Prefix
@@ -21,42 +10,39 @@ Each framework has its own convention for browser-exposed environment variables.
 
 | Framework | Prefix | Example |
 |-----------|--------|---------|
+| Next.js | `NEXT_PUBLIC_` | `NEXT_PUBLIC_BLOCKS_API_URL`, `NEXT_PUBLIC_X_BLOCKS_KEY` |
 | Vite / React SPA | `VITE_` | `VITE_API_BASE_URL`, `VITE_X_BLOCKS_KEY` |
-| Next.js | `NEXT_PUBLIC_` | `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_X_BLOCKS_KEY` |
 | Angular | None | `API_BASE_URL`, `X_BLOCKS_KEY` (Angular `environment.ts` files) |
+| Flutter Web | None | `blocksApiUrl`, `blocksApiKey` (Dart constants) |
+| Blazor WASM | None | `blocksApiUrl`, `blocksApiKey` (C# configuration) |
 
-> **Next.js:** Unlike Vite, Next.js uses `NEXT_PUBLIC_` to expose variables to the browser. Using `VITE_*` in a Next.js project will result in `undefined` values at runtime.
+> **Next.js:** Uses `NEXT_PUBLIC_` to expose variables to the browser. Using `VITE_*` in a Next.js project will result in `undefined` values at runtime.
 
-> **Angular:** Angular uses its own environment file system (`src/environments/environment.ts`). Do not use a prefix — the Angular CLI handles environment substitution at build time.
+> **Angular:** Uses its own environment file system (`src/environments/environment.ts`). The Angular CLI substitutes values at build time. No prefix needed.
+
+> **Flutter Web:** Uses Dart constants in `lib/config/api_config.dart`. Values are embedded at compile time. For web, store `projectKey` in `localStorage['projectKey']` to enable the UILM browser extension on `localhost`.
+
+> **Blazor WebAssembly:** Uses `appsettings.json` or `IConfiguration`. Values are embedded in the WASM binary at compile time. For web, store `projectKey` in `localStorage` via JS interop to enable the UILM browser extension.
 
 ---
 
 ## Required Variables
 
-These variables must be present in each `.env.{env}` file.
+These variables must be present in each environment.
 
-### *_API_BASE_URL
+### API Endpoint
 
-**Purpose:** API endpoint URL for the environment.
+**Purpose:** Base URL for the Blocks platform API.
 
-| Environment | Value |
-|-------------|-------|
-| Dev | `https://dev-api.seliseblocks.com` |
-| Staging | `https://stg-api.seliseblocks.com` |
-| Production | `https://api.seliseblocks.com` |
+| Framework | Variable | Dev Value | Prod Value |
+|-----------|---------|-----------|------------|
+| Next.js | `NEXT_PUBLIC_BLOCKS_API_URL` | `https://api.seliseblocks.com` | `https://api.seliseblocks.com` |
+| Vite | `VITE_API_BASE_URL` | `https://api.seliseblocks.com` | `https://api.seliseblocks.com` |
+| Angular | `API_BASE_URL` (in `environment.ts`) | `https://api.seliseblocks.com` | `https://api.seliseblocks.com` |
+| Flutter | `apiUrl` (in `api_config.dart`) | `https://api.seliseblocks.com` | `https://api.seliseblocks.com` |
+| Blazor | `ApiUrl` (in `appsettings.json`) | `https://api.seliseblocks.com` | `https://api.seliseblocks.com` |
 
-**Example:**
-```bash
-# Vite
-VITE_API_BASE_URL=https://api.seliseblocks.com
-
-# Next.js
-NEXT_PUBLIC_API_BASE_URL=https://api.seliseblocks.com
-```
-
----
-
-### *_X_BLOCKS_KEY
+### Project Key
 
 **Purpose:** Blocks project key for authentication with the Blocks platform.
 
@@ -67,50 +53,48 @@ NEXT_PUBLIC_API_BASE_URL=https://api.seliseblocks.com
 2. Navigate to your project → Settings → Project Key
 3. Copy the key
 
-**Template (replace value via CLI):**
-```bash
-# Vite
-VITE_X_BLOCKS_KEY=<get from blocks CLI: blocks config show --key>
+**Per-framework template:**
 
-# Next.js
-NEXT_PUBLIC_X_BLOCKS_KEY=<get from blocks CLI: blocks config show --key>
+```bash
+# Next.js (.env.dev / .env.prod)
+NEXT_PUBLIC_X_BLOCKS_KEY=<your-project-key>
 ```
 
----
-
-### *_PROJECT_SLUG
-
-**Purpose:** Project identifier/slug used by the Blocks platform.
-
-**Format:** Alphanumeric string (e.g., `ddoxpd`, `prjrjk-dzhwx`)
-
-**Template:**
 ```bash
-# Vite
-VITE_PROJECT_SLUG=<your-project-slug>
-
-# Next.js
-NEXT_PUBLIC_PROJECT_SLUG=<your-project-slug>
+# Vite (.env.dev / .env.prod)
+VITE_X_BLOCKS_KEY=<your-project-key>
 ```
 
----
-
-### *_BLOCKS_OIDC_CLIENT_ID
-
-**Purpose:** OIDC client ID for authentication with the Blocks identity provider.
-
-**Format:** UUID (e.g., `4354ad04-07b9-4e27-8b93-f53b472e1803`)
-
-**How to get:** From Blocks Cloud Portal → Project → Identity Settings
-
-**Template:**
-```bash
-# Vite
-VITE_BLOCKS_OIDC_CLIENT_ID=<get from blocks CLI or cloud portal>
-
-# Next.js
-NEXT_PUBLIC_BLOCKS_OIDC_CLIENT_ID=<get from blocks CLI or cloud portal>
+```typescript
+// Angular (src/environments/environment.ts)
+export const environment = {
+  production: false,
+  blocksApiUrl: 'https://api.seliseblocks.com',
+  blocksApiKey: '<your-project-key>',
+  blocksProjectKey: '<your-project-key>',
+};
 ```
+
+```dart
+// Flutter (lib/config/api_config.dart)
+class ApiConfig {
+  static const String apiUrl = 'https://api.seliseblocks.com';
+  static const String apiKey = '<your-project-key>';
+  static const String projectKey = '<your-project-key>';
+}
+```
+
+```json
+// Blazor WASM (wwwroot/appsettings.json)
+{
+  "Localise": {
+    "ApiUrl": "https://api.seliseblocks.com",
+    "ProjectKey": "<your-project-key>"
+  }
+}
+```
+
+> **Flutter Web and Blazor WASM:** Store the `projectKey` in `localStorage['projectKey']` on app init. This enables the UILM browser extension to inject key-mode on `localhost`. Read from localStorage first, falling back to the compile-time constant.
 
 ---
 
@@ -118,180 +102,154 @@ NEXT_PUBLIC_BLOCKS_OIDC_CLIENT_ID=<get from blocks CLI or cloud portal>
 
 These variables enhance functionality but are not required for deployment.
 
-### *_CAPTCHA_SITE_KEY
+### OIDC Client ID
 
-**Purpose:** CAPTCHA site key for bot protection (reCaptcha or hCaptcha).
+**Purpose:** OIDC client ID for authentication with the Blocks identity provider.
 
-**Template:**
-```bash
-# Vite
-VITE_CAPTCHA_SITE_KEY=***REMOVED***
+| Framework | Variable |
+|-----------|----------|
+| Next.js | `NEXT_PUBLIC_BLOCKS_OIDC_CLIENT_ID` |
+| Vite | `VITE_BLOCKS_OIDC_CLIENT_ID` |
+| Angular | `BLOCKS_OIDC_CLIENT_ID` (in `environment.ts`) |
 
-# Next.js
-NEXT_PUBLIC_CAPTCHA_SITE_KEY=***REMOVED***
-```
-
----
-
-### *_CAPTCHA_TYPE
-
-**Purpose:** Type of CAPTCHA to use.
-
-**Values:** `reCaptcha` or `hCaptcha`
-
-**Template:**
-```bash
-# Vite
-VITE_CAPTCHA_TYPE=reCaptcha
-
-# Next.js
-NEXT_PUBLIC_CAPTCHA_TYPE=reCaptcha
-```
-
----
-
-### *_BLOCKS_OIDC_REDIRECT_URI
+### OIDC Redirect URI
 
 **Purpose:** Redirect URI for OIDC authentication flow. Must match the domain where the app is hosted.
 
-**Patterns per environment:**
-
 | Environment | Pattern | Example |
 |-------------|---------|---------|
-| Dev | `https://dev-{slug}.seliseblocks.com/oidc` | `https://dev-prjrjk-dzhwx.seliseblocks.com/oidc` |
-| Staging | `https://stg-{slug}.seliseblocks.com/oidc` | `https://stg-prjrjk-dzhwx.seliseblocks.com/oidc` |
-| Production | `https://{slug}.seliseblocks.com/oidc` | `https://prjrjk-dzhwx.seliseblocks.com/oidc` |
+| Dev | `https://dev-{slug}.seliseblocks.com/oidc` | `https://dev-myapp.seliseblocks.com/oidc` |
+| Staging | `https://stg-{slug}.seliseblocks.com/oidc` | `https://stg-myapp.seliseblocks.com/oidc` |
+| Production | `https://{slug}.seliseblocks.com/oidc` | `https://myapp.seliseblocks.com/oidc` |
 
-**Template:**
-```bash
-# Vite
-VITE_BLOCKS_OIDC_REDIRECT_URI=https://dev-<slug>.seliseblocks.com/oidc
-
-# Next.js
-NEXT_PUBLIC_BLOCKS_OIDC_REDIRECT_URI=https://dev-<slug>.seliseblocks.com/oidc
-```
-
----
-
-### GENERATE_SOURCEMAP
-
-**Purpose:** Whether to generate source maps during build.
-
-**Values:** `true` or `false`
-
-**Recommendation:** Set to `false` in production for security and performance.
-
-**Template:**
-```bash
-GENERATE_SOURCEMAP=false
-```
-
----
-
-### VITE_PRIMARY_COLOR / VITE_SECONDARY_COLOR
-
-**Purpose:** Theme color customization.
-
-**Format:** Hex or HSL (e.g., `#15969B` or `hsl(174, 69%, 41%)`)
-
-**Template:**
-```bash
-VITE_PRIMARY_COLOR=#15969B
-VITE_SECONDARY_COLOR=#5194B8
-```
+| Framework | Variable |
+|-----------|----------|
+| Next.js | `NEXT_PUBLIC_BLOCKS_OIDC_REDIRECT_URI` |
+| Vite | `VITE_BLOCKS_OIDC_REDIRECT_URI` |
+| Angular | `BLOCKS_OIDC_REDIRECT_URI` (in `environment.ts`) |
 
 ---
 
 ## Template Generation Guidelines
 
-When generating `.env` templates:
+When generating env file templates:
 
-1. **NEVER include real credentials** — use placeholder comments
-2. **Use correct prefix per framework** — `VITE_*` for Vite, `NEXT_PUBLIC_*` for Next.js
-3. **Use consistent variable keys** across all env files
-4. **Differentiate values per environment** (dev vs stg vs prod)
-5. **Include comments** explaining each variable
-6. **Group related variables** together
-7. **Set sensible defaults** for optional variables
-8. **Path 2 (Cloud Portal):** Omit `.env.prod` or use `<get from cloud portal>` — do not include real production credentials
+1. **NEVER include real credentials** — use placeholder `<your-project-key>`, `<your-oidc-client-id>`
+2. **Use correct prefix per framework** — `NEXT_PUBLIC_*` for Next.js, `VITE_*` for Vite, Dart constants for Flutter, `appsettings.json` for Blazor
+3. **Generate all three env files** — `.env.dev`, `.env.stg`, and `.env.prod` — always. For Path 2, `.env.prod` uses placeholder values since the portal injects real credentials at runtime. Never omit `.env.prod`.
+4. **Use consistent variable keys** across all environments
+5. **Differentiate values per environment** (dev/stg/prod endpoints, though Blocks uses the same API URL)
+6. **Include comments** explaining each variable
+7. **Group related variables** together
+8. **Keep minimal** — only include variables the app actually uses
+
+## Example Template: .env.dev (Next.js)
+
+```bash
+# Development Environment
+NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_X_BLOCKS_KEY=<your-project-key>
+```
+
+## Example Template: .env.stg (Next.js)
+
+```bash
+# Staging Environment
+NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_X_BLOCKS_KEY=<your-project-key>
+```
+
+## Example Template: .env.prod (Next.js)
+
+```bash
+# Production Environment
+NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_X_BLOCKS_KEY=<your-project-key>
+```
 
 ## Example Template: .env.dev (Vite)
 
 ```bash
 # Vite environment variables — Development
-VITE_API_BASE_URL=https://dev-api.seliseblocks.com
-
-# Blocks project key — Get via: blocks config show --key
-VITE_X_BLOCKS_KEY=<set via: blocks config set --key>
-
-VITE_CAPTCHA_SITE_KEY=<get from cloud portal>
-VITE_CAPTCHA_TYPE=reCaptcha
-VITE_PROJECT_SLUG=<your-dev-project-slug>
-
-# OIDC configuration
-VITE_BLOCKS_OIDC_CLIENT_ID=<get from blocks CLI: blocks config show --oidc>
+VITE_API_BASE_URL=https://api.seliseblocks.com
+VITE_X_BLOCKS_KEY=<your-project-key>
+VITE_PROJECT_SLUG=<your-project-slug>
+VITE_BLOCKS_OIDC_CLIENT_ID=<your-oidc-client-id>
 VITE_BLOCKS_OIDC_REDIRECT_URI=https://dev-<slug>.seliseblocks.com/oidc
-
-# Build configuration
-GENERATE_SOURCEMAP=false
-
-# Theme colors (optional)
-VITE_PRIMARY_COLOR=#15969B
-VITE_SECONDARY_COLOR=#5194B8
 ```
 
-## Example Template: .env.dev (Next.js)
+## Example Template: environment.ts (Angular)
 
-```bash
-# Next.js environment variables — Development
-NEXT_PUBLIC_API_BASE_URL=https://dev-api.seliseblocks.com
-
-# Blocks project key — Get via: blocks config show --key
-NEXT_PUBLIC_X_BLOCKS_KEY=<set via: blocks config set --key>
-
-NEXT_PUBLIC_CAPTCHA_SITE_KEY=<get from cloud portal>
-NEXT_PUBLIC_CAPTCHA_TYPE=reCaptcha
-NEXT_PUBLIC_PROJECT_SLUG=<your-dev-project-slug>
-
-# OIDC configuration
-NEXT_PUBLIC_BLOCKS_OIDC_CLIENT_ID=<get from blocks CLI: blocks config show --oidc>
-NEXT_PUBLIC_BLOCKS_OIDC_REDIRECT_URI=https://dev-<slug>.seliseblocks.com/oidc
-
-# Build configuration
-GENERATE_SOURCEMAP=false
+```typescript
+// src/environments/environment.ts (Development)
+export const environment = {
+  production: false,
+  blocksApiUrl: 'https://api.seliseblocks.com',
+  blocksApiKey: '<your-project-key>',
+  blocksProjectKey: '<your-project-key>',
+  blocksOidcClientId: '<your-oidc-client-id>',
+  blocksOidcRedirectUri: 'https://dev-<slug>.seliseblocks.com/oidc',
+};
 ```
 
-## Example Template: .env.prod (Path 2 — Cloud Portal Direct)
-
-> **For Cloud Portal Direct deployments, do NOT include real credentials in `.env.prod`.** The portal injects production credentials at runtime.
-
-```bash
-# Production environment — Cloud Portal Direct
-# Do NOT include real credentials here. The cloud portal injects them at runtime.
-NEXT_PUBLIC_API_BASE_URL=https://api.seliseblocks.com
-NEXT_PUBLIC_PROJECT_SLUG=<your-project-slug>
-
-# OIDC redirect — must match your deployed domain
-NEXT_PUBLIC_BLOCKS_OIDC_REDIRECT_URI=https://<your-slug>.seliseblocks.com/oidc
-
-# Client ID — get from cloud portal (or portal may inject automatically)
-NEXT_PUBLIC_BLOCKS_OIDC_CLIENT_ID=<get from cloud portal>
-
-# Blocks key — portal manages this automatically
-NEXT_PUBLIC_X_BLOCKS_KEY=<get from cloud portal>
+```typescript
+// src/environments/environment.prod.ts (Production)
+export const environment = {
+  production: true,
+  blocksApiUrl: 'https://api.seliseblocks.com',
+  blocksApiKey: '<your-project-key>',
+  blocksProjectKey: '<your-project-key>',
+  blocksOidcClientId: '<your-oidc-client-id>',
+  blocksOidcRedirectUri: 'https://<slug>.seliseblocks.com/oidc',
+};
 ```
 
-## CLI for Credential Setup
+## Example Template: api_config.dart (Flutter)
 
-Use `@seliseblocks/cli` instead of manual credential entry:
-
-```bash
-npm install -g @seliseblocks/cli
-blocks login
-blocks init --env
-blocks config set --key <your-x-blocks-key>
-blocks config set --oidc <your-oidc-client-id>
-blocks config show
+```dart
+// lib/config/api_config.dart
+class ApiConfig {
+  static const String apiUrl = 'https://api.seliseblocks.com';
+  static const String apiKey = '<your-project-key>';
+  static const String projectKey = '<your-project-key>';
+  static const String oidcClientId = '<your-oidc-client-id>';
+  static const String oidcRedirectUri = 'https://dev-<slug>.seliseblocks.com/oidc';
+}
 ```
 
-This keeps credentials with the user, not in AI-generated files.
+> **Flutter Web:** Initialize localStorage on app start:
+> ```dart
+> import 'dart:html' as html;
+> html.window.localStorage['projectKey'] = ApiConfig.projectKey;
+> ```
+
+## Example Template: appsettings.json (Blazor WASM)
+
+```json
+// wwwroot/appsettings.json (Development)
+{
+  "Localise": {
+    "ApiUrl": "https://api.seliseblocks.com",
+    "ProjectKey": "<your-project-key>",
+    "OidcClientId": "<your-oidc-client-id>",
+    "OidcRedirectUri": "https://dev-<slug>.seliseblocks.com/oidc"
+  }
+}
+```
+
+```json
+// wwwroot/appsettings.Production.json (Production)
+{
+  "Localise": {
+    "ApiUrl": "https://api.seliseblocks.com",
+    "ProjectKey": "<your-project-key>",
+    "OidcClientId": "<your-oidc-client-id>",
+    "OidcRedirectUri": "https://<slug>.seliseblocks.com/oidc"
+  }
+}
+```
+
+> **Blazor WASM Web:** Initialize localStorage on app start in `Program.cs`:
+> ```csharp
+> await JS.InvokeVoidAsync("localStorage.setItem", "projectKey", config["Localise:ProjectKey"]);
+> ```

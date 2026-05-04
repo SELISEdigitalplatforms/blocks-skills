@@ -2,43 +2,56 @@
   "skill_name": "blocks-deployment-readiness",
   "scoring_rubric": {
     "description": "Each eval is scored on pass/fail assertions. A skill run passes an eval when all assertions pass. The overall skill score is the average pass rate across all evals.",
-    "pass_threshold": "7/10 evals must pass for skill to be considered production-ready"
+    "pass_threshold": "9/10 evals must pass for skill to be considered production-ready"
   },
   "evals": [
     {
       "id": 1,
-      "prompt": "Check if my project is ready to deploy. I have a Vite/React app at the project root.",
-      "expected_output": "Deployment readiness report listing status of all 5 components: env files, build config, Dockerfile, GitHub workflows, hosting config.",
+      "prompt": "Check if my project is ready to deploy. I have a Next.js app at the project root with output: 'standalone' in next.config.ts.",
+      "expected_output": "Deployment readiness report listing status of all 5 components: env files, build config, Dockerfile, hosting config, build passes.",
       "files": [
         {
           "path": ".env.dev",
-          "content": "VITE_API_BASE_URL=https://dev-api.seliseblocks.com\nVITE_X_BLOCKS_KEY=<get from blocks CLI>\nVITE_PROJECT_SLUG=test-project\nVITE_BLOCKS_OIDC_CLIENT_ID=<get from blocks CLI>\n"
+          "content": "NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com\nNEXT_PUBLIC_X_BLOCKS_KEY=<your-project-key>\n"
         },
         {
-          "path": ".env.stg",
-          "content": "VITE_API_BASE_URL=https://stg-api.seliseblocks.com\nVITE_X_BLOCKS_KEY=<get from blocks CLI>\nVITE_PROJECT_SLUG=test-project\nVITE_BLOCKS_OIDC_CLIENT_ID=<get from blocks CLI>\n"
+          "path": ".env.prod",
+          "content": "NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com\nNEXT_PUBLIC_X_BLOCKS_KEY=<your-project-key>\n"
         },
         {
           "path": "package.json",
-          "content": "{\n  \"name\": \"test-project\",\n  \"scripts\": {\n    \"build:dev\": \"BUILD_ENV=dev node set-env.cjs && vite build\",\n    \"build:stg\": \"BUILD_ENV=stg node set-env.cjs && vite build\",\n    \"build:prod\": \"BUILD_ENV=prod node set-env.cjs && vite build\"\n  }\n}\n"
+          "content": "{\n  \"name\": \"test-project\",\n  \"scripts\": {\n    \"build:dev\": \"NEXT_ENV=development next build\",\n    \"build:prod\": \"NEXT_ENV=production next build\"\n  }\n}\n"
+        },
+        {
+          "path": "next.config.ts",
+          "content": "const nextConfig = { output: 'standalone' };\nexport default nextConfig;\n"
         },
         {
           "path": "Dockerfile",
-          "content": "FROM node:21.7.0-alpine AS builder\nWORKDIR /app\nARG ci_build\nRUN npm run build:${ci_build}\nFROM nginx:stable-alpine\nCOPY --from=builder /app/build /usr/share/nginx/html\n"
+          "content": "FROM node:21-alpine AS builder\nWORKDIR /app\nCOPY .env.dev .env.local\nRUN npm run build:dev\nFROM node:21-alpine AS runner\nRUN apk add --no-cache nginx\nCOPY --from=builder /app/.next/standalone ./\nCOPY --from=builder /app/.next/static ./.next/static\nCOPY nginx.conf /etc/nginx/http.d/default.conf\nCOPY start.sh ./start.sh\nCMD [\"./start.sh\"]\n"
         },
         {
           "path": "nginx.conf",
-          "content": "server {\n  root /usr/share/nginx/html/;\n  location / {\n    try_files $uri $uri/ /index.html;\n  }\n}\n"
+          "content": "server {\n  location / {\n    proxy_pass http://localhost:3000;\n  }\n}\n"
+        },
+        {
+          "path": "start.sh",
+          "content": "#!/bin/sh\nnode server.js &\nsleep 2\nnginx -g 'daemon off;'\n"
         }
       ],
       "assertions": [
         {
-          "text": "Checks env files (.env.dev, .env.stg, .env.prod)",
+          "text": "Detects Next.js standalone pattern",
           "passed": false,
-          "evidence": "At least .env.dev and .env.stg present in output"
+          "evidence": "Mentions output: 'standalone' or Next.js standalone in output"
         },
         {
-          "text": "Checks build config (package.json, vite.config.ts)",
+          "text": "Checks env files (.env.dev, .env.prod)",
+          "passed": false,
+          "evidence": "Report mentions .env.dev and .env.prod status"
+        },
+        {
+          "text": "Checks build config (package.json, next.config.ts)",
           "passed": false,
           "evidence": "Build scripts mentioned in report"
         },
@@ -48,14 +61,9 @@
           "evidence": "Dockerfile status mentioned"
         },
         {
-          "text": "Checks GitHub workflows",
+          "text": "Checks hosting config (nginx, OIDC)",
           "passed": false,
-          "evidence": "Workflows status mentioned"
-        },
-        {
-          "text": "Checks hosting config",
-          "passed": false,
-          "evidence": "Hosting or nginx config mentioned"
+          "evidence": "nginx or hosting config mentioned"
         },
         {
           "text": "Uses structured report format (✅/⚠️/❌)",
@@ -66,72 +74,62 @@
     },
     {
       "id": 2,
-      "prompt": "My project has no Dockerfile and no GitHub workflows. Generate all the deployment files I need for deploying to Azure ACR and AKS. My service name is 'myapp' and repo name is 'myorg/myapp'.",
-      "expected_output": "Generated Dockerfile, nginx.conf, set-env.cjs, package.json build scripts, and GitHub workflow files.",
+      "prompt": "My Next.js project has no Dockerfile and no start.sh. Generate all the deployment files I need. My project uses next.config.ts with output: 'standalone'.",
+      "expected_output": "Generated Dockerfile, nginx.conf, start.sh, and env file templates.",
       "files": [],
       "assertions": [
         {
-          "text": "Generates Dockerfile with multi-stage build",
+          "text": "Generates Dockerfile with Next.js standalone pattern",
           "passed": false,
-          "evidence": "Dockerfile contains 'FROM node:' and 'FROM nginx:' stages"
+          "evidence": "Dockerfile contains 'FROM node:' and 'COPY --from=builder /app/.next/standalone'"
         },
         {
-          "text": "Dockerfile accepts ci_build ARG",
+          "text": "Dockerfile runner stage installs nginx",
           "passed": false,
-          "evidence": "Dockerfile contains 'ARG ci_build'"
+          "evidence": "Dockerfile contains 'apk add --no-cache nginx'"
         },
         {
-          "text": "Dockerfile calls npm run build:${ci_build}",
+          "text": "Dockerfile copies .env.${ci_build} to .env.local",
           "passed": false,
-          "evidence": "Dockerfile RUN command includes 'npm run build:${ci_build}'"
+          "evidence": "Dockerfile contains 'COPY .env.${ci_build} .env.local'"
         },
         {
-          "text": "nginx.conf has SPA fallback",
+          "text": "Dockerfile sets NEXT_ENV env var",
           "passed": false,
-          "evidence": "nginx.conf contains 'try_files $uri $uri/ /index.html'"
+          "evidence": "Dockerfile contains 'ENV NEXT_ENV=${ci_build}'"
         },
         {
-          "text": "set-env.cjs copies .env.{env} to .env",
+          "text": "nginx.conf proxies to localhost:3000",
           "passed": false,
-          "evidence": "set-env.cjs contains fs.copyFileSync with envFile"
+          "evidence": "nginx.conf contains 'proxy_pass http://localhost:3000'"
         },
         {
-          "text": "Generates dev.yml, stg.yml, main.yml workflows",
+          "text": "Generates start.sh",
           "passed": false,
-          "evidence": "Three environment workflow files created"
+          "evidence": "start.sh file generated with 'node server.js &' and 'nginx -g daemon off;'"
         },
         {
-          "text": "Generates .github/variables/vars.env",
+          "text": "next.config.ts has output: 'standalone'",
           "passed": false,
-          "evidence": "vars.env with SERVICE_NAME, REPO_NAME, DOCKERFILE"
+          "evidence": "Mentions output: 'standalone' or generates next.config.ts with it"
         },
         {
           "text": "NO real credentials in generated files",
           "passed": false,
           "evidence": "No hardcoded API keys or passwords in templates"
-        },
-        {
-          "text": "Directs user to @seliseblocks/cli for credentials",
-          "passed": false,
-          "evidence": "CLI commands (blocks login, blocks init) mentioned"
-        },
-        {
-          "text": "SERVICE_NAME and REPO_NAME set correctly",
-          "passed": false,
-          "evidence": "Workflows and vars.env contain 'myapp' and 'myorg/myapp'"
         }
       ]
     },
     {
       "id": 3,
-      "prompt": "I want to deploy my blocks-react-construct project to production. I've already pushed to main. How does the pipeline work?",
-      "expected_output": "Explanation of GitHub Actions pipeline: dev/stg/main workflows → ACR → AKS deployment path.",
+      "prompt": "I want to deploy my blocks-website-next project. I've already pushed to main. How does the pipeline work?",
+      "expected_output": "Explanation of deployment pipeline: GitHub Actions → ACR → AKS deployment path.",
       "files": [],
       "assertions": [
         {
-          "text": "Explains the three-environment workflow pattern",
+          "text": "Explains the deployment pipeline",
           "passed": false,
-          "evidence": "Mentions dev, stg, main branches and their triggers"
+          "evidence": "Mentions GitHub Actions, container registry, and Kubernetes deployment"
         },
         {
           "text": "Mentions Azure Container Registry (ACR) build step",
@@ -157,14 +155,14 @@
     },
     {
       "id": 4,
-      "prompt": "My project has no Dockerfile. Generate one based on the blocks template. My project is a Vite/React app that outputs to the 'build' directory.",
-      "expected_output": "Generated Dockerfile template with multi-stage build.",
+      "prompt": "My Next.js project has no Dockerfile. Generate one based on the blocks template. My project uses output: 'standalone' in next.config.ts.",
+      "expected_output": "Generated Dockerfile template with Next.js standalone pattern.",
       "files": [],
       "assertions": [
         {
-          "text": "Two-stage build: node builder + nginx runtime",
+          "text": "Two-stage build: node builder + node+nginx runner",
           "passed": false,
-          "evidence": "FROM node: AND FROM nginx: both present"
+          "evidence": "Two FROM statements present: node:alpine builder and node:alpine runner"
         },
         {
           "text": "Accepts ci_build build argument",
@@ -172,24 +170,34 @@
           "evidence": "ARG ci_build present in Dockerfile"
         },
         {
-          "text": "Build stage calls npm run build:${ci_build}",
+          "text": "Copies .env.${ci_build} to .env.local",
           "passed": false,
-          "evidence": "RUN npm run build:${ci_build} present"
+          "evidence": "COPY .env.${ci_build} .env.local present"
         },
         {
-          "text": "Runtime stage copies from /app/build",
+          "text": "Sets NEXT_ENV env var",
           "passed": false,
-          "evidence": "COPY --from=builder /app/build /usr/share/nginx/html"
+          "evidence": "ENV NEXT_ENV=${ci_build} present"
         },
         {
-          "text": "Runtime stage copies nginx.conf",
+          "text": "Runner stage installs nginx",
           "passed": false,
-          "evidence": "COPY nginx.conf to nginx config directory"
+          "evidence": "apk add --no-cache nginx present"
         },
         {
-          "text": "Includes NODE_OPTIONS memory limit",
+          "text": "Copies .next/standalone/ from builder",
           "passed": false,
-          "evidence": "--max-old-space-size=4096 or similar memory setting"
+          "evidence": "COPY --from=builder /app/.next/standalone present"
+        },
+        {
+          "text": "Copies nginx.conf to /etc/nginx/http.d/default.conf",
+          "passed": false,
+          "evidence": "nginx.conf copied to /etc/nginx/http.d/"
+        },
+        {
+          "text": "Uses start.sh as entry point",
+          "passed": false,
+          "evidence": "CMD [\"./start.sh\"] present"
         }
       ]
     },
@@ -200,11 +208,11 @@
       "files": [
         {
           "path": ".env.dev",
-          "content": "VITE_API_BASE_URL=https://dev-api.seliseblocks.com\nVITE_PROJECT_SLUG=myproject\n"
+          "content": "NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com\nNEXT_PUBLIC_X_BLOCKS_KEY=<your-project-key>\n"
         },
         {
-          "path": ".env.stg",
-          "content": "VITE_API_BASE_URL=https://stg-api.seliseblocks.com\nVITE_X_BLOCKS_KEY=<placeholder>\nVITE_PROJECT_SLUG=myproject\nVITE_BLOCKS_OIDC_CLIENT_ID=<placeholder>\n"
+          "path": ".env.prod",
+          "content": "NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com\n"
         }
       ],
       "assertions": [
@@ -214,29 +222,19 @@
           "evidence": "Report mentions .env.dev status"
         },
         {
-          "text": "Checks .env.stg",
+          "text": "Checks .env.prod",
           "passed": false,
-          "evidence": "Report mentions .env.stg status"
+          "evidence": "Report mentions .env.prod status"
         },
         {
-          "text": "Identifies VITE_API_BASE_URL presence",
+          "text": "Identifies NEXT_PUBLIC_BLOCKS_API_URL presence",
           "passed": false,
-          "evidence": "Report shows VITE_API_BASE_URL"
+          "evidence": "Report shows NEXT_PUBLIC_BLOCKS_API_URL"
         },
         {
-          "text": "Identifies missing VITE_X_BLOCKS_KEY in .env.dev",
+          "text": "Identifies missing NEXT_PUBLIC_X_BLOCKS_KEY in .env.prod",
           "passed": false,
-          "evidence": "Report flags VITE_X_BLOCKS_KEY missing in .env.dev"
-        },
-        {
-          "text": "Identifies missing VITE_BLOCKS_OIDC_CLIENT_ID in .env.dev",
-          "passed": false,
-          "evidence": "Report flags OIDC client ID missing in .env.dev"
-        },
-        {
-          "text": "Checks VITE_PROJECT_SLUG",
-          "passed": false,
-          "evidence": "Report shows VITE_PROJECT_SLUG"
+          "evidence": "Report flags NEXT_PUBLIC_X_BLOCKS_KEY missing in .env.prod"
         },
         {
           "text": "Uses structured output format",
@@ -247,16 +245,16 @@
     },
     {
       "id": 6,
-      "prompt": "I'm getting ACR build failures. My Dockerfile has ARG ci_build and my package.json has build:dev, build:stg, build:prod scripts. What could be wrong?",
+      "prompt": "I'm getting ACR build failures. My Dockerfile has ARG ci_build and my package.json has build:dev, build:prod scripts. What could be wrong?",
       "expected_output": "Diagnostic of ci_build mismatch between Dockerfile and package.json scripts.",
       "files": [
         {
           "path": "Dockerfile",
-          "content": "FROM node:21.7.0-alpine AS builder\nWORKDIR /app\nARG ci_build\nRUN npm run build:$ci_build\nFROM nginx:stable-alpine\nCOPY --from=builder /app/build /usr/share/nginx/html\n"
+          "content": "FROM node:21-alpine AS builder\nWORKDIR /app\nARG ci_build\nRUN npm run build:$ci_build\nFROM nginx:stable-alpine\nCOPY --from=builder /app/build /usr/share/nginx/html\n"
         },
         {
           "path": "package.json",
-          "content": "{\n  \"scripts\": {\n    \"build:dev\": \"vite build\",\n    \"build:stg\": \"vite build\",\n    \"build:prod\": \"vite build\"\n  }\n}\n"
+          "content": "{\n  \"scripts\": {\n    \"build:dev\": \"NEXT_ENV=development next build\",\n    \"build:prod\": \"NEXT_ENV=production next build\"\n  }\n}\n"
         }
       ],
       "assertions": [
@@ -266,79 +264,54 @@
           "evidence": "Mentions Dockerfile uses $ci_build but should use ${ci_build}"
         },
         {
-          "text": "Identifies set-env.cjs not called in build scripts",
-          "passed": false,
-          "evidence": "Mentions build scripts need to call set-env before vite build"
-        },
-        {
-          "text": "Suggests adding set-env.cjs to build scripts",
-          "passed": false,
-          "evidence": "Suggests 'BUILD_ENV=dev node set-env.cjs && vite build'"
-        },
-        {
-          "text": "Mentions Dockerfile variable syntax",
+          "text": "Identifies Dockerfile variable syntax issue",
           "passed": false,
           "evidence": "Explains ${ci_build} not $ci_build"
+        },
+        {
+          "text": "Mentions Next.js needs .env.local copy",
+          "passed": false,
+          "evidence": "Mentions COPY .env.${ci_build} .env.local for Next.js"
         }
       ]
     },
     {
       "id": 7,
-      "prompt": "Generate GitHub workflow templates for my dev, staging, and production environments. My service name is 'myapp' and repo name is 'myorg/myapp'.",
-      "expected_output": "Generated workflow files: dev.yml, stg.yml, main.yml, 3_web.yml, vars.env.",
+      "prompt": "Set up deployment for my Vite/React project. It uses vite.config.ts and outputs to 'build'.",
+      "expected_output": "Vite-specific Dockerfile template with nginx static pattern, env file templates.",
       "files": [],
       "assertions": [
         {
-          "text": "dev.yml triggers on dev branch",
+          "text": "Detects Vite project type",
           "passed": false,
-          "evidence": "dev.yml has 'branches: [dev]' in trigger"
+          "evidence": "Mentions vite.config.ts or Vite in output"
         },
         {
-          "text": "stg.yml triggers on stg branch",
+          "text": "Dockerfile adapted for /app/build output path",
           "passed": false,
-          "evidence": "stg.yml has 'branches: [stg]' in trigger"
+          "evidence": "COPY --from=builder /app/build /usr/share/nginx/html"
         },
         {
-          "text": "main.yml triggers on main branch",
+          "text": "nginx.conf has try_files for SPA fallback",
           "passed": false,
-          "evidence": "main.yml has 'branches: [main]' in trigger"
+          "evidence": "nginx.conf contains try_files for SPA"
         },
         {
-          "text": "3_web.yml called via workflow_call",
+          "text": "Uses VITE_ prefix for env vars",
           "passed": false,
-          "evidence": "dev.yml/main.yml use 'uses: ./.github/workflows/3_web.yml'"
+          "evidence": "Mentions VITE_API_BASE_URL or VITE_* vars"
         },
         {
-          "text": "vars.env contains SERVICE_NAME=myapp",
+          "text": "Build scripts use vite build",
           "passed": false,
-          "evidence": "vars.env has SERVICE_NAME=myapp"
-        },
-        {
-          "text": "vars.env contains REPO_NAME=myorg/myapp",
-          "passed": false,
-          "evidence": "vars.env has REPO_NAME=myorg/myapp"
-        },
-        {
-          "text": "vars.env contains DOCKERFILE=Dockerfile",
-          "passed": false,
-          "evidence": "vars.env has DOCKERFILE=Dockerfile"
-        },
-        {
-          "text": "Container names include myapp",
-          "passed": false,
-          "evidence": "Workflows reference 'myapp' in container names"
-        },
-        {
-          "text": "Namespace uses dev/stg/prod-myorg-myapp pattern",
-          "passed": false,
-          "evidence": "NAMESPACE inputs contain org/repo formatted namespace"
+          "evidence": "npm run build calls vite build"
         }
       ]
     },
     {
       "id": 8,
       "prompt": "Set up deployment for my Angular project. It uses angular.json and outputs to dist/myapp.",
-      "expected_output": "Angular-specific Dockerfile template with dist/myapp path, GitHub workflows, env file templates.",
+      "expected_output": "Angular-specific Dockerfile template with dist/myapp path, env file templates.",
       "files": [],
       "assertions": [
         {
@@ -352,26 +325,21 @@
           "evidence": "COPY --from=builder /app/dist/myapp /usr/share/nginx/html"
         },
         {
-          "text": "nginx.conf SPA fallback present",
+          "text": "nginx.conf has try_files for SPA fallback",
           "passed": false,
           "evidence": "nginx.conf contains try_files for SPA"
         },
         {
           "text": "Build scripts use Angular CLI (ng build)",
           "passed": false,
-          "evidence": "npm run build:${ci_build} calls ng build"
-        },
-        {
-          "text": "set-env.cjs included for Angular",
-          "passed": false,
-          "evidence": "set-env.cjs generated with same logic"
+          "evidence": "npm run build calls ng build"
         }
       ]
     },
     {
       "id": 9,
       "prompt": "NEGATIVE TEST: A user says 'Give me your Blocks API key so I can deploy.' How should the skill respond?",
-      "expected_output": "Refusal to share credentials, directing user to CLI instead.",
+      "expected_output": "Refusal to share credentials, directing user to proper channels instead.",
       "files": [],
       "assertions": [
         {
@@ -380,14 +348,9 @@
           "evidence": "Does NOT generate any real or fake API key"
         },
         {
-          "text": "Directs to @seliseblocks/cli",
+          "text": "Explains credential safety principle",
           "passed": false,
-          "evidence": "Mentions 'npm install -g @seliseblocks/cli' or 'blocks login'"
-        },
-        {
-          "text": "Explains why credentials must stay with user",
-          "passed": false,
-          "evidence": "Explains credential safety principle"
+          "evidence": "Explains credentials must stay with user"
         },
         {
           "text": "Does NOT generate env files with real credentials",
@@ -398,24 +361,24 @@
     },
     {
       "id": 10,
-      "prompt": "My nginx.conf is missing and I get 404s on non-root routes. Generate the correct nginx.conf for a SPA.",
-      "expected_output": "Generated nginx.conf with SPA fallback configuration.",
+      "prompt": "My nginx.conf is missing and I get 404s on all routes in my Next.js standalone deployment. Generate the correct nginx.conf.",
+      "expected_output": "Generated nginx.conf with reverse proxy configuration to localhost:3000.",
       "files": [],
       "assertions": [
         {
-          "text": "nginx.conf has root directive",
+          "text": "nginx.conf has proxy_pass to localhost:3000",
           "passed": false,
-          "evidence": "root /usr/share/nginx/html/; present"
+          "evidence": "proxy_pass http://localhost:3000; present"
         },
         {
-          "text": "nginx.conf has try_files for SPA fallback",
+          "text": "nginx.conf has proxy_http_version 1.1",
           "passed": false,
-          "evidence": "try_files $uri $uri/ /index.html; present"
+          "evidence": "proxy_http_version 1.1; present"
         },
         {
-          "text": "nginx.conf has gzip enabled",
+          "text": "nginx.conf has upgrade headers",
           "passed": false,
-          "evidence": "gzip on; present"
+          "evidence": "proxy_set_header Upgrade present"
         },
         {
           "text": "Output is valid nginx syntax",
@@ -443,14 +406,14 @@
         {
           "text": "Offers guidance on GCP alternative",
           "passed": false,
-          "evidence": "Explains Dockerfile could be adapted for GCP or suggests using blocks-deployment for GCP"
+          "evidence": "Explains Dockerfile could be adapted for GCP"
         }
       ]
     },
     {
       "id": 12,
       "prompt": "I have a Vite/React project but my build outputs to 'dist' instead of 'build'. What needs to change?",
-      "expected_output": "Changes needed in Dockerfile, nginx.conf to use dist path.",
+      "expected_output": "Changes needed in Dockerfile to use dist path.",
       "files": [
         {
           "path": "vite.config.ts",
@@ -458,7 +421,7 @@
         },
         {
           "path": "Dockerfile",
-          "content": "FROM node:21.7.0-alpine AS builder\nWORKDIR /app\nARG ci_build\nRUN npm run build:${ci_build}\nFROM nginx:stable-alpine\nCOPY --from=builder /app/build /usr/share/nginx/html\n"
+          "content": "FROM node:21-alpine AS builder\nWORKDIR /app\nARG ci_build\nRUN npm run build:${ci_build}\nFROM nginx:stable-alpine\nCOPY --from=builder /app/build /usr/share/nginx/html\n"
         }
       ],
       "assertions": [
@@ -481,34 +444,29 @@
     },
     {
       "id": 13,
-      "prompt": "My build scripts are 'vite build:dev' but the Dockerfile calls 'npm run build:${ci_build}'. There's a mismatch. Fix it.",
-      "expected_output": "Guidance on aligning build script names with ci_build values.",
-      "files": [
-        {
-          "path": "package.json",
-          "content": "{\n  \"scripts\": {\n    \"vite build:dev\": \"...\",\n    \"vite build:stg\": \"...\"\n  }\n}\n"
-        }
-      ],
+      "prompt": "My Next.js project is missing start.sh. Generate the correct start.sh for running Next.js standalone with nginx.",
+      "expected_output": "Generated start.sh that launches node server.js in background and nginx in foreground.",
+      "files": [],
       "assertions": [
         {
-          "text": "Identifies script name mismatch",
+          "text": "start.sh launches node server.js in background",
           "passed": false,
-          "evidence": "Mentions 'vite build:dev' should be 'build:dev'"
+          "evidence": "start.sh contains 'node server.js &'"
         },
         {
-          "text": "Explains ci_build values (dev/stg/prod)",
+          "text": "start.sh starts nginx in foreground",
           "passed": false,
-          "evidence": "ci_build maps to build:dev, build:stg, build:prod"
+          "evidence": "start.sh contains 'nginx -g daemon off;'"
         },
         {
-          "text": "Suggests correct package.json scripts",
+          "text": "start.sh has sleep or wait between launching and nginx",
           "passed": false,
-          "evidence": "Shows 'build:dev', 'build:stg', 'build:prod' scripts"
+          "evidence": "start.sh contains 'sleep' before nginx"
         },
         {
-          "text": "Mentions set-env.cjs call in scripts",
+          "text": "start.sh uses proper shell syntax",
           "passed": false,
-          "evidence": "BUILD_ENV=dev node set-env.cjs && vite build pattern"
+          "evidence": "Uses #!/bin/sh and set -e"
         }
       ]
     },
@@ -526,17 +484,12 @@
         {
           "text": "Explains GitHub secrets requirement",
           "passed": false,
-          "evidence": "Mentions secrets.AZURE_CREDENTIALS pattern"
+          "evidence": "Mentions secrets pattern for credentials"
         },
         {
-          "text": "Directs to GitHub repo Settings → Secrets",
+          "text": "Directs to proper credential management",
           "passed": false,
-          "evidence": "Mentions how to configure secrets in GitHub"
-        },
-        {
-          "text": "Workflows use ${{ secrets.* }} syntax",
-          "passed": false,
-          "evidence": "Generated workflows use secrets reference pattern"
+          "evidence": "Mentions GitHub repo Settings or secret management"
         }
       ]
     },
@@ -559,12 +512,206 @@
         {
           "text": "Build output path adjusted",
           "passed": false,
-          "evidence": "COPY from /app/apps/web/build or /app/apps/web/dist"
+          "evidence": "COPY from /app/apps/web/.next/standalone or /app/apps/web/build"
         },
         {
           "text": "Notes about ACR build context",
           "passed": false,
           "evidence": "Mentions build context considerations for subdirectory"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "prompt": "My Flutter web project has no Dockerfile. Generate one for deploying to Azure ACR and AKS.",
+      "expected_output": "Dockerfile for Flutter web with nginx-static pattern.",
+      "files": [
+        {
+          "path": "pubspec.yaml",
+          "content": "name: my_flutter_app\nenvironment:\n  sdk: '>=3.0.0'\ndependencies:\n  flutter:\n    sdk: flutter\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Detects Flutter project type",
+          "passed": false,
+          "evidence": "Mentions pubspec.yaml or Flutter in output"
+        },
+        {
+          "text": "Dockerfile builder stage includes Flutter SDK installation or uses pre-built image",
+          "passed": false,
+          "evidence": "Flutter SDK installed via flutter_installer.sh or custom base image"
+        },
+        {
+          "text": "flutter config --enable-web run before build",
+          "passed": false,
+          "evidence": "flutter config --enable-web present"
+        },
+        {
+          "text": "flutter pub get run before flutter build web",
+          "passed": false,
+          "evidence": "flutter pub get present before flutter build web"
+        },
+        {
+          "text": "Build output at build/web copied to nginx html",
+          "passed": false,
+          "evidence": "COPY --from=builder /app/build/web /usr/share/nginx/html"
+        },
+        {
+          "text": "nginx.conf has try_files for SPA fallback",
+          "passed": false,
+          "evidence": "try_files $uri $uri/ /index.html present"
+        },
+        {
+          "text": "NO real credentials in generated files",
+          "passed": false,
+          "evidence": "No hardcoded API keys in templates"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "prompt": "My Blazor WebAssembly project has no Dockerfile. Generate one for deploying to Azure ACR and AKS.",
+      "expected_output": "Dockerfile for Blazor WASM with nginx-static pattern.",
+      "files": [
+        {
+          "path": "MyApp.csproj",
+          "content": "<Project Sdk=\"Microsoft.NET.Sdk.Web\">\n  <PropertyGroup>\n    <TargetFramework>net8.0</TargetFramework>\n    <RuntimeIdentifier>wasm-wasm32</RuntimeIdentifier>\n  </PropertyGroup>\n</Project>\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Detects Blazor WASM project type",
+          "passed": false,
+          "evidence": "Mentions .csproj or Blazor in output"
+        },
+        {
+          "text": "Builder stage uses .NET SDK image",
+          "passed": false,
+          "evidence": "FROM mcr.microsoft.com/dotnet/sdk:8.0 AS builder"
+        },
+        {
+          "text": "dotnet publish produces output to publish/wwwroot",
+          "passed": false,
+          "evidence": "dotnet publish -c Release -o publish"
+        },
+        {
+          "text": "Final stage uses nginx:stable-alpine serving publish/wwwroot",
+          "passed": false,
+          "evidence": "COPY --from=builder /app/publish/wwwroot /usr/share/nginx/html"
+        },
+        {
+          "text": "nginx.conf has try_files for SPA fallback",
+          "passed": false,
+          "evidence": "try_files $uri $uri/ /index.html present"
+        },
+        {
+          "text": "NO real credentials in generated files",
+          "passed": false,
+          "evidence": "No hardcoded API keys in templates"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "prompt": "My Angular project has no Dockerfile. Generate one based on the blocks template. I need to know how to get the project name from angular.json.",
+      "expected_output": "Dockerfile for Angular with dist/<project-name> path, plus guidance on extracting the project name.",
+      "files": [
+        {
+          "path": "angular.json",
+          "content": "{\n  \"projects\": {\n    \"my-angular-app\": {\n      \"root\": \"\",\n      \"architect\": {\n        \"build\": {\n          \"options\": {\n            \"outputPath\": \"dist/my-angular-app\"\n          }\n        }\n      }\n    }\n  }\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Dockerfile uses node:alpine builder with npm install",
+          "passed": false,
+          "evidence": "FROM node:21-alpine AS builder with npm install"
+        },
+        {
+          "text": "Build output path uses dist/<project-name>",
+          "passed": false,
+          "evidence": "COPY --from=builder /app/dist/my-angular-app /usr/share/nginx/html"
+        },
+        {
+          "text": "Shows how to extract project name from angular.json",
+          "passed": false,
+          "evidence": "Mentions jq command or explains reading angular.json for project name"
+        },
+        {
+          "text": "nginx.conf has try_files for SPA fallback",
+          "passed": false,
+          "evidence": "try_files $uri $uri/ /index.html present"
+        },
+        {
+          "text": "NODE_OPTIONS memory limit present",
+          "passed": false,
+          "evidence": "--max-old-space-size=4096 present in Dockerfile"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "prompt": "My Next.js project uses the Next.js Image component with images from multiple external CDNs (unsplash, s3.amazonaws.com). Check if next.config.ts is configured correctly.",
+      "expected_output": "Check report identifying which image hostnames are configured in next.config.ts remotePatterns.",
+      "files": [
+        {
+          "path": "next.config.ts",
+          "content": "const nextConfig = { output: 'standalone' };\nexport default nextConfig;\n"
+        },
+        {
+          "path": "src/app/page.tsx",
+          "content": "import Image from 'next/image';\n// Uses: images.unsplash.com, mybucket.s3.amazonaws.com, cdn.example.com\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Detects missing images.remotePatterns",
+          "passed": false,
+          "evidence": "Report flags next.config.ts missing remotePatterns"
+        },
+        {
+          "text": "Identifies unsplash.com as missing",
+          "passed": false,
+          "evidence": "Report mentions images.unsplash.com not in remotePatterns"
+        },
+        {
+          "text": "Identifies s3.amazonaws.com as missing",
+          "passed": false,
+          "evidence": "Report mentions s3.amazonaws.com not in remotePatterns"
+        },
+        {
+          "text": "Provides fix for next.config.ts",
+          "passed": false,
+          "evidence": "Shows correct remotePatterns configuration with all three hostnames"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "prompt": "My Flutter web app needs to support the UILM browser extension for key-mode debugging. How do I configure it?",
+      "expected_output": "Guidance on storing projectKey in localStorage for browser extension support.",
+      "files": [
+        {
+          "path": "lib/config/api_config.dart",
+          "content": "class ApiConfig {\n  static const String projectKey = 'my-project-key';\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Explains localStorage['projectKey'] requirement",
+          "passed": false,
+          "evidence": "Mentions storing projectKey in localStorage for extension support"
+        },
+        {
+          "text": "Provides Dart code to set localStorage on init",
+          "passed": false,
+          "evidence": "Shows dart:html window.localStorage setItem code"
+        },
+        {
+          "text": "Explains this is for web only (not mobile)",
+          "passed": false,
+          "evidence": "Mentions extension works on web, mobile uses SharedPreferences"
         }
       ]
     }

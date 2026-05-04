@@ -7,53 +7,259 @@ This document serves as the canonical example for all deployment-ready Blocks pr
 ## Project Structure
 
 ```
-blocks-react-construct/
-├── Dockerfile                    # Multi-stage container build
-├── nginx.conf                   # Web server configuration
-├── set-env.cjs                  # Environment file switcher
-├── vite.config.ts               # Build tool configuration
+blocks-website-next/
+├── Dockerfile                    # Multi-stage container build (node builder + node+nginx runner)
+├── nginx.conf                   # Reverse proxy configuration
+├── start.sh                     # Startup orchestrator (Next.js + nginx)
+├── next.config.ts               # Next.js config with standalone output
 ├── package.json                 # Scripts, dependencies, build commands
-├── index.html                   # SPA entry point
 ├── .env.dev                     # Development env vars
 ├── .env.stg                     # Staging env vars
 ├── .env.prod                    # Production env vars
-├── .github/
-│   ├── workflows/
-│   │   ├── dev.yml              # Dev deployment pipeline
-│   │   ├── stg.yml              # Staging deployment pipeline
-│   │   ├── main.yml             # Production deployment pipeline
-│   │   ├── 1_test.yml           # Test runner (reusable)
-│   │   ├── 2_sonar.yml          # SonarQube analysis (reusable)
-│   │   ├── 3_web.yml            # ACR build + AKS deploy (reusable)
-│   │   ├── 3_stg_web.yml       # Staging web deploy (reusable)
-│   │   └── 4_storybook.yml      # Storybook build/deploy (optional)
-│   ├── variables/
-│   │   └── vars.env             # Repository-level variables
-│   └── actions/
-│       └── setvars/             # Custom action for loading vars.env
 └── src/                         # Application source
 ```
 
 ---
 
-## Dockerfile
+## Primary Pattern: Next.js Standalone
 
-The canonical Dockerfile uses a two-stage build:
+The canonical pattern uses Next.js in standalone mode with nginx as a reverse proxy.
+
+### Dockerfile
 
 **Stage 1 — Builder:**
-- Base: `node:21.7.0-alpine`
+- Base: `node:21-alpine`
 - Installs dependencies
-- Accepts `ci_build` arg (dev/stg/prod)
-- Runs `npm run build:${ci_build}` which internally calls `set-env.cjs`
-- Output: `/app/build/`
+- Accepts `ci_build` arg (`dev`/`prod`)
+- Copies `.env.${ci_build}` → `.env.local`
+- Sets `NEXT_ENV` env var
+- Runs `npm run build:${ci_build}`
+- Output: `.next/standalone/` + `.next/static/` + `public/`
 
-**Stage 2 — Runtime:**
-- Base: `nginx:stable-alpine`
-- Copies build output from Stage 1
-- Copies `nginx.conf` to nginx config dir
+**Stage 2 — Runner:**
+- Base: `node:21-alpine`
+- Installs nginx
+- Copies Next.js standalone build from Stage 1
+- Copies `nginx.conf` to `/etc/nginx/http.d/default.conf`
+- Runs `start.sh`
 
 ```dockerfile
-FROM node:21.7.0-alpine AS builder
+FROM node:21-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+
+ARG ci_build
+
+RUN mkdir -p /app/log
+
+COPY .env.${ci_build} .env.local
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_ENV=${ci_build}
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build:${ci_build}
+
+# ── Runner ─────────────────────────────────────────────────────────────────────
+FROM node:21-alpine AS runner
+
+WORKDIR /app
+
+RUN apk add --no-cache nginx
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/public ./public
+
+RUN mkdir -p .next && chown nextjs:nodejs .next
+
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+COPY nginx.conf /etc/nginx/http.d/default.conf
+
+COPY start.sh ./start.sh
+RUN chmod +x ./start.sh
+
+EXPOSE 80
+
+CMD ["./start.sh"]
+```
+
+**Key points:**
+- `ci_build` maps to `build:dev`, `build:stg`, or `build:prod` scripts
+- `NEXT_ENV` set to `development`, `staging`, or `production` (values: `development`/`staging`/`production`, not `dev`/`stg`/`prod`)
+- `COPY .env.${ci_build} .env.local` — Next.js reads `.env.local` by convention. Each build target loads its corresponding `.env.dev`, `.env.stg`, or `.env.prod` file
+- Memory limit of 4GB prevents OOM during large builds
+
+---
+
+## nginx.conf (Reverse Proxy)
+
+The canonical nginx configuration proxies to the Next.js server running on port 3000:
+
+```nginx
+server {
+  server_tokens off;
+  client_max_body_size 200m;
+  gzip             on;
+  gzip_comp_level  6;
+  gzip_min_length  1000;
+  gzip_proxied     expired no-cache no-store private auth;
+  gzip_types       text/plain application/x-javascript text/xml text/css application/xml text/javascript application/javascript application/json application/font-woff application/font-woff2 application/vnd.ms-fontobject application/x-font-ttf font/opentype;
+
+  location / {
+    proxy_pass http://localhost:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+  }
+}
+```
+
+**Key points:**
+- Proxies to `localhost:3000` where Next.js runs (not static file serving)
+- WebSocket support via `Upgrade` headers
+- No `try_files` — Next.js handles all routing
+- 200MB max body size for file uploads
+
+---
+
+## start.sh
+
+The startup script launches Next.js in the background, waits briefly, then starts nginx in the foreground:
+
+```sh
+#!/bin/sh
+set -e
+
+# Start Next.js standalone server in the background (port 3000)
+node server.js &
+
+# Wait briefly to give Next.js a moment to start before nginx begins proxying
+sleep 2
+
+# Start nginx in foreground (keeps the container alive)
+nginx -g 'daemon off;'
+```
+
+**Key points:**
+- Next.js runs in background, nginx in foreground
+- Container stays alive because nginx runs in foreground
+
+---
+
+## next.config.ts
+
+```typescript
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  output: 'standalone',
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+    ],
+  },
+};
+
+export default nextConfig;
+```
+
+**Key points:**
+- `output: 'standalone'` — produces a self-contained build in `.next/standalone/`
+- No `output: 'export'` — this is not a static export
+- `server.js` in `.next/standalone/` is the entry point
+- `images.remotePatterns` — add all external image hostnames the app uses (CDNs, cloud storage, etc.). Without this, Next.js Image component will block external images at runtime. Common patterns to add:
+  - `images.unsplash.com` — Unsplash photo CDN
+  - `*.amazonaws.com` — S3 / CloudFront
+  - `*.googleusercontent.com` — Google Cloud Storage
+  - `*.akamai.net` — Akamai CDN
+
+**Key points:**
+- `output: 'standalone'` — produces a self-contained build in `.next/standalone/`
+- No `output: 'export'` — this is not a static export
+- `server.js` in `.next/standalone/` is the entry point
+
+---
+
+## package.json Build Scripts
+
+```json
+{
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:dev": "NEXT_ENV=development next build",
+    "build:stg": "NEXT_ENV=staging next build",
+    "build:prod": "NEXT_ENV=production next build",
+    "start": "next start",
+    "lint": "eslint"
+  }
+}
+```
+
+**Key points:**
+- Three build scripts: `build:dev`, `build:stg`, and `build:prod` — one per environment
+- `NEXT_ENV` set to `development`, `staging`, or `production` (not `dev`/`stg`/`prod`)
+- `ci_build` arg in Dockerfile maps to the correct script and env file: `dev` → `.env.dev`, `stg` → `.env.stg`, `prod` → `.env.prod`
+- No `set-env.cjs` — env switching done via Dockerfile `COPY .env.${ci_build} .env.local`
+
+---
+
+## Environment Files
+
+### .env.dev
+```bash
+# Development Environment
+NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_X_BLOCKS_KEY=<your-project-key>
+```
+
+### .env.stg
+```bash
+# Staging Environment
+NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_X_BLOCKS_KEY=<your-project-key>
+```
+
+### .env.prod
+```bash
+# Production Environment
+NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_X_BLOCKS_KEY=<your-project-key>
+```
+
+**Key points:**
+- Only `NEXT_PUBLIC_*` variables (Next.js convention)
+- Minimal set — only what's actually used by the app
+- Use placeholder `<your-project-key>` — never embed real credentials in templates
+- All three env files (`.env.dev`, `.env.stg`, `.env.prod`) should always exist. For Path 2, `.env.prod` uses placeholder values — the portal injects real credentials at runtime
+- Each env file maps to its corresponding `build:dev`, `build:stg`, `build:prod` script via the `ci_build` Dockerfile argument
+
+---
+
+## Fallback Pattern: Static File Serving (Vite / Angular / Flutter / Blazor WASM)
+
+For Vite or Angular projects that don't use Next.js standalone, fall back to the nginx-static pattern.
+
+### Dockerfile (Vite/Angular)
+```dockerfile
+FROM node:21-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
@@ -67,17 +273,7 @@ COPY --from=builder /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 ```
 
-**Key points:**
-- `ci_build` maps to `build:dev`, `build:stg`, `build:prod` scripts
-- Memory limit of 4GB prevents OOM during large builds
-- Multi-stage keeps final image minimal (~25MB)
-
----
-
-## nginx.conf
-
-The canonical nginx configuration:
-
+### nginx.conf (Static, for Vite/Angular)
 ```nginx
 server {
   root /usr/share/nginx/html/;
@@ -95,255 +291,73 @@ server {
 }
 ```
 
-**Key points:**
-- `try_files $uri $uri/ /index.html` — SPA fallback for client-side routing
-- Gzip compression for all text-based assets
-- 200MB max body size for file uploads
-
----
-
-## set-env.cjs
-
-Environment file switcher that copies `.env.{env}` to `.env` before build:
-
-```javascript
-const fs = require('fs');
-const path = require('path');
-
-const env = process.env.BUILD_ENV || 'dev';
-const envFile = `.env.${env}`;
-const targetFile = path.join(__dirname, '.env');
-
-if (!fs.existsSync(envFile)) {
-  console.error(`❌ Error: ${envFile} does not exist.`);
-  process.exit(1);
-}
-
-fs.copyFileSync(envFile, targetFile);
-console.log(`✅ Successfully set environment: ${envFile} → .env`);
-```
-
-**Key points:**
-- Uses `BUILD_ENV` env var (set by `build:dev`, `build:stg`, `build:prod`)
-- Exits with error if target env file missing
-- Synchronous copy before Vite build starts
-
----
-
-## package.json Build Scripts
-
+### package.json (Vite)
 ```json
 {
   "scripts": {
-    "build:dev": "BUILD_ENV=dev npm run set-env && vite build",
-    "build:stg": "BUILD_ENV=stg npm run set-env && vite build",
-    "build:prod": "BUILD_ENV=prod npm run set-env && vite build",
-    "set-env": "node set-env.cjs"
+    "build:dev": "vite build",
+    "build:stg": "vite build",
+    "build:prod": "vite build"
   }
 }
 ```
 
-**Key points:**
-- `BUILD_ENV` passed to `set-env.cjs` which selects `.env.dev`, `.env.stg`, or `.env.prod`
-- `set-env` script runs before `vite build`
-- Chain: `build:dev` → `set-env` → `vite build`
+**Key points for Vite/Angular:**
+- nginx serves static files from `/usr/share/nginx/html/`
+- `try_files $uri $uri/ /index.html` — SPA fallback required
+- Build output: `/app/build` (Vite), `/app/dist/<name>` (Angular), `/app/build/web` (Flutter), `/app/publish/wwwroot` (Blazor WASM)
 
----
+**Flutter Web:** Builds to `build/web/`, deploys as static files with nginx.
 
-## vite.config.ts
+**Blazor WebAssembly:** Builds to `publish/wwwroot/`, deploys as static files with nginx.
 
-```typescript
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-
-export default defineConfig({
-  plugins: [react()],
-  envPrefix: 'VITE_',
-  build: {
-    outDir: 'build',
-    sourcemap: false,
-  },
-  server: {
-    host: true,
-    allowedHosts: true,
-  },
-});
-```
-
-**Key points:**
-- `envPrefix: 'VITE_'` — exposes only `VITE_*` variables to client
-- `outDir: 'build'` — matches Dockerfile COPY path
-- `allowedHosts: true` — required for multi-tenant deployment
-
----
-
-## Environment Files
-
-### .env.dev
-```bash
-# Development environment
-VITE_API_BASE_URL=https://dev-api.seliseblocks.com
-VITE_X_BLOCKS_KEY=<get via: blocks config show --key>
-VITE_PROJECT_SLUG=<your-dev-project-slug>
-VITE_BLOCKS_OIDC_CLIENT_ID=<get via: blocks config show --oidc>
-VITE_BLOCKS_OIDC_REDIRECT_URI=https://dev-construct.seliseblocks.com/oidc
-GENERATE_SOURCEMAP=false
-VITE_CAPTCHA_SITE_KEY=<get from cloud portal>
-VITE_CAPTCHA_TYPE=reCaptcha
-```
-
-### .env.stg
-```bash
-# Staging environment
-VITE_API_BASE_URL=https://stg-api.seliseblocks.com
-VITE_X_BLOCKS_KEY=<get via: blocks config show --key>
-VITE_PROJECT_SLUG=<your-stg-project-slug>
-VITE_BLOCKS_OIDC_CLIENT_ID=<get via: blocks config show --oidc>
-VITE_BLOCKS_OIDC_REDIRECT_URI=https://stg-construct.seliseblocks.com/oidc
-GENERATE_SOURCEMAP=false
-```
-
-### .env.prod
-```bash
-# Production environment
-VITE_API_BASE_URL=https://api.seliseblocks.com
-VITE_X_BLOCKS_KEY=<get via: blocks config show --key>
-VITE_PROJECT_SLUG=<your-prod-project-slug>
-VITE_BLOCKS_OIDC_CLIENT_ID=<get via: blocks config show --oidc>
-VITE_BLOCKS_OIDC_REDIRECT_URI=https://construct.seliseblocks.com/oidc
-GENERATE_SOURCEMAP=false
-```
-
----
-
-## GitHub Variables (.github/variables/vars.env)
-
-```
-SONARQUBE_HOST=https://code.selise.biz
-AUTHOR=<github-org>
-REPO_NAME=blocks-react-construct
-SOLUTION_NAME=construct
-SERVICE_NAME=construct
-DOCKERFILE=Dockerfile
-STORYBOOK_DOCKERFILE=storybook.Dockerfile
-```
-
----
-
-## GitHub Workflows Summary
-
-### dev.yml — Dev Deployment
-- Trigger: Push to `dev` branch
-- Runs: `2_sonar.yml` → `3_web.yml`
-- Container: `dev-construct-webclient`
-- Namespace: `dev-blocks-react-construct`
-
-### stg.yml — Staging Deployment
-- Trigger: Push to `stg` branch
-- Runs: `3_stg_web.yml`
-- Container: `stg-construct-webclient`
-- Namespace: `stg-blocks-react-construct`
-
-### main.yml — Production Deployment
-- Trigger: Push to `main` branch, PR to `main`
-- Runs: `3_web.yml` (no sonar on push)
-- Container: `prod-construct-webclient`
-- Namespace: `prod-blocks-react-construct`
-
----
-
-## Deployment Pipeline Flow
-
-```
-Push to branch
-     │
-     ▼
-GitHub Actions (dev.yml / stg.yml / main.yml)
-     │
-     ├──► 1_test.yml ───► Run tests & lint
-     │
-     ├──► 2_sonar.yml ──► SonarQube analysis
-     │
-     └──► 3_web.yml ────► Build Docker image
-             │                │
-             │                ├── ACR build (az acr build)
-             │                │
-             │                └── Deploy to AKS (helm upgrade)
-             │                      │
-             │                      └── Helm chart: ecap3-webclient
-             │                      └── Values: <cluster>/construct-webclient.values.yaml
-             │
-             ▼
-     Azure Container Registry (ACR)
-             │
-             └── Image: <registry>.azurecr.io/<container>:<sha>
-             │
-             ▼
-     Azure Kubernetes Service (AKS)
-             │
-             └── Namespace: dev/stg/prod-blocks-react-construct
-             │
-             └── Pod: dev/stg/prod-construct-webclient
-             │
-             └── Service: dev/stg/prod-construct-webclient
-             │
-             └── Ingress: dev/stg/prod-construct.seliseblocks.com
-```
-
----
-
-## Angular Adaptation
-
-When adapting for Angular projects:
-
-1. **Dockerfile:** Change build output path from `/app/build` to `/app/dist/<project-name>`
-2. **nginx.conf:** Same SPA fallback required
-3. **package.json scripts:** Same pattern with `BUILD_ENV` and `set-env.cjs`
-4. **set-env.cjs:** Same logic — no changes needed
-
-```dockerfile
-FROM node:21.7.0-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-ARG ci_build
-RUN npm run build:${ci_build}
-FROM nginx:stable-alpine
-COPY --from=builder /app/dist/<project-name> /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-```
-
----
-
-## Key Files for Reference
-
-The canonical files are sourced from the `blocks-react-construct` sample project. These files are the authoritative reference when templates in this skill conflict.
-
-| What you need | Description |
-|---------------|-------------|
-| Dockerfile | Multi-stage build: node:alpine builder → nginx:alpine runtime |
-| nginx.conf | SPA fallback, gzip, security headers |
-| set-env.cjs | Environment file switcher (BUILD_ENV → .env.{env}) |
-| package.json scripts | build:dev, build:stg, build:prod with set-env call |
-| vite.config.ts | envPrefix: 'VITE_', outDir: 'build' |
-| GitHub workflows | dev.yml, stg.yml, main.yml + reusable workflows |
-| vars.env | SERVICE_NAME, REPO_NAME, DOCKERFILE variables |
+**Blazor Server:** Uses dotnet runtime image, no nginx needed — the app runs as a dotnet process on port 80.
 
 ---
 
 ## Checklist for Checking Against This Reference
 
-- [ ] Dockerfile has two stages (node builder → nginx runtime)
+### Next.js Standalone Pattern
+- [ ] Dockerfile has two stages (node builder → node+nginx runner)
 - [ ] Dockerfile accepts `ci_build` ARG
-- [ ] `npm run build:${ci_build}` is called in Dockerfile
-- [ ] nginx.conf has `try_files $uri $uri/ /index.html`
-- [ ] set-env.cjs copies `.env.{env}` to `.env`
-- [ ] package.json has `build:dev`, `build:stg`, `build:prod` scripts
-- [ ] Scripts call `set-env` before `vite build`
-- [ ] vite.config.ts has `envPrefix: 'VITE_'`
-- [ ] vite.config.ts `build.outDir` matches Dockerfile COPY path
-- [ ] `.env.dev`, `.env.stg`, `.env.prod` all exist
-- [ ] No real credentials in env files — use placeholder comments
-- [ ] `.github/variables/vars.env` exists with SERVICE_NAME, REPO_NAME, DOCKERFILE
-- [ ] GitHub workflows exist for dev, stg, and main branches
+- [ ] Dockerfile copies `.env.${ci_build}` → `.env.local`
+- [ ] Dockerfile sets `ENV NEXT_ENV=${ci_build}`
+- [ ] `npm run build:${ci_build}` called in Dockerfile
+- [ ] Stage 2 installs nginx (`apk add --no-cache nginx`)
+- [ ] Stage 2 copies `.next/standalone/`, `.next/static/`, `public/`
+- [ ] nginx.conf proxies to `http://localhost:3000`
+- [ ] nginx.conf copied to `/etc/nginx/http.d/default.conf`
+- [ ] `start.sh` exists and launches `node server.js` + `nginx`
+- [ ] `next.config.ts` has `output: 'standalone'`
+- [ ] package.json has `build:dev`, `build:stg`, and `build:prod` scripts
+- [ ] Build scripts use `NEXT_ENV=development/staging/production` (not `BUILD_ENV=dev/stg/prod`)
+- [ ] `.env.dev`, `.env.stg`, and `.env.prod` always exist (prod uses placeholders for Path 2)
+- [ ] No real credentials — use placeholder `<your-project-key>`
+- [ ] No `set-env.cjs` in Next.js projects
+
+### Vite/Angular Fallback Pattern
+- [ ] Dockerfile has two stages (node builder → nginx static)
+- [ ] nginx.conf serves static files with SPA fallback
+- [ ] Build output path matches Dockerfile COPY path
+
+### Flutter Web Pattern
+- [ ] Dockerfile builder installs Flutter SDK or uses Flutter pre-installed iGmage
+- [ ] Build output at `/app/build/web` copied to nginx html root
+- [ ] nginx.conf serves static files with SPA fallback
+
+### Blazor WebAssembly Pattern
+- [ ] Dockerfile uses .NET SDK for build, nginx:alpine for serving
+- [ ] Build output at `/app/publish/wwwroot` copied to nginx html root
+
+### Blazor Server Pattern
+- [ ] Dockerfile uses dotnet runtime image, not nginx
+- [ ] `EXPOSE 80` and `CMD ["dotnet", "MyApp.dll"]`
+- [ ] `build:dev`, `build:stg`, `build:prod` scripts present
+
+### Env Files (all frameworks)
+- [ ] Correct prefix used per framework:
+  - Next.js: `NEXT_PUBLIC_*`
+  - Vite: `VITE_*`
+  - Angular: No prefix (use `environment.ts`)
+- [ ] Placeholder values used — no real credentials in templates
+- [ ] `.env.dev` and `.env.prod` exist (or `.env.dev` only for Cloud Portal)

@@ -8,9 +8,9 @@ Prepares SELISE Blocks projects for deployment by checking and generating requir
 
 | Category | Coverage |
 |----------|---------|
-| **Readiness checks** | Verify .env files, build config, Dockerfile, workflows, hosting config |
-| **File generation** | Generate Dockerfile, nginx.conf, GitHub workflows, env templates |
-| **Guidance** | CLI-based credential setup, project structure reference |
+| **Readiness checks** | Verify .env files, build config, Dockerfile, hosting config |
+| **File generation** | Generate Dockerfile, nginx.conf, start.sh, env templates |
+| **Guidance** | Project structure reference, env variable documentation |
 
 ---
 
@@ -19,6 +19,7 @@ Prepares SELISE Blocks projects for deployment by checking and generating requir
 - Trigger builds via CloudBuild API (use `blocks-deployment` skill)
 - Store or handle credentials
 - Monitor running deployments
+- Generate GitHub workflows (managed by infrastructure team)
 
 ---
 
@@ -27,23 +28,22 @@ Prepares SELISE Blocks projects for deployment by checking and generating requir
 ```
 skills/blocks-deployment-readiness/
 ├── SKILL.md                      <- Intent map, trigger phrases, verification checklist
-├── meta.json                    <- Machine-readable skill metadata
-├── README.md                    <- This file
-├── evals/                       <- Evaluation tests
+├── meta.json                     <- Machine-readable skill metadata
+├── README.md                     <- This file
+├── evals/                        <- Evaluation tests
 │   └── evals.json
-├── checks/                      <- 5 readiness check actions
+├── checks/                       <- 5 readiness check actions
 │   ├── check-env-files.md
 │   ├── check-build-config.md
 │   ├── check-dockerfile.md
-│   ├── check-github-workflows.md
-│   └── check-hosting-config.md
+│   ├── check-hosting-config.md
+│   └── check-build-passes.md
 ├── flows/
-│   └── make-deployment-ready.md <- Full 7-step preparation flow
-└── references/                  <- Templates and documentation
+│   └── make-deployment-ready.md  <- Full preparation flow
+└── references/                   <- Templates and documentation
     ├── canonical-example.md
     ├── dockerfile-template.md
-    ├── env-variables.md
-    └── github-workflows.md
+    └── env-variables.md
 ```
 
 ---
@@ -62,25 +62,25 @@ Use this skill when:
 
 | File | Purpose |
 |------|---------|
-| `.env.dev`, `.env.stg`, `.env.prod` | Environment-specific configuration |
-| `Dockerfile` | Container build definition |
-| `nginx.conf` | Web server configuration |
-| `.github/workflows/*.yml` | CI/CD pipelines |
-| `package.json` | Build scripts (`build:dev`, `build:stg`, `build:prod`) |
-| `set-env.cjs` | Environment file switcher (optional but recommended) |
+| `.env.dev`, `.env.prod` | Environment-specific configuration |
+| `Dockerfile` | Container build definition (Next.js standalone or Vite static) |
+| `nginx.conf` | Reverse proxy (Next.js) or static file server (Vite/Angular) |
+| `start.sh` | Startup orchestrator for Next.js standalone |
+| `next.config.ts` / `vite.config.ts` | Build tool configuration |
+| `package.json` | Build scripts (`build:dev`, `build:prod`) |
 
 ---
 
 ## Credential Safety
 
-**Never share API keys or passwords with AI.** This skill guides you to use `@seliseblocks/cli` for credential setup instead.
+**Never share API keys or passwords with AI.** This skill generates templates with placeholder values. Fill in actual credentials via the Blocks Cloud Portal or your organization's secret management.
 
 ---
 
 ## Quick Start
 
 ```
-Check if my project is deployment-ready
+Check if my project is ready to deploy
 ```
 
 ```
@@ -88,30 +88,17 @@ Make my React app deployment-ready
 ```
 
 ```
-Generate a Dockerfile and GitHub workflows for my project
-```
-
----
-
-## Environment Variables
-
-This skill generates templates. The actual values must be set via CLI:
-
-```bash
-npm install -g @seliseblocks/cli
-blocks login
-blocks init --env
-blocks config set --key <your-x-blocks-key>
+Generate a Dockerfile for my blocks project
 ```
 
 ---
 
 ## Reference
 
-The canonical example project is `blocks-react-construct` — use its structure as a template for your own projects.
+The canonical example project is `sample/blocks-website-next/` — use its structure as a reference for Next.js standalone deployments.
 
 ---
 
 ## Version
 
-**1.0.0** — Initial release. Covers Vite/React project readiness checks and template generation for Azure ACR + AKS deployment.
+**1.1.0** — Revamped for Next.js standalone pattern with nginx reverse proxy. Removed `@seliseblocks/cli` references. Supports Next.js (primary) and Vite/Angular (fallback) patterns.

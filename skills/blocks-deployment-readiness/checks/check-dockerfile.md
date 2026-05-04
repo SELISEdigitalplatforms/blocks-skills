@@ -12,13 +12,65 @@ Part of the deployment-readiness check suite. Run alongside other check actions 
 
 Check for the existence of `Dockerfile` in the project root. Also check for `storybook.Dockerfile` if the project uses Storybook.
 
-### Step 2: Verify Multi-Stage Build Structure
+### Step 2: Detect Pattern
 
-The Dockerfile should use a multi-stage build pattern:
+First determine which deployment pattern the project uses:
+
+**Check for Next.js standalone pattern:**
+- `next.config.ts` has `output: 'standalone'` → **Next.js standalone (PRIMARY)**
+- `vite.config.ts` present → **Vite static (FALLBACK)**
+- `angular.json` present → **Angular static (FALLBACK)**
+- `pubspec.yaml` present → **Flutter web (FALLBACK)**
+- `*.csproj` with Blazor → **Blazor WASM (static) or Blazor Server (dotnet runtime)**
+
+### Step 3: Verify Next.js Standalone Pattern (Primary)
+
+For Next.js standalone projects, the Dockerfile should have:
 
 **Stage 1 — Builder:**
 ```dockerfile
-FROM node:<version>-alpine AS builder
+FROM node:21-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+ARG ci_build
+COPY .env.${ci_build} .env.local
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_ENV=${ci_build}
+RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build:${ci_build}
+```
+
+**Stage 2 — Runner:**
+```dockerfile
+FROM node:21-alpine AS runner
+WORKDIR /app
+RUN apk add --no-cache nginx
+ENV NODE_ENV=production ENV PORT=3000
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY nginx.conf /etc/nginx/http.d/default.conf
+COPY start.sh ./start.sh
+RUN chmod +x ./start.sh
+EXPOSE 80
+CMD ["./start.sh"]
+```
+
+Key indicators:
+- Stage 2 uses `node:21-alpine` not `nginx:stable-alpine`
+- nginx installed via `apk add --no-cache nginx`
+- `.next/standalone/` copied from builder
+- `nginx.conf` copied to `/etc/nginx/http.d/default.conf`
+- `start.sh` used as entry point
+
+### Step 4: Verify Vite/Angular Static Pattern (Fallback)
+
+For Vite or Angular projects, the Dockerfile should have:
+
+**Stage 1 — Builder:**
+```dockerfile
+FROM node:21-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
@@ -34,34 +86,28 @@ COPY --from=builder /app/build /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 ```
 
-This pattern is used by `blocks-react-construct`. The build stage compiles the app and the runtime stage serves it via nginx.
+Key indicators:
+- Stage 2 uses `nginx:stable-alpine`
+- Static files copied to `/usr/share/nginx/html`
 
-### Step 3: Verify nginx.conf Presence
+### Step 5: Verify nginx.conf
 
-The Dockerfile references `nginx.conf` — ensure it exists in the project root and contains a SPA fallback configuration:
-
+For Next.js: verify `nginx.conf` proxies to `localhost:3000`:
 ```nginx
-server {
-  root /usr/share/nginx/html/;
-  server_tokens off;
-  client_max_body_size 200m;
-  gzip on;
-  gzip_comp_level 6;
-  gzip_min_length 1000;
-  gzip_proxied expired no-cache no-store private auth;
-  gzip_types text/plain application/x-javascript text/xml text/css application/xml text/javascript application/javascript application/json application/font-woff application/font-woff2 application/vnd.ms-fontobject application/x-font-ttf font/opentype;
-
-  location / {
-    try_files $uri $uri/ /index.html;
-  }
+location / {
+  proxy_pass http://localhost:3000;
+  ...
 }
 ```
 
-### Step 4: Verify ci_build Argument
+For Vite/Angular: verify `nginx.conf` serves static files with SPA fallback:
+```nginx
+location / {
+  try_files $uri $uri/ /index.html;
+}
+```
 
-The Dockerfile must accept a `ci_build` build argument that corresponds to the environment name (`dev`, `stg`, `prod`). The build script in `package.json` passes this as `npm run build:${ci_build}`.
-
-### Step 5: Verify .dockerignore
+### Step 6: Verify .dockerignore
 
 Check for a `.dockerignore` file to exclude unnecessary files from the build context (node_modules, .git, coverage, etc.).
 
@@ -69,11 +115,10 @@ Check for a `.dockerignore` file to exclude unnecessary files from the build con
 
 ```
 Dockerfile check:
-✅ Dockerfile — Present, multi-stage build detected
-✅ nginx.conf — Referenced and exists
-✅ ci_build ARG — Accepts build environment
+✅ Dockerfile — Present, Next.js standalone pattern detected
+✅ nginx.conf — Present with reverse proxy configuration
+✅ start.sh — Present and executable
 ⚠️  .dockerignore — Missing (recommended to speed up builds)
-⚠️  storybook.Dockerfile — Missing (if using Storybook)
 ```
 
 ## If Missing
@@ -81,9 +126,10 @@ Dockerfile check:
 If the Dockerfile is missing:
 
 1. Generate a Dockerfile from the template at `references/dockerfile-template.md`
-2. Generate an `nginx.conf` from the reference project
-3. Optionally generate a `.dockerignore` file
-4. Ensure the Dockerfile path matches what the GitHub workflows reference (via `DOCKERFILE` variable in `.github/variables/vars.env`)
+2. Detect the correct pattern first (Next.js standalone vs Vite static)
+3. Generate an `nginx.conf` from the reference project
+4. Generate a `start.sh` for Next.js projects
+5. Optionally generate a `.dockerignore` file
 
 ## Reference
 
@@ -95,19 +141,33 @@ See `references/dockerfile-template.md` for the full Dockerfile template and `re
 
 After checking Dockerfile, verify your report includes:
 
+### Next.js Standalone Pattern
 - [ ] Dockerfile exists in project root
-- [ ] Two-stage build present (node builder → nginx runtime)
-- [ ] Stage 1: FROM node:21.7.0-alpine AS builder
-- [ ] Stage 1: ARG ci_build defined
-- [ ] Stage 1: RUN npm run build:${ci_build} (with ${} syntax)
-- [ ] Stage 1: NODE_OPTIONS with --max-old-space-size=4096
-- [ ] Stage 2: FROM nginx:stable-alpine
-- [ ] Stage 2: COPY --from=builder /app/build /usr/share/nginx/html
-- [ ] Stage 2: COPY nginx.conf /etc/nginx/conf.d/default.conf
-- [ ] nginx.conf exists and has try_files $uri $uri/ /index.html
+- [ ] Two-stage build present (node builder → node+nginx runner)
+- [ ] Stage 1: `FROM node:21-alpine AS builder`
+- [ ] Stage 1: `ARG ci_build` defined
+- [ ] Stage 1: `COPY .env.${ci_build} .env.local` present
+- [ ] Stage 1: `ENV NEXT_ENV=${ci_build}` present
+- [ ] Stage 1: `RUN npm run build:${ci_build}` (with ${} syntax)
+- [ ] Stage 1: `NODE_OPTIONS` with `--max-old-space-size=4096`
+- [ ] Stage 2: `FROM node:21-alpine AS runner`
+- [ ] Stage 2: `apk add --no-cache nginx` present
+- [ ] Stage 2: Copies `.next/standalone/`, `.next/static/`, `public/`
+- [ ] Stage 2: Copies `nginx.conf` to `/etc/nginx/http.d/default.conf`
+- [ ] Stage 2: Copies and executes `start.sh`
+- [ ] nginx.conf proxies to `http://localhost:3000`
+
+### Vite/Angular Static Pattern (Fallback)
+- [ ] Dockerfile exists in project root
+- [ ] Two-stage build present (node builder → nginx static)
+- [ ] Stage 2: `FROM nginx:stable-alpine`
+- [ ] Stage 2: Copies static files to `/usr/share/nginx/html`
+- [ ] nginx.conf has `try_files $uri $uri/ /index.html`
+
+### General
 - [ ] .dockerignore exists (recommended)
 - [ ] storybook.Dockerfile checked if project uses Storybook
-- [ ] For Angular: dist path adjusted to /app/dist/<project-name>
-- [ ] For Next.js static export: out path adjusted to /app/out
-- [ ] DOCKERFILE variable set in .github/variables/vars.env
+- [ ] Flutter: build/web output path verified
+- [ ] Blazor WASM: wwwroot output path verified
+- [ ] Blazor Server: dotnet runtime image used (not nginx)
 - [ ] Structured output format used (✅ present, ⚠️ missing, ❌ broken)
