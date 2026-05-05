@@ -1,0 +1,62 @@
+{
+  "name": "blocks-deployment-readiness",
+  "version": "1.1.0",
+  "description": "Prepare a SELISE Blocks project for deployment by checking and generating required configuration files — Dockerfile, nginx.conf, .env files, start.sh, and build configuration.",
+  "service": "deployment",
+  "capability": "deployment-readiness",
+  "apiPrefix": null,
+  "fileConventions": {
+    "dockerfile": {
+      "stages": "Two-stage: node builder + node+nginx runner",
+      "builderImage": "node:21-alpine",
+      "runtimeImage": "node:21-alpine with nginx",
+      "requiredArg": "ci_build (dev/prod)",
+      "buildCommand": "npm run build:${ci_build}",
+      "outputPath": ".next/standalone/ (Next.js), /app/build (Vite), /app/dist/<name> (Angular), /app/build/web (Flutter), /app/publish/wwwroot (Blazor WASM)"
+    },
+    "nginx": {
+      "role": "Reverse proxy to localhost:3000 (Next.js) or static file server (Vite/Angular/Flutter/Blazor WASM)",
+      "configPath": "/etc/nginx/http.d/default.conf (Next.js), /etc/nginx/conf.d/default.conf (Vite/Angular)",
+      "nextJsPattern": "proxy_pass http://localhost:3000",
+      "staticPattern": "try_files $uri $uri/ /index.html; root /usr/share/nginx/html/"
+    },
+    "envFiles": {
+      "required": ["NEXT_PUBLIC_BLOCKS_API_URL", "NEXT_PUBLIC_X_BLOCKS_KEY"],
+      "optional": ["NEXT_PUBLIC_BLOCKS_OIDC_CLIENT_ID", "NEXT_PUBLIC_BLOCKS_OIDC_REDIRECT_URI"],
+      "credentials": "Always use <placeholder>, never real values"
+    },
+    "nextJsStandalone": {
+      "outputMode": "standalone",
+      "envFile": ".env.local",
+      "envVar": "NEXT_ENV (development/production)",
+      "buildCommand": "next build",
+      "dockerStage2": "node:21-alpine with nginx reverse proxy",
+      "startupScript": "start.sh (node server.js & + nginx)"
+    },
+    "packageJson": {
+      "buildScripts": "build:dev, build:prod (no build:stg — use build:dev with stg API URL)",
+      "scriptPattern": "NEXT_ENV=development next build",
+      "envPrefix": "NEXT_PUBLIC_ (in next.config.ts)"
+    }
+  },
+  "deploymentTargets": {
+    "primary": "Azure Container Registry (ACR) + Azure Kubernetes Service (AKS)",
+    "helmChart": "new-templates/ecap3-webclient",
+    "ciTool": "GitHub Actions"
+  },
+  "credentialSafety": {
+    "rule": "Never generate real credentials, always use placeholder values",
+    "forbidden": ["API keys in templates", "Passwords in files", "Real Azure credentials in workflows"],
+    "required": ["Placeholder comments in env templates: <your-project-key>"]
+  },
+  "dependencies": [],
+  "ecosystems": ["javascript", "typescript", "react", "angular", "nextjs", "vite", "blazor", "flutter", "dotnet"],
+  "blocksVersion": "1.1.0",
+  "maintainers": ["kilo-agent", "thinleysangay"],
+  "tags": ["deployment", "dockerfile", "github-actions", "ci-cd", "env-files", "nginx", "azure", "acr", "aks", "helm", "nextjs", "standalone", "vite", "angular", "flutter", "blazor", "dotnet"],
+  "actionCount": 5,
+  "flowCount": 1,
+  "evalCount": 20,
+  "referenceCount": 4,
+  "user-invocable": true
+}

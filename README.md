@@ -1,6 +1,6 @@
 # Blocks AI Skills
 
-**Blocks AI Skills** is a modular AI skill system that enables **Claude Code** to build full-stack applications on **SELISE Blocks** — automatically calling the right APIs, generating production-ready frontend code, and following consistent architecture across every project.
+Blocks AI Skills is a modular system that enables **Claude Code** to build full-stack applications on **SELISE Blocks** — automatically calling the right APIs, generating production-ready frontend code, and following consistent architecture across every project.
 
 Instead of writing boilerplate integration code, you describe what you want to build. Claude reads the skills, selects the correct flow or action, executes the backend requests, and generates the frontend — all grounded in real API contracts.
 
@@ -8,7 +8,7 @@ Instead of writing boilerplate integration code, you describe what you want to b
 
 ## About SELISE Blocks
 
-SELISE Blocks is a cloud platform that provides backend services as a unified environment:
+SELISE Blocks is a cloud platform providing backend services as a unified environment:
 
 | Service | What it does |
 |---------|-------------|
@@ -26,23 +26,23 @@ SELISE Blocks is a cloud platform that provides backend services as a unified en
 
 ## Implemented Skills
 
-```
-skills/
-├── blocks-idp/              ✅  Auth, MFA, users, roles, permissions, orgs, sessions, SSO/OIDC
-└── blocks-uilm/             ✅  Languages, translation keys, auto-translate, import/export
-```
+| Skill | Domain | Coverage |
+|-------|--------|----------|
+| `blocks-idp` | Identity & Access | Auth, MFA, users, roles, permissions, orgs, SSO/OIDC, sessions |
+| `blocks-uilm` | Localization | Languages, translation keys, AI auto-translate, import/export |
+| `blocks-uds` | Data Management | Schemas, GraphQL CRUD, files (S3/DMS), access policies, validations |
+| `blocks-deployment` | CI/CD | Build triggers, repository config, GitHub webhooks via CloudBuild API |
+| `blocks-deployment-readiness` | Deployment Prep | Dockerfile, GitHub workflows, env files, build config generation |
 
 ### Coming Soon
 
-```
-skills/
-├── blocks-data-management/    Schemas, GraphQL CRUD, files, access policies
-├── blocks-communication/      Email, notifications, templates
-├── blocks-ai-services/      AI agents, knowledge bases, streaming chat
-├── blocks-logging/           Logs, traces, analytics
-├── blocks-background-tasks/   Scheduled tasks (cron jobs)
-└── blocks-webhooks/          Event-driven webhooks
-```
+| Skill | Coverage |
+|-------|---------|
+| `blocks-communication` | Email, notifications, templates |
+| `blocks-ai-services` | AI agents, knowledge bases, streaming chat |
+| `blocks-logging` | Logs, traces, analytics |
+| `blocks-background-tasks` | Scheduled tasks (cron jobs) |
+| `blocks-webhooks` | Event-driven webhooks |
 
 ---
 
@@ -60,43 +60,13 @@ skills/<domain>/SKILL.md       ← Which flow or action handles this?
 skills/<domain>/flows/*.md    ← Multi-step workflow (run these, not individual actions)
     │
     ▼
-skills/<domain>/actions/*.md  ← Exact curl, request body, response shape, error handling
+skills/<domain>/actions/*.md    ← Exact curl, request body, response shape, error handling
     │
     ▼
 skills/<domain>/contracts.md   ← TypeScript types for frontend generation
 ```
 
-**Flows are the key layer.** A flow bundles multiple actions into a correct sequence — for example, the login flow covers: get login options → handle MFA branching → call get-token → store tokens → redirect. Without flows, each action would need to be manually sequenced every time.
-
----
-
-## Quick Start
-
-```
-claude
-```
-
-Then try:
-
-```
-Build a login page with email/password and MFA support
-```
-
-```
-Set up authentication for my Next.js app
-```
-
-```
-Create a schema for blog posts with title, body, and tags
-```
-
-```
-Set up an AI agent with a knowledge base
-```
-
-```
-Add email notifications for new signups
-```
+**Flows are the key layer.** A flow bundles multiple actions into a correct sequence. Without flows, each action would need to be manually sequenced every time.
 
 ---
 
@@ -108,130 +78,67 @@ Each skill follows this layout:
 skills/<domain>/
 ├── SKILL.md              ← Intent map: "user wants X → use flow Y or action Z"
 │                          ← Decision guides, verification checklist, troubleshooting
-├── contracts.md          ← All TypeScript request/response types
-├── README.md             ← Domain overview with quick reference
-├── flows/               ← Multi-step workflows (login, schema creation, MFA setup, …)
+├── contracts.md           ← All TypeScript request/response types (API skills only)
+├── README.md             ← Domain overview — coverage, conventions, environment variables
+├── meta.json              ← Machine-readable metadata
+├── evals/               ← Evaluation test cases
+├── flows/               ← Multi-step workflows (login, schema creation, ...)
 │   └── *.md
 ├── actions/             ← Single API operations with exact curl and error handling
 │   └── *.md
-└── references/         ← Framework-specific implementation guides (Next.js, Vite, Angular, …)
+├── checks/              ← Readiness check actions (deployment-readiness only)
+│   └── *.md
+└── references/          ← Framework-specific implementation guides
     └── *.md
 ```
 
 ---
 
-## Skill: blocks-idp
+## Quick Start
 
-Authentication, user management, MFA, RBAC, SSO/OIDC, and organization operations via the IDP v1 API.
+```
+Build a login page with email/password and MFA support
+```
 
-### Coverage
+```
+Create a schema for blog posts with title, body, and tags
+```
 
-| Category | Details |
-|----------|---------|
-| Authentication | Email/password, social login, OIDC/OAuth2, `client_credentials` |
-| MFA | Email OTP (5-digit), TOTP authenticator app (6-digit), resend, disable |
-| Users | Create, update, activate, deactivate, search, list with pagination |
-| Roles & permissions | Full RBAC — create roles, create permissions, assign to users |
-| Organizations | Create orgs, configure multi-org settings, toggle signup methods |
-| Sessions | View active sessions, single-device logout, logout all, audit history |
-| SSO / OIDC | OIDC client CRUD, SSO credential setup (Okta, Azure AD, Google) |
-| Client credentials | Machine-to-machine OAuth2 for backend services and CLI tools |
-| CAPTCHA | Create, submit, verify (reCaptcha, hCaptcha) |
+```
+Set up English and German as project languages
+```
 
-### Key Conventions
-
-The IDP API uses conventions that differ from standard REST APIs. Wrong field names silently return empty results.
-
-| Wrong | Correct | Why |
-|-------|---------|-----|
-| `success` | `isSuccess` | All response envelopes |
-| `id` | `itemId` | User, org, credential, role all use `itemId` |
-| `languageName` | `language` | User fields use `language` |
-| JSON body | `application/x-www-form-urlencoded` | Token endpoint only |
-| `/ResendOTP` | `/ResendOtp` | Swagger typo — preserve it |
-
-### Flows
-
-| Flow | What it does |
-|------|--------------|
-| `auth-setup.md` | Project scaffold — types, service, React Query hooks, auth context |
-| `login-flow.md` | Email/password + social + OIDC + MFA branching |
-| `user-registration.md` | Self-signup or admin-created with account activation |
-| `password-recovery.md` | Forgot password → reset password |
-| `mfa-setup.md` | Email OTP + TOTP authenticator enrollment |
-| `user-onboarding.md` | Admin creates user + assigns roles + org |
-| `session-management.md` | View sessions, single/all device logout |
-| `role-permission-setup.md` | Create roles, create permissions, assign to users |
-| `oidc-sso-setup.md` | OIDC client, SSO credential, authorize URL |
-| `client-credentials.md` | Machine-to-machine OAuth2 for backend services |
-
-### Environment Variables
-
-```bash
-NEXT_PUBLIC_API_BASE_URL=https://api.seliseblocks.com
-NEXT_PUBLIC_X_BLOCKS_KEY=your-project-key
-NEXT_PUBLIC_OIDC_CLIENT_ID=your-client-id
-NEXT_PUBLIC_OIDC_REDIRECT_URI=http://localhost:3000/api/auth/callback
-
-# For direct API operations (never embed in frontend)
-USERNAME=your-cloudadmin-email
-PASSWORD=your-cloudadmin-password
+```
+Make my project deployment-ready
 ```
 
 ---
 
-## Skill: blocks-uilm
+## Learn About Each Skill
 
-Languages, translation keys, AI-powered auto-translation, and UILM file import/export via the UILM v1 API.
+You can ask the AI to explain any skill. Try:
 
-### Coverage
+```
+How to use blocks-idp?
+```
 
-| Category | Details |
-|----------|---------|
-| Languages | Add, list, set default, delete |
-| Modules | Create, list (route-based loading: `common` + route-specific) |
-| Translation keys | Create, update, delete, batch create, get by name |
-| Translations | Add values per language, auto-translate via AI |
-| File management | Import JSON, export compiled JSON, regenerate, rollback |
-| Webhooks | Configure localization change notifications |
+```
+How to use blocks-uilm?
+```
 
-### Key Conventions
+```
+How to use blocks-uds?
+```
 
-| Wrong | Correct | Why |
-|-------|---------|-----|
-| `moduleName` | `moduleId` | Key operations (Save, Gets, TranslateAll) |
-| `moduleName` | `moduleName` | Module operations (Module/Save, Module/Gets) |
-| `translations[]` | `resources[]` | Key structures use `{value, culture, characterLength}` |
-| `data[]` | `keys[]` | GetKeysQueryResponse |
-| `keyId` | `itemId` | Key responses |
+```
+How to use blocks-deployment?
+```
 
-### Translation Key Naming
+```
+How to use blocks-deployment-readiness?
+```
 
-Translation keys must use **semantic names** that describe meaning, not UI structure:
-
-| Bad | Good | Why |
-|-----|------|-----|
-| `HERO_WELCOME_CLIENTS` | `WELCOME_CLIENTS` | Hero is a UI pattern |
-| `FEATURES_SHIP_HOURS_DESC_1` | `SHIP_HOURS_DESC` | Count-based segments are fragile |
-| `FOOTER_COPYRIGHT` | _(not a key)_ | Copyright/legal text is not translatable |
-
-Rules:
-- No UI-type prefixes: `BTN_`, `CTA_`, `BADGE_`, `SECTION_`
-- No layout names: `HEADER_`, `FOOTER_`, `SIDEBAR_`
-- No component names: `CARD_`, `TABLE_`, `FORM_`
-- Use `SCREAMING_SNAKE_CASE`
-- Common module: `NAV_HOME`, `ERROR_REQUIRED`
-- Route-specific: `HOME_HERO_TITLE`, `AUTH_LOGIN_SUBMIT`
-
-### Flows
-
-| Flow | What it does |
-|------|--------------|
-| `client-i18n-setup.md` | React + Vite/Next.js scaffold with i18next + React Query |
-| `language-setup.md` | Add languages, set default, create modules |
-| `key-management.md` | Create keys, add translations, AI-translate missing values |
-| `import-export.md` | Import JSON files, export/download compiled files |
-| `scan-and-generate.md` | Scan source code for `useTranslation()` calls, generate CSV |
+Each command loads the skill's full documentation and explains what it covers, key conventions, how to set things up, common pitfalls, and example prompts.
 
 ---
 
@@ -239,36 +146,17 @@ Rules:
 
 Complete these steps manually in the [Cloud Portal](https://cloud.seliseblocks.com) before any API call will work.
 
-### 1. Create a Project
+1. **Create a Project** — Cloud Portal → Projects → Create Project. Copy Blocks Key → `X_BLOCKS_KEY`
+2. **Create an Environment** — Cloud Portal → Projects → [Your Project] → Environments → Create. The API base URL is always `https://api.seliseblocks.com`
+3. **Add a Developer Account with `cloudadmin` role** — Cloud Portal → Projects → [Your Project] → People → Add Member
+4. **Attach a Repository** — Cloud Portal → Projects → [Your Project] → Repositories → Attach
 
-Cloud Portal → Projects → Create Project
-
-Copy **Blocks Key** → `X_BLOCKS_KEY`
-
-### 2. Create an Environment
-
-Cloud Portal → Projects → [Your Project] → Environments → Create
-
-The API base URL is always `https://api.seliseblocks.com`. The environment must exist for your project to be active.
-
-### 3. Add a Developer Account with `cloudadmin` role
-
-Cloud Portal → Projects → [Your Project] → People → Add Member
-
-Assign the `cloudadmin` role. This account's credentials become `USERNAME` and `PASSWORD` in `.env`.
-
-### 4. Attach a Repository
-
-Cloud Portal → Projects → [Your Project] → Repositories → Attach
-
-### Error Reference
-
-| HTTP Status | Likely Cause | Fix |
-|-------------|-------------|-----|
-| `401` | Wrong credentials | Check `USERNAME` / `PASSWORD` in Cloud Portal → People |
-| `403` | Missing `cloudadmin` role | Assign role in Cloud Portal → People |
-| `404` | Wrong API URL | Re-check `API_BASE_URL` from Environments |
-| All APIs fail | Project not set up | Complete all 4 portal steps above |
+| Error | Fix |
+|-------|-----|
+| `401` | Wrong credentials — check `USERNAME` / `PASSWORD` |
+| `403` | Missing `cloudadmin` role — assign in Cloud Portal |
+| `404` | Wrong API URL — check `API_BASE_URL` |
+| All APIs fail | Project not set up — complete all 4 steps above |
 
 ---
 
@@ -288,46 +176,13 @@ The default stack follows the reference implementation at [blocks-construct-reac
 | Data fetching | TanStack Query |
 | Font | Nunito Sans |
 
-**shadcn/ui MCP** — configure the shadcn/ui MCP server in Claude Code for real-time component API lookups during code generation:
+**shadcn/ui MCP** — configure the shadcn/ui MCP server in Claude Code for real-time component API lookups:
+
 ```
 https://ui.shadcn.com/docs/mcp
 ```
 
-The skills system is not tied to any specific framework. To use a different stack, each skill's `SKILL.md` references framework-specific guides for Next.js, React Native, Angular, Flutter, and Blazor .NET.
-
----
-
-## Example Use Cases
-
-### Authentication & Access Control
-- Login with email/password and MFA (email OTP + TOTP)
-- Self-registration with account activation
-- Password recovery with email reset link
-- Role-based access control — create roles, assign permissions, manage users
-- View active sessions and logout from all devices
-- SSO/OIDC login with Okta, Azure AD, or Google
-
-### Data Management
-- Define data schemas with validation rules
-- GraphQL-based CRUD for collections
-- File upload with S3/DMS integration
-
-### Localization
-- Set up multiple languages for a project
-- Manage translation keys with semantic naming
-- Auto-translate all missing translations via AI
-- Import/export translation files
-
-### Communication
-- Send transactional emails
-- Configure email templates
-- In-app notification system
-
-### AI Services
-- Create AI agents with custom prompts
-- Upload documents for knowledge bases (RAG)
-- Streaming chat interfaces
-- Direct LLM queries
+The skills system is not tied to any specific framework. Each skill references framework-specific guides for Next.js, React Native, Angular, Flutter, and Blazor .NET.
 
 ---
 

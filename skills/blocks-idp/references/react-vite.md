@@ -9,7 +9,7 @@ This guide covers integrating blocks-idp into a React Single Page Application bu
 Create a `.env` file at the project root:
 
 ```env
-VITE_API_BASE_URL=https://api.seliseblocks.com
+VITE_API_BASE_URL=https://api.example.com
 VITE_X_BLOCKS_KEY=your-project-key
 VITE_OIDC_CLIENT_ID=your-client-id
 VITE_OIDC_REDIRECT_URI=http://localhost:5173/auth/callback

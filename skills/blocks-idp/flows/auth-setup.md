@@ -43,7 +43,7 @@ Skip if `@tanstack/react-query` or `axios` already exist in `package.json`.
 For **Next.js**:
 ```env
 # .env.local
-NEXT_PUBLIC_API_BASE_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_API_BASE_URL=https://api.example.com
 NEXT_PUBLIC_X_BLOCKS_KEY=your-project-key
 NEXT_PUBLIC_OIDC_CLIENT_ID=your-client-id
 NEXT_PUBLIC_OIDC_REDIRECT_URI=http://localhost:3000/api/auth/callback
@@ -52,7 +52,7 @@ NEXT_PUBLIC_OIDC_REDIRECT_URI=http://localhost:3000/api/auth/callback
 For **Vite + React**:
 ```env
 # .env
-VITE_API_BASE_URL=https://api.seliseblocks.com
+VITE_API_BASE_URL=https://api.example.com
 VITE_X_BLOCKS_KEY=your-project-key
 VITE_OIDC_CLIENT_ID=your-client-id
 VITE_OIDC_REDIRECT_URI=http://localhost:5173/auth/callback

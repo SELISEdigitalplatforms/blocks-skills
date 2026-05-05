@@ -9,7 +9,7 @@ Implementation guide for building authentication with the blocks-idp skill on Re
 ```typescript
 // src/config/env.ts
 export const env = {
-  apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api.seliseblocks.com',
+  apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || 'https://api.example.com',
   xBlocksKey: process.env.EXPO_PUBLIC_X_BLOCKS_KEY || '',
   projectKey: process.env.EXPO_PUBLIC_PROJECT_KEY || '',
   oidcClientId: process.env.EXPO_PUBLIC_OIDC_CLIENT_ID || '',

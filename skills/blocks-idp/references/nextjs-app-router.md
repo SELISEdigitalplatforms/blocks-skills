@@ -9,7 +9,7 @@ This guide covers integrating blocks-idp into a Next.js 14+ project using the Ap
 Create a `.env.local` file at the project root:
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_API_BASE_URL=https://api.example.com
 NEXT_PUBLIC_X_BLOCKS_KEY=your-project-key
 NEXT_PUBLIC_OIDC_CLIENT_ID=your-client-id
 NEXT_PUBLIC_OIDC_REDIRECT_URI=http://localhost:3000/api/auth/callback

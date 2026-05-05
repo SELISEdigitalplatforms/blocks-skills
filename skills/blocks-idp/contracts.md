@@ -1,6 +1,6 @@
 # Identity & Access Contracts
 
-Validated against IDP v1 Swagger spec at `https://api.seliseblocks.com/idp/v1/swagger/v1/swagger.json`.
+Validated against IDP v1 Swagger spec at `https://api.example.com/idp/v1/swagger/v1/swagger.json`.
 
 ---
 

@@ -146,7 +146,7 @@ app.Run();
 ```json
 {
   "Localise": {
-    "ApiUrl": "https://api.seliseblocks.com",
+    "ApiUrl": "https://api.example.com",
     "ApiKey": "your_api_key",
     "ProjectKey": "your_project_key"
   }

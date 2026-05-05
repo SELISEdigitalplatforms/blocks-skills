@@ -57,7 +57,8 @@ skills/blocks-uilm/
 │   ├── language-setup.md         ← Add languages, set default, create modules
 │   ├── key-management.md         ← Create keys, add translations, AI-translate
 │   ├── import-export.md         ← Import JSON files, export/download compiled files
-│   └── scan-and-generate.md     ← Scan source code, extract keys, generate CSV
+│   ├── scan-and-generate.md     ← Scan source code, extract keys, generate CSV
+│   └── webhook-setup.md         ← Configure localization change webhooks
 └── actions/                      ← 23 single-API operations
     ├── save-language.md
     ├── get-languages.md
@@ -178,11 +179,11 @@ All endpoints: `{apiUrl}/uilm/v1`
 ## Environment Variables
 
 ```bash
-NEXT_PUBLIC_BLOCKS_API_URL=https://api.seliseblocks.com
+NEXT_PUBLIC_BLOCKS_API_URL=https://api.example.com
 NEXT_PUBLIC_X_BLOCKS_KEY=your-project-key
 
 # For Vite + React
-VITE_BLOCKS_API_URL=https://api.seliseblocks.com
+VITE_BLOCKS_API_URL=https://api.example.com
 VITE_X_BLOCKS_KEY=your-project-key
 ```
 
