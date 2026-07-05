@@ -20,11 +20,11 @@ Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/rele
 3. Pick one of two write paths:
 
    **A. Single repo, alongside other settings** — `POST /api/Build/repo-settings-update`
-   (`RepoUpdateRequest`):
+   (`RepoUpdateRequest`; `projectKey` = your Blocks Key — the same value as `$X_BLOCKS_KEY`):
 
    ```json
    {
-     "projectKey": "<PROJECT_SLUG>",
+     "projectKey": "<X_BLOCKS_KEY>",
      "repoId": "<repoId>",
      "customDomain": "app.example.com"
    }
@@ -36,8 +36,8 @@ Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/rele
 
    ```json
    {
-     "projectKey": "<PROJECT_SLUG>",
-     "projectEnv": "<environment name — allowed values not documented in swagger; match what Cloud Portal shows>",
+     "projectKey": "<X_BLOCKS_KEY>",
+     "projectEnv": "<environment name — allowed values not documented in swagger; match what OS portal shows>",
      "repoWithDomains": [
        {
          "repoId": "<repoId>",
@@ -54,8 +54,8 @@ Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/rele
 
 4. Point DNS at the deployment. The release swagger exposes no DNS-verification endpoint;
    platform-wide domain verification lives in the **blocks-monitor** skill (Domain controller) —
-   use it (or Cloud Portal) to add and verify the domain, and set the DNS record (typically a
-   CNAME to your platform domain — confirm the exact target in Cloud Portal).
+   use it (or OS portal) to add and verify the domain, and set the DNS record (typically a
+   CNAME to your platform domain — confirm the exact target in OS portal).
 
    **Auth cookies on the new domain:** configure the project's cookie domain to match —
    `POST /monitor/v4/api/Domain/Configure` with `{ projectKey, cookieDomain }` (blocks-monitor).
@@ -73,7 +73,7 @@ Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/rele
 - **`isSuccess: false` from repo-update** → `errors` dictionary explains per-field problems
   (bad `projectEnv`, unknown `repoId`, malformed domain).
 - **Domain serves but with a certificate error** → certificate/domain provisioning status is not
-  exposed in this swagger; check the Domain tooling in blocks-monitor / Cloud Portal.
+  exposed in this swagger; check the Domain tooling in blocks-monitor / OS portal.
 
 ## Verify
 

@@ -4,9 +4,10 @@ Use for password-based ("embedded") login in your own UI — the standard auth f
 Blocks apps. Covers the captcha and MFA branches, token refresh, fetching the current
 user, logout, and post-login TOTP enrollment.
 
-Preconditions: env vars from `blocks-setup` (`X_BLOCKS_KEY`, `PROJECT_SLUG` = the
-`client_id`). No token needed to start — login is the endpoint that issues one.
-All requests: `x-blocks-key` header + `Content-Type: application/json`.
+Preconditions: env vars from `blocks-setup` (`X_BLOCKS_KEY`). No token needed to
+start — login is the endpoint that issues one; the `x-blocks-key` header carries
+the project context. All requests: `x-blocks-key` header +
+`Content-Type: application/json`.
 
 ## Steps
 
@@ -20,7 +21,7 @@ All requests: `x-blocks-key` header + `Content-Type: application/json`.
    (endpoints.md → [Authentication](../endpoints.md#authentication)):
 
    ```json
-   { "client_id": "<PROJECT_SLUG>", "username": "user@example.com", "password": "***" }
+   { "username": "user@example.com", "password": "***" }
    ```
 
    Fields are **snake_case** — do not camelCase them. On success the platform issues
@@ -63,7 +64,7 @@ All requests: `x-blocks-key` header + `Content-Type: application/json`.
 5. Keep the session alive: `POST /api/auth/refresh` before the access token expires:
 
    ```json
-   { "refresh_token": "<refresh_token>", "client_id": "<PROJECT_SLUG>" }
+   { "refresh_token": "<refresh_token>" }
    ```
 
    Response undocumented — expect a fresh token pair; verify live. Token lifetimes

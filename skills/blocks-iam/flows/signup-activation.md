@@ -70,7 +70,7 @@ All bodies on this page are **camelCase** (unlike the token flows).
    `POST /api/iam/users` with `{ "filter": { "email": "user@example.com" } }`.
 
 6. First login: `POST /api/auth/login` with snake_case
-   `{ "client_id", "username", "password" }` — continue in
+   `{ "username", "password" }` — continue in
    [embedded-login.md](embedded-login.md).
 
 ## Alternative: admin-created users

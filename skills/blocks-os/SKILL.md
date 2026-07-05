@@ -1,6 +1,6 @@
 ---
 name: blocks-os
-description: "Use this skill for any task involving the SELISE Blocks platform OS service (os/v4) — captcha configuration and challenge verification, platform MFA OTP/TOTP (PascalCase /api/Mfa/*), notification configurations, storage backend configurations, project secrets (key-value), project and tenant-group management, team invitations (People), subscriptions/quotas, managed service registry, data migration between projects, per-endpoint captcha/MFA enforcement (ApiEndpointConfig), and OIDC discovery/JWKS. Trigger when the user mentions Blocks OS, platform service, Cloud Portal API, captcha, OTP, TOTP, MFA setup, secrets, storage config, notification config, project create/invite/transfer ownership, tenant group, subscription limits, or JWKS on SELISE Blocks. App-level login/auth/MFA flows belong to blocks-iam; this skill covers the platform controllers."
+description: "Use this skill for any task involving the SELISE Blocks platform OS service (os/v4) — captcha configuration and challenge verification, platform MFA OTP/TOTP (PascalCase /api/Mfa/*), notification configurations, storage backend configurations, project secrets (key-value), project and tenant-group management, team invitations (People), subscriptions/quotas, managed service registry, data migration between projects, per-endpoint captcha/MFA enforcement (ApiEndpointConfig), and OIDC discovery/JWKS. Trigger when the user mentions Blocks OS, platform service, OS portal API, captcha, OTP, TOTP, MFA setup, secrets, storage config, notification config, project create/invite/transfer ownership, tenant group, subscription limits, or JWKS on SELISE Blocks. App-level login/auth/MFA flows belong to blocks-iam; this skill covers the platform controllers."
 ---
 
 # Blocks OS — Platform Service
@@ -11,9 +11,9 @@ These controllers are framework-level: the same routes are also served by the `l
 
 ## Prerequisites
 
-- **blocks-setup** skill: env vars (`BLOCKS_API_URL`, `X_BLOCKS_KEY`, `PROJECT_SLUG`, credentials) and obtaining/refreshing a bearer token.
+- **blocks-setup** skill: env vars (`BLOCKS_API_URL`, `X_BLOCKS_KEY`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`) and obtaining/refreshing a bearer token.
 - Every request needs `x-blocks-key: <X_BLOCKS_KEY>`; configuration/admin endpoints additionally need `Authorization: Bearer <access_token>`.
-- Most config endpoints take a `projectKey` (the project short key / slug — the same value used as `client_id` in blocks-iam login).
+- Most config endpoints take a `projectKey` — projectKey = your Blocks Key (the same value as `X_BLOCKS_KEY`; use `$X_BLOCKS_KEY` in curl).
 
 ## What's where
 
@@ -36,7 +36,7 @@ These controllers are framework-level: the same routes are also served by the `l
 
 ## Key concepts
 
-- **Project / tenant / tenant group** — a Blocks *project* is one environment (tenant) identified by a `projectKey` (short key/slug, aka `client_id`). Projects belong to a *tenant group* (`tenantGroupId`), which groups the environments (e.g. dev/prod) of one application and is the unit for team access and ownership.
+- **Project / tenant / tenant group** — a Blocks *project* is one environment (tenant) identified by a `projectKey` (the same value as that environment's Blocks Key). Projects belong to a *tenant group* (`tenantGroupId`), which groups the environments (e.g. dev/prod) of one application and is the unit for team access and ownership.
 - **Captcha configuration vs. challenge** — a *configuration* stores provider credentials (`captchaKey`/`captchaSecret`, `provider`, `captchaGenerator`) per project; a *challenge* is a one-shot puzzle created from a configuration and solved by an end user, yielding a `verificationCode`.
 - **Platform MFA (`/api/Mfa/*`, PascalCase)** — the OTP/TOTP engine: per-project MFA settings plus generate/resend/verify cycles keyed by `mfaId`. Distinct from blocks-iam's lowercase `/api/mfa/*`, which drives the login handshake in applications.
 - **Secrets** — named bags of `keyValuePairs` (string→string) per project; server-side config storage, not for client exposure.

@@ -10,7 +10,7 @@ Describe what you want to build; Claude picks the skill, follows a flow, and wri
 
 | Skill | Covers | Flows |
 |-------|--------|-------|
-| `blocks-setup` | Bootstrap: Cloud Portal prerequisites, `.env` conventions, local HTTPS for dev (mkcert + Vite — required for Secure auth cookies), obtaining/refreshing tokens (login, refresh, me, logout), entering a project context via tenant impersonation, troubleshooting, and the canonical React auth foundation (fetch wrapper + Zustand store + 401-refresh-retry) all other skills build on. | bootstrap-project, local-https-setup, project-impersonation, activate-first-user, token-lifecycle |
+| `blocks-setup` | Bootstrap: OS portal prerequisites, `.env` conventions, local HTTPS for dev (openssl + Vite — required for Secure auth cookies), obtaining/refreshing tokens (login, refresh, me, logout), entering a project context via tenant impersonation, troubleshooting, and the canonical React auth foundation (fetch wrapper + Zustand store + 401-refresh-retry) all other skills build on. | bootstrap-project, local-https-setup, project-impersonation, activate-first-user, token-lifecycle |
 | `blocks-iam` | Application identity & access (`iam/v4`): embedded login, signup/activation, password lifecycle, MFA, users/roles/permissions/organizations, impersonation, external-IdP SSO, OIDC provider & client management, machine-to-machine credentials. | embedded-login, signup-activation, password-recovery, org-switch-impersonation, sso-identity-providers, machine-to-machine |
 | `blocks-data` | Data platform (`data/v4`): schema definitions and fields, data access policies and security levels, field validations with AI regex assistant, data sources, configuration reload, Files/DMS uploads, schema exchange between projects, mock-data cleanup. | define-schema, configure-access, add-validations, upload-files, schema-exchange, manage-mock-data |
 | `blocks-localization` | Languages, translation keys, glossaries, AI/machine translation, UILM language-file generation and import/export, change timeline with rollback, webhook config (`localization/v4`). | language-setup, key-management, ai-translation, language-files-and-webhook, timeline-and-rollback |
@@ -52,17 +52,18 @@ Swagger specs are cached in `.swagger-cache/` (gitignored); delete a service's J
 
 ## Prerequisites
 
-Complete the Cloud Portal setup first — the `blocks-setup` skill walks through it (project, environment, Blocks Key, developer account) and establishes the env var conventions used everywhere:
+Complete the OS portal setup first — the `blocks-setup` skill walks through it (project, environment, Blocks Key, developer account) and establishes the env var conventions used everywhere:
 
 | Variable | Meaning |
 |----------|---------|
 | `BLOCKS_API_URL` | `https://api.seliseblocks.com` |
-| `X_BLOCKS_KEY` | project Blocks Key — sent as `x-blocks-key` header on every request |
-| `PROJECT_SLUG` | project short key, used as `client_id` at login |
+| `X_BLOCKS_KEY` | project Blocks Key — sent as `x-blocks-key` header on every request; also the value for any `projectKey` field an API asks for |
 | `BLOCKS_USERNAME` / `BLOCKS_PASSWORD` | developer account credentials |
-| `BLOCKS_CLOUD_CLIENT_ID` | cloud-level `client_id` for the login → project-impersonation model (verify in portal) |
-| `PROJECT_TENANT_ID` | project's tenant id from `GET /os/v4/api/Project/Gets`, target of impersonation |
+| `PROJECT_TENANT_ID` | project's tenant id from `GET /os/v4/api/Project/Gets` — only needed for tenant impersonation |
 
+Login sends no project identifier — the `x-blocks-key` header carries the project context.
+(Deprecated names from older setups: `PROJECT_SLUG`/`VITE_PROJECT_SLUG`, `VITE_PROJECT_KEY`,
+`BLOCKS_CLOUD_CLIENT_ID` — don't use them in new code.)
 Every request needs `x-blocks-key`; authenticated operations add `Authorization: Bearer <access_token>`.
 Two platform behaviors worth knowing up front: browser apps must run over **HTTPS even in local dev**
 (Secure auth cookies — see blocks-setup's local-https-setup flow), and working inside a project means

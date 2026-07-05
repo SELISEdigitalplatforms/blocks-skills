@@ -9,9 +9,9 @@ The localization service (`https://api.seliseblocks.com/localization/v4`) manage
 
 ## Prerequisites
 
-- Follow **blocks-setup** for env vars (`BLOCKS_API_URL`, `X_BLOCKS_KEY`, `PROJECT_SLUG`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`) and for obtaining/refreshing a Bearer token.
+- Follow **blocks-setup** for env vars (`BLOCKS_API_URL`, `X_BLOCKS_KEY`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`) and for obtaining/refreshing a Bearer token.
 - Every request needs the `x-blocks-key` header; management operations also need `Authorization: Bearer <access_token>`.
-- Almost every request carries the project identifier: `projectKey` in JSON bodies, `ProjectKey` as a query param. Use your project's short key (same value as `PROJECT_SLUG` / login `client_id`).
+- Almost every request carries the project identifier: `projectKey` in JSON bodies, `ProjectKey` as a query param. projectKey = your Blocks Key — the same value as `X_BLOCKS_KEY` / the `x-blocks-key` header (`$X_BLOCKS_KEY` in curl).
 
 ## What's where
 

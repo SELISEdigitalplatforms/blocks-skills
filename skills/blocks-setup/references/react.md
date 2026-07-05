@@ -15,7 +15,6 @@ fields; verify them against your environment's live responses once and adjust.
 # .env.local (Vite) — client-safe values only
 VITE_BLOCKS_API_URL=https://api.seliseblocks.com
 VITE_X_BLOCKS_KEY=<Blocks Key>       # client-visible by design
-VITE_PROJECT_SLUG=<project short key>
 ```
 
 Never expose `BLOCKS_USERNAME` / `BLOCKS_PASSWORD` or admin secrets via `VITE_`.
@@ -29,9 +28,8 @@ locally-trusted cert to `vite.config.ts`).
 // src/lib/blocks/env.ts
 export const BLOCKS_API_URL = import.meta.env.VITE_BLOCKS_API_URL as string;
 export const X_BLOCKS_KEY = import.meta.env.VITE_X_BLOCKS_KEY as string;
-export const PROJECT_SLUG = import.meta.env.VITE_PROJECT_SLUG as string;
 
-if (!BLOCKS_API_URL || !X_BLOCKS_KEY || !PROJECT_SLUG) {
+if (!BLOCKS_API_URL || !X_BLOCKS_KEY) {
   throw new Error("Missing VITE_BLOCKS_* env vars — see blocks-setup skill");
 }
 ```
@@ -75,7 +73,7 @@ refresh so concurrent 401s trigger exactly one `POST /api/auth/refresh`, retries
 
 ```ts
 // src/lib/blocks/api.ts
-import { BLOCKS_API_URL, X_BLOCKS_KEY, PROJECT_SLUG } from "./env";
+import { BLOCKS_API_URL, X_BLOCKS_KEY } from "./env";
 import { useAuthStore } from "./auth-store";
 
 export type BlocksService =
@@ -97,7 +95,7 @@ async function refreshTokens(): Promise<boolean> {
   const res = await fetch(`${BLOCKS_API_URL}/iam/v4/api/auth/refresh`, {
     method: "POST",
     headers: { "x-blocks-key": X_BLOCKS_KEY, "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken, client_id: PROJECT_SLUG }),
+    body: JSON.stringify({ refresh_token: refreshToken }),
   });
   if (!res.ok) {
     clear(); // refresh token dead — force full re-login
@@ -143,12 +141,11 @@ export async function blocksFetch<T>(
 ```ts
 // src/lib/blocks/auth-api.ts
 import { blocksFetch } from "./api";
-import { PROJECT_SLUG } from "./env";
 import { useAuthStore } from "./auth-store";
 
-// Request shape verbatim from blocks-iam endpoints.md (snake_case is intentional).
+// Request shape from blocks-iam endpoints.md (snake_case is intentional). No project
+// identifier in the body — the x-blocks-key header carries the project context.
 export interface LoginRequest {
-  client_id: string;
   username: string;
   password: string;
   captcha_code?: string;
@@ -164,10 +161,10 @@ export interface LoginResponse {
   [key: string]: unknown; // MFA challenge / captcha-demand fields appear here — inspect live
 }
 
-export async function login(creds: Omit<LoginRequest, "client_id">): Promise<LoginResponse> {
+export async function login(creds: LoginRequest): Promise<LoginResponse> {
   const data = await blocksFetch<LoginResponse>("iam", "/api/auth/login", {
     method: "POST",
-    body: JSON.stringify({ client_id: PROJECT_SLUG, ...creds }),
+    body: JSON.stringify(creds),
   });
   if (data.access_token && data.refresh_token) {
     useAuthStore.getState().setTokens(data.access_token, data.refresh_token);

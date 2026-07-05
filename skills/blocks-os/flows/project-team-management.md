@@ -2,13 +2,13 @@
 
 Create a Blocks project (tenant group + environments), inspect it, invite teammates with roles per environment, and handle the invitation/removal/ownership lifecycle.
 
-Preconditions: `x-blocks-key` + bearer token of a platform account (Cloud Portal user). Team operations require the caller to have access to the tenant group; ownership transfer requires being the owner (`GetPeoples` response exposes `isOwner`).
+Preconditions: `x-blocks-key` + bearer token of a platform account (OS portal user). Team operations require the caller to have access to the tenant group; ownership transfer requires being the owner (`GetPeoples` response exposes `isOwner`).
 
 ## Steps
 
 1. **`POST /api/Project/Create`** — create the project ([endpoints.md#project](../endpoints.md#project)). Key fields: `name`, `isAcceptBlocksTerms: true`, `isProduction`, optional `tenantGroupId` (omit to start a new group; pass an existing one to add an environment to it), `applicationContexts: [{ environment, domain, cookieDomain }]`. Response: `{ tenantGroupId, isSuccess, errors }` — keep `tenantGroupId`; it's the handle for team and asset operations.
 2. **`GET /api/Project/Gets?TenantGroupId=<id>&Page=0&PageSize=20`** — list the group's projects. Each project row carries `itemId`, `tenantId`, `name`, `environment`, `applicationDomain`, `isProduction`, `isDisabled`. Keep each environment's `tenantId` — invitations are keyed by it.
-3. **`GET /api/Project/Get`** (no parameters) — read the *current* project resolved from the request context (`x-blocks-key`). Useful to confirm which project a key belongs to (`data.tenantSlug` is the projectKey/`client_id` value used across the platform).
+3. **`GET /api/Project/Get`** (no parameters) — read the *current* project resolved from the request context (`x-blocks-key`). Useful to confirm which project a key belongs to (`data.tenantSlug` is the project's short slug; wherever a payload takes a `projectKey`, projectKey = your Blocks Key — the `x-blocks-key` value).
 4. **`POST /api/People/Invite`** — invite teammates ([endpoints.md#people](../endpoints.md#people)). Body maps email → environment grants:
    ```json
    {

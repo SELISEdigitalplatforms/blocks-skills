@@ -15,7 +15,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
 
    ```json
    {
-     "projectKey": "<PROJECT_SLUG>",
+     "projectKey": "<X_BLOCKS_KEY>",       // projectKey = your Blocks Key (x-blocks-key value)
      "page": 0,
      "pageSize": 20,
      "sort": { "property": "<field>", "isDescending": true },
@@ -37,7 +37,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
    - Keep from the response: the trace id of the request you care about (field name must be
      confirmed from the live response — no schema in swagger).
 
-2. `GET /api/Trace/GetTrace?TraceId=<id>&ProjectKey=<PROJECT_SLUG>` — fetch the full trace.
+2. `GET /api/Trace/GetTrace?TraceId=<id>&ProjectKey=<X_BLOCKS_KEY>` — fetch the full trace.
    `TraceId` is **required** and PascalCase in the query string. Expect span-level detail
    (services, operations, timings) — response shape not documented in swagger; inspect it live.
 
@@ -53,7 +53,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
      "startTime": "2026-07-05T00:00:00Z",   // REQUIRED
      "endTime": "2026-07-05T12:00:00Z",     // REQUIRED
      "serviceName": null,                    // optional — omit/null for all services
-     "projectKey": "<PROJECT_SLUG>"
+     "projectKey": "<X_BLOCKS_KEY>"
    }
    ```
 
@@ -70,7 +70,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
      "endTime": "2026-07-05T12:00:00Z",     // REQUIRED
      "serviceName": "<service>",            // REQUIRED
      "operationName": "<operation>",        // optional — narrow to one endpoint/operation
-     "projectKey": "<PROJECT_SLUG>"
+     "projectKey": "<X_BLOCKS_KEY>"
    }
    ```
 

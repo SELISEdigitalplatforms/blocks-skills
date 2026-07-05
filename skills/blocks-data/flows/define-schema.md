@@ -1,15 +1,15 @@
 # Define a schema, add fields, and reload
 
-Use when creating a new data model (collection) for a project, or when adding/changing fields on an existing one. Preconditions: a Bearer token (blocks-setup) and the project's `projectKey`. If you don't have `projectKey`/`projectShortKey`, step 1 gives you both.
+Use when creating a new data model (collection) for a project, or when adding/changing fields on an existing one. Preconditions: a Bearer token (blocks-setup) and your Blocks Key — **`projectKey` = your Blocks Key** (the `X_BLOCKS_KEY` value). If you don't have `projectShortKey`, step 1 gives you it.
 
 ## Steps
 
-1. `GET /api/data-sources/get?projectKey=<projectKey>` — confirm a data source exists and capture identifiers.
+1. `GET /api/data-sources/get?projectKey=$X_BLOCKS_KEY` — confirm a data source exists and capture identifiers.
    Keep `data.projectKey`, `data.projectShortKey`, `data.collectionNamePattern`, `data.isCollectionNameEditable` ([endpoints.md#datasource](../endpoints.md#datasource)).
-   - If `data` is null/empty, no data source is configured yet → `POST /api/data-sources/add` with `{ connectionString, databaseName, projectKey }` (ask the user: their own MongoDB connection string, or the Blocks-provided default set up in Cloud Portal).
+   - If `data` is null/empty, no data source is configured yet → `POST /api/data-sources/add` with `{ connectionString, databaseName, projectKey }` (ask the user: their own MongoDB connection string, or the Blocks-provided default set up in OS portal).
    - `GET /api/configurations` returns the same configuration for the current tenant without a `projectKey` param.
 
-2. `GET /api/schemas?ProjectKey=<projectKey>&SchemaName=<name>` — check whether the schema already exists ([endpoints.md#schema](../endpoints.md#schema)).
+2. `GET /api/schemas?ProjectKey=$X_BLOCKS_KEY&SchemaName=<name>` — check whether the schema already exists ([endpoints.md#schema](../endpoints.md#schema)).
    - Exists → skip to step 4 to modify fields. Keep `data.items[0].id` (the schema id).
    - Not found → step 3.
 
@@ -18,7 +18,7 @@ Use when creating a new data model (collection) for a project, or when adding/ch
    {
      "schemaName": "Product",
      "collectionName": "sb_product",
-     "projectKey": "<projectKey>",
+     "projectKey": "$X_BLOCKS_KEY",
      "projectShortKey": "<projectShortKey>",
      "schemaType": 1,
      "fields": [
@@ -28,8 +28,8 @@ Use when creating a new data model (collection) for a project, or when adding/ch
    }
    ```
    Keep `data.itemId` — that is the schema definition id used by the fields, validation, and access endpoints.
-   - `schemaType` is a `1 | 2` int enum with unpublished member names. The swagger's own prose calls type-1 collections "Entity-type" (they get a collection and runtime CRUD); legacy docs used 2 for child/nested-object schemas — unverified in v4, confirm in Cloud Portal if it matters.
-   - `field.type` is a **string**. Legacy scalar values were `"String"`, `"Int"`, `"Long"`, `"Float"`, `"Boolean"`, `"DateTime"`, and a child schema's name for nesting — unverified in v4; if a type is rejected, check the Cloud Portal schema editor for the accepted list.
+   - `schemaType` is a `1 | 2` int enum with unpublished member names. The swagger's own prose calls type-1 collections "Entity-type" (they get a collection and runtime CRUD); legacy docs used 2 for child/nested-object schemas — unverified in v4, confirm in OS portal if it matters.
+   - `field.type` is a **string**. Legacy scalar values were `"String"`, `"Int"`, `"Long"`, `"Float"`, `"Boolean"`, `"DateTime"`, and a child schema's name for nesting — unverified in v4; if a type is rejected, check the OS portal schema editor for the accepted list.
    - Respect `collectionNamePattern` from step 1 when choosing `collectionName` (if `isCollectionNameEditable` is false, don't fight it — let the platform derive the name).
    - Evaluate `isPIIData` for every field (names, emails, addresses → true). Ask the user when unsure.
    - Lightweight alternative: `POST /api/schemas/info` creates a schema from `{ collectionName, schemaName, projectKey, schemaType }` only (no fields); `PUT /api/schemas/info` renames/retypes it.
@@ -38,7 +38,7 @@ Use when creating a new data model (collection) for a project, or when adding/ch
    ```json
    {
      "schemaDefinitionItemId": "<schema itemId>",
-     "projectKey": "<projectKey>",
+     "projectKey": "$X_BLOCKS_KEY",
      "projectShortKey": "<projectShortKey>",
      "fields": [
        { "name": "sku", "type": "String", "isArray": false, "isPIIData": false, "isUniqueData": true, "description": "Stock keeping unit" }
@@ -54,6 +54,6 @@ Error paths: 401 → refresh token via blocks-setup. 400 returns `ProblemDetails
 
 ## Verify
 
-- `GET /api/schemas/get-by-id?id=<schema itemId>&projectKey=<projectKey>` — full definition with fields, access levels, and policy counts.
-- Or `GET /api/schemas/info-by-name?schemaName=<name>&projectKey=<projectKey>` for the collection view.
-- `GET /api/schemas/unadapted-change-logs?projectKey=<projectKey>` — should show nothing pending after a successful reload.
+- `GET /api/schemas/get-by-id?id=<schema itemId>&projectKey=$X_BLOCKS_KEY` — full definition with fields, access levels, and policy counts.
+- Or `GET /api/schemas/info-by-name?schemaName=<name>&projectKey=$X_BLOCKS_KEY` for the collection view.
+- `GET /api/schemas/unadapted-change-logs?projectKey=$X_BLOCKS_KEY` — should show nothing pending after a successful reload.

@@ -9,9 +9,9 @@ The data service (`https://api.seliseblocks.com/data/v4`) is where a Blocks proj
 
 ## Prerequisites
 
-- Environment and tokens: see the **blocks-setup** skill (`BLOCKS_API_URL`, `X_BLOCKS_KEY`, `PROJECT_SLUG`, login → `access_token`).
+- Environment and tokens: see the **blocks-setup** skill (`BLOCKS_API_URL`, `X_BLOCKS_KEY`, `BLOCKS_USERNAME`/`BLOCKS_PASSWORD`, login → `access_token`).
 - Every request needs `x-blocks-key: <X_BLOCKS_KEY>`; authenticated operations also need `Authorization: Bearer <access_token>`.
-- Most endpoints take a `projectKey` (long project identifier) — distinct from `projectShortKey` (the short slug, same value as `client_id`/`PROJECT_SLUG`). Get both from `GET /api/data-sources/get` (`data.projectKey`, `data.projectShortKey`).
+- Most endpoints take a `projectKey` — **projectKey = your Blocks Key** (the same value as `X_BLOCKS_KEY`). It is distinct from `projectShortKey` (the short slug used in the GraphQL gateway path), which is runtime-discovered, not an env var — read it from `GET /api/data-sources/get` (`data.projectShortKey`).
 - A data source must be configured before schemas behave fully — check with `GET /api/data-sources/get` (see [endpoints.md#datasource](endpoints.md#datasource)).
 
 ## What's where
@@ -40,7 +40,7 @@ The data service (`https://api.seliseblocks.com/data/v4`) is where a Blocks proj
 - **Data validation** — per-field rules (`ValidationRule { type, value, secondaryValue, errorMessage, isActive }`) enforced at write time. `ValidationType` is a `0..11` int enum with unpublished member names.
 - **Files / DMS** — document management embedded in the data service: pre-signed upload URLs, folders, tags, metadata, versions. Routes are PascalCase (`/api/Files/*`).
 - **Schema exchange** — async export of all schema definitions to a JSON file in blob storage, and import of that file into another project. Results arrive via notification correlated by `messageCoRelationId`.
-- **Mock data** — sample records seeded per collection. The v4 API lets you inventory counts and delete them; generation is done in the Cloud Portal (no generation endpoint in the v4 swagger).
+- **Mock data** — sample records seeded per collection. The v4 API lets you inventory counts and delete them; generation is done in the OS portal (no generation endpoint in the v4 swagger).
 
 ## Flows
 
@@ -60,11 +60,11 @@ The data service (`https://api.seliseblocks.com/data/v4`) is where a Blocks proj
 - **Reload or it didn't happen:** schema/field/policy/validation changes are staged until you call `POST /api/schema-configurations/reload` (or the equivalent `POST /api/configurations/reload` — the swagger documents identical behavior for both). Check pending changes with `GET /api/schemas/unadapted-change-logs`.
 - **Pagination:** list endpoints (`GET /api/schemas`, `GET /api/data-validations`) use **PascalCase query params** — `PageNo`, `PageSize`, `SortBy`, `SortDescending`, `Keyword`, `ProjectKey`. Files listing (`POST /api/Files/GetFilesInfo`) instead takes a camelCase JSON body (`page`, `pageSize`, `sort`, `filter`).
 - **Casing quirks:** `/api/Files/*` routes and `GET /api/Files/GetFile`'s query params (`FileId`, `Version`, `ConfigurationName`, `ProjectKey`) are PascalCase; everything else is lowercase kebab with camelCase bodies.
-- **"Cloud use only" twins:** several endpoints exist twice — a query-param version and a path-param version marked "Cloud use only" (used by the Cloud Portal). Prefer the query-param versions from your own tooling.
+- **"Cloud use only" twins:** several endpoints exist twice — a query-param version and a path-param version marked "Cloud use only" (used by the OS portal). Prefer the query-param versions from your own tooling.
 - **POST that deletes:** `POST /api/data-manage/mock-data` *deletes* mock data (same body/behavior as `DELETE /api/mock-data`). Read the endpoint description, not the verb.
 - **Undocumented responses:** all `/api/data-access/policy/*` endpoints, `POST /api/regex/generateregex`, and `POST /api/Files/updateFileAdditionalInfo` have **no response schema in swagger** — inspect the live response before relying on a shape.
-- **Int enums are unnamed:** `SchemaType`, `SchemaAccessLevel`, `PolicyType`, `PolicyOperation`, `PolicyOperator`, `ConditionSource`, `ValidationType`, `SchemaExportOption`, `ModuleName`, `AccessModifier` are numeric unions in contracts.md with no member names in swagger. Legacy v1 docs mapped some of them (see flow files for hints), but treat every mapping as **unverified in v4** — confirm against live responses or the Cloud Portal UI before hardcoding.
-- **GraphQL runtime gateway is not in the swagger.** The v1 pattern was `POST /uds/v1/{projectShortKey}/gateway`; the v4 equivalent is likely `POST https://api.seliseblocks.com/data/v4/{projectShortKey}/gateway` but this is **unverified — verify against your project** before wiring it in. All REST configuration flows in this skill are verified; keep them primary. `SchemaDefinitionResponse.querySchema` / `mutationSchemas` hint at the generated GraphQL operation names per schema.
+- **Int enums are unnamed:** `SchemaType`, `SchemaAccessLevel`, `PolicyType`, `PolicyOperation`, `PolicyOperator`, `ConditionSource`, `ValidationType`, `SchemaExportOption`, `ModuleName`, `AccessModifier` are numeric unions in contracts.md with no member names in swagger. Legacy v1 docs mapped some of them (see flow files for hints), but treat every mapping as **unverified in v4** — confirm against live responses or the OS portal UI before hardcoding.
+- **GraphQL runtime gateway is not in the swagger.** The v1 pattern was `POST /uds/v1/{projectShortKey}/gateway`; the v4 equivalent is likely `POST https://api.seliseblocks.com/data/v4/{projectShortKey}/gateway` but this is **unverified — verify against your project** before wiring it in. (`projectShortKey` is runtime-discovered — read it from `GET /api/data-sources/get` → `data.projectShortKey`; it is not an env var.) All REST configuration flows in this skill are verified; keep them primary. `SchemaDefinitionResponse.querySchema` / `mutationSchemas` hint at the generated GraphQL operation names per schema.
 - **Generic wrappers:** responses are wrapped in generated per-payload envelope interfaces named `…Of…` in contracts.md (e.g. `ServiceResponseOfSchemaDefinitionResponse`, `PaginationResponseOfDataValidationResponse`). In app code a single local `ApiEnvelope<T>` generic mirroring that shape is cleaner — see references/react.md.
 
 ## Files

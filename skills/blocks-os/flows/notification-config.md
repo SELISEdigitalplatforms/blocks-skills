@@ -4,7 +4,7 @@ Create, list, update, and delete a project's notification configurations — the
 
 Honest scope note: the os/v4 swagger exposes **configuration CRUD only**. There is no "send notification" or "subscribe" endpoint on this controller — delivery and subscription happen platform-side according to these configurations. For real-time client notification plumbing (Notifier) and outbound mail, see the **blocks-utilities** skill.
 
-Preconditions: `x-blocks-key` + bearer token; `projectKey`.
+Preconditions: `x-blocks-key` + bearer token; `projectKey` (projectKey = your Blocks Key — the same value as `x-blocks-key`).
 
 ## Steps
 

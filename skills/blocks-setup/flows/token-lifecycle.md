@@ -3,10 +3,10 @@
 The day-to-day auth loop every Blocks client runs. Use after [bootstrap-project](bootstrap-project.md)
 has produced working credentials. All endpoint shapes: `../../blocks-iam/endpoints.md#authentication`.
 
-Preconditions: `.env` with `BLOCKS_API_URL`, `X_BLOCKS_KEY`, `PROJECT_SLUG`, and login credentials.
+Preconditions: `.env` with `BLOCKS_API_URL`, `X_BLOCKS_KEY`, and login credentials.
 Every call below also carries `x-blocks-key: $X_BLOCKS_KEY`.
 
-Note: if you use the cloud-login → tenant-impersonation model
+Note: if you use the login → tenant-impersonation model
 ([project-impersonation](project-impersonation.md)), this same lifecycle applies to whichever
 session is active — but whether refresh preserves the impersonated (project-scoped) context is
 not documented in swagger; verify against your project, and re-impersonate after a full re-login.
@@ -15,7 +15,8 @@ not documented in swagger; verify against your project, and re-impersonate after
 
 ### 1. Login — `POST /iam/v4/api/auth/login`
 
-Body (snake_case): `{ client_id, username, password }`, plus `captcha_code` / `mfa_id` / `mfa_code`
+Body (snake_case): `{ username, password }` — no project identifier; the `x-blocks-key` header
+carries project context — plus `captcha_code` / `mfa_id` / `mfa_code`
 / `mfa_type` on the branch paths (see bootstrap-project for those branches).
 
 Response 200 is not documented in swagger — inspect the live response. Keep two things:
@@ -44,7 +45,7 @@ When the access token expires (proactively on `exp`, or reactively on a 401):
 curl -s -X POST "$BLOCKS_API_URL/iam/v4/api/auth/refresh" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
   -H "Content-Type: application/json" \
-  -d "{ \"refresh_token\": \"$REFRESH_TOKEN\", \"client_id\": \"$PROJECT_SLUG\" }"
+  -d "{ \"refresh_token\": \"$REFRESH_TOKEN\" }"
 ```
 
 Response 200 is not documented in swagger — inspect the live response; expect fresh tokens. If a

@@ -35,7 +35,7 @@ Endpoints: endpoints.md → [Authentication](../endpoints.md#authentication)
    description lists only authorization_code and refresh_token grants, and no request
    schema is published. Whether M2M credentials use a client_credentials grant there
    (RFC 6749 §4.4, form-encoded `grant_type=client_credentials` + client id/secret)
-   must be verified against your project / Cloud Portal docs before you build on it.
+   must be verified against your project / OS portal docs before you build on it.
    Inspect a working exchange (or ask SELISE support) and pin what you observe.
 
 4. Rotate by creating a replacement credential, migrating the consumer, then
@@ -48,8 +48,9 @@ For device-style or delegated short-lived access tied to a user
 (endpoints.md → [Authentication](../endpoints.md#authentication)):
 
 1. `POST /api/auth/user-codes` with
-   `{ "clientId": "<PROJECT_SLUG>", "codeTtlInMinute": 15, "note": "cli-pairing" }`
-   → `{ isSuccess, errors }`.
+   `{ "clientId": "<client id>", "codeTtlInMinute": 15, "note": "cli-pairing" }`
+   → `{ isSuccess, errors }`. `clientId` here identifies the OAuth client app the
+   code is issued for (not a project identifier, and not an env var).
 2. `GET /api/auth/user-codes` — items carry `code`, `userId`, `clientId`,
    `expiryDate`, `note`. How a code is redeemed for a token is not documented in the
    v4 swagger — verify the redemption endpoint against your project before relying

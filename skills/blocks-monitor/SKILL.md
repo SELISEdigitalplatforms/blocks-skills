@@ -1,6 +1,6 @@
 ---
 name: blocks-monitor
-description: "Observability and platform back-office for SELISE Blocks (monitor service, api.seliseblocks.com/monitor/v4). Use this skill for any task involving logs, traces, uptime monitors, health checks, incidents, or Cloud-Portal-grade administration — including querying and filtering service logs, live log tailing (/api/Log/Live), inspecting distributed traces and spans, creating and managing uptime monitors (incidents, response time, downtime), heartbeat health checks with ping URLs, cookie-domain configuration (/api/Domain/Configure), and back-office account/organization/role/permission administration via the PascalCase /api/Authentication and /api/Iam controllers. Trigger on: monitor service, log viewer, live tail, trace id, span, uptime, health ping, downtime report, incident list, SSO/OIDC client-credential admin. App sign-in/sign-up is blocks-iam, NOT this skill."
+description: "Observability and platform back-office for SELISE Blocks (monitor service, api.seliseblocks.com/monitor/v4). Use this skill for any task involving logs, traces, uptime monitors, health checks, incidents, or OS-portal-grade administration — including querying and filtering service logs, live log tailing (/api/Log/Live), inspecting distributed traces and spans, creating and managing uptime monitors (incidents, response time, downtime), heartbeat health checks with ping URLs, cookie-domain configuration (/api/Domain/Configure), and back-office account/organization/role/permission administration via the PascalCase /api/Authentication and /api/Iam controllers. Trigger on: monitor service, log viewer, live tail, trace id, span, uptime, health ping, downtime report, incident list, SSO/OIDC client-credential admin. App sign-in/sign-up is blocks-iam, NOT this skill."
 ---
 
 # Blocks Monitor — Observability & Platform Back-Office
@@ -10,11 +10,11 @@ administration API. It serves four observability domains — **logs** (query, fi
 **traces** (per-request spans and service analytics), **uptime monitors** (active HTTP probes with
 incidents/downtime/response-time history), and **health checks** (heartbeat-style configs with a
 ping URL) — and two admin domains: **domain configuration** (auth cookie domain per project) and the
-PascalCase **`/api/Authentication/*` and `/api/Iam/*` back-office controllers** used by Cloud Portal
+PascalCase **`/api/Authentication/*` and `/api/Iam/*` back-office controllers** used by OS portal
 for account, organization, role, permission, SSO/OIDC-credential, and session administration.
 
 > **Warning — this is NOT your app's auth path.** The PascalCase `/api/Authentication/*` and
-> `/api/Iam/*` controllers here are platform back-office APIs (what Cloud Portal itself uses).
+> `/api/Iam/*` controllers here are platform back-office APIs (what OS portal itself uses).
 > Application login, signup, token refresh, MFA, and profile flows belong to the **blocks-iam**
 > skill (lowercase `/api/auth/*`, `/api/iam/*`, `/api/mfa/*` on `https://api.seliseblocks.com/iam/v4`).
 > Only use the controllers in this skill for admin tooling operating on behalf of a project owner.
@@ -24,13 +24,13 @@ for account, organization, role, permission, SSO/OIDC-credential, and session ad
 ## Prerequisites
 
 - Environment + token bootstrap: see **blocks-setup** (`BLOCKS_API_URL`, `X_BLOCKS_KEY`,
-  `PROJECT_SLUG`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`; login via `POST /iam/v4/api/auth/login`).
+  `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`; login via `POST /iam/v4/api/auth/login`).
 - Every request needs `x-blocks-key: <X_BLOCKS_KEY>`; authenticated operations also need
   `Authorization: Bearer <access_token>`.
 - Back-office `/api/Iam/*` and `/api/Authentication/*` calls require a token with admin-level
   privileges on the project (a plain end-user token will be rejected or return empty data).
-- `projectKey` in request bodies/queries is your project's short key (same value as `PROJECT_SLUG`
-  / `client_id`, e.g. `dbahjq`).
+- `projectKey` in request bodies/queries = your Blocks Key (the same value as `X_BLOCKS_KEY` /
+  the `x-blocks-key` header).
 
 ## What's where
 
@@ -54,7 +54,7 @@ for account, organization, role, permission, SSO/OIDC-credential, and session ad
 
 - **Log** — structured log entries per service, filtered by `startDate`/`endDate`/`level`/`traceId`/
   `spanId` plus free-text `search`. `serviceName` is required on log queries; valid values are not
-  published in swagger — use the service names visible in your project's Cloud Portal observability
+  published in swagger — use the service names visible in your project's OS portal observability
   view (or discover them via trace analytics) and verify live.
 - **Trace / span** — distributed-tracing records. A `traceId` links spans across services and links
   back to logs (log filter accepts `traceId` and `spanId`).
@@ -66,7 +66,7 @@ for account, organization, role, permission, SSO/OIDC-credential, and session ad
   schedule. (Interpretation from field names — semantics are not documented in swagger; verify
   alerting behavior live.)
 - **Incident** — an outage record attached to a monitor (`GET /api/Monitor/GetIncidentList`).
-- **Back-office Iam/Authentication** — Cloud-Portal-grade administration of users ("accounts"),
+- **Back-office Iam/Authentication** — OS-portal-grade administration of users ("accounts"),
   organizations, roles, permissions, sign-up settings, SSO/OIDC/client credentials, sessions, and
   login histories for a project. Distinct from, and higher-privileged than, app auth (blocks-iam).
 - **Domain configure** — sets the `cookieDomain` a project's auth cookies are scoped to

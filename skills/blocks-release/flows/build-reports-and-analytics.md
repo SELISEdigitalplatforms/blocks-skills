@@ -12,7 +12,7 @@ Base URL: `https://api.seliseblocks.com/release/v4`.
 ## Steps
 
 1. Get a `buildId`. Either from the trigger response (`BuildResponse.buildId`) or by asking the
-   user / checking Cloud Portal build history. `GET /api/Build?buildId=<id>` confirms the build
+   user / checking OS portal build history. `GET /api/Build?buildId=<id>` confirms the build
    exists and its state (response shape not documented in swagger — inspect).
 
 2. `GET /api/Build/reports?buildId=<buildId>` — fetch all reports for the build. Response shape
@@ -37,13 +37,13 @@ Base URL: `https://api.seliseblocks.com/release/v4`.
 - **Empty/404-ish reports on a fresh build** → reports may only exist after the build reaches a
   terminal state; poll `GET /api/Build?buildId=…` first.
 - **Analytics endpoints return an error** → SonarQube/DependencyTrack may not be enabled for the
-  project. Enabling the tools themselves is not exposed in the v4 swagger — do it in Cloud Portal,
+  project. Enabling the tools themselves is not exposed in the v4 swagger — do it in OS portal,
   then re-run steps 4–5.
 
 ## Verify
 
 - Step 2 returns report content for the build (non-empty payload).
-- After steps 4–5, the SonarQube / DependencyTrack dashboards linked from Cloud Portal show the
+- After steps 4–5, the SonarQube / DependencyTrack dashboards linked from OS portal show the
   project/user, and subsequent builds carry analysis results in their reports.
 - Nothing here can be verified from swagger alone — all five endpoints in this flow have
   undocumented response shapes, so confirm against the live project once and record what you saw.

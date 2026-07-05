@@ -10,8 +10,9 @@ Auth/token lifecycle (login, refresh, 401 retry) is owned by **blocks-setup** / 
 # .env — client-safe values only (never put credentials in VITE_ vars)
 VITE_BLOCKS_API_URL=https://api.seliseblocks.com
 VITE_X_BLOCKS_KEY=<public x-blocks-key for this app>
-VITE_PROJECT_SLUG=<projectKey / client_id>
 ```
+
+Note: projectKey = your Blocks Key — every `projectKey` / `ProjectKey` param below reuses `VITE_X_BLOCKS_KEY`; no separate project env var exists.
 
 ## API client slice
 
@@ -33,7 +34,8 @@ import type {
 } from './contracts'; // types copied from blocks-localization/contracts.md
 
 const BASE = `${import.meta.env.VITE_BLOCKS_API_URL}/localization/v4`;
-export const PROJECT_KEY = import.meta.env.VITE_PROJECT_SLUG as string;
+// projectKey = your Blocks Key: the same value serves as the x-blocks-key header and every projectKey/ProjectKey param
+export const X_BLOCKS_KEY = import.meta.env.VITE_X_BLOCKS_KEY as string;
 
 async function locFetch<T>(
   path: string,
@@ -48,7 +50,7 @@ async function locFetch<T>(
   const res = await fetch(url, {
     ...rest,
     headers: {
-      'x-blocks-key': import.meta.env.VITE_X_BLOCKS_KEY,
+      'x-blocks-key': X_BLOCKS_KEY,
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(rest.body ? { 'Content-Type': 'application/json' } : {}),
       ...rest.headers,
@@ -74,63 +76,63 @@ function assertOk(r: ApiResponse): ApiResponse {
 export const localizationApi = {
   // Languages
   getLanguages: () =>
-    locFetch<Language[]>('/api/Language/Gets', { query: { ProjectKey: PROJECT_KEY } }),
+    locFetch<Language[]>('/api/Language/Gets', { query: { ProjectKey: X_BLOCKS_KEY } }),
   saveLanguage: (body: Language) =>
     locFetch<ApiResponse>('/api/Language/Save', {
       method: 'POST',
-      body: JSON.stringify({ ...body, projectKey: PROJECT_KEY }),
+      body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }).then(assertOk),
 
   // Modules
   getModules: () =>
-    locFetch<BlocksLanguageModule[]>('/api/Module/Gets', { query: { ProjectKey: PROJECT_KEY } }),
+    locFetch<BlocksLanguageModule[]>('/api/Module/Gets', { query: { ProjectKey: X_BLOCKS_KEY } }),
 
   // Keys
   getKeys: (filter: GetKeysRequest) =>
     locFetch<GetKeysQueryResponse>('/api/Key/Gets', {
       method: 'POST',
-      body: JSON.stringify({ ...filter, projectKey: PROJECT_KEY }),
+      body: JSON.stringify({ ...filter, projectKey: X_BLOCKS_KEY }),
     }),
   saveKey: (key: Key) =>
     locFetch<ApiResponse>('/api/Key/Save', {
       method: 'POST',
-      body: JSON.stringify({ ...key, projectKey: PROJECT_KEY }),
+      body: JSON.stringify({ ...key, projectKey: X_BLOCKS_KEY }),
     }).then(assertOk),
   saveKeys: (keys: Key[]) =>
     locFetch<ApiResponse>('/api/Key/SaveKeys', {
       method: 'POST',
       // NB: bare JSON array body
-      body: JSON.stringify(keys.map((k) => ({ ...k, projectKey: PROJECT_KEY }))),
+      body: JSON.stringify(keys.map((k) => ({ ...k, projectKey: X_BLOCKS_KEY }))),
     }).then(assertOk),
   translateKeys: (body: Omit<TranslateBlocksLanguageKeysRequest, 'projectKey'>) =>
     // async queue — resolves when enqueued, not when translated; response shape undocumented
     locFetch<unknown>('/api/Key/TranslateKeys', {
       method: 'POST',
-      body: JSON.stringify({ ...body, projectKey: PROJECT_KEY }),
+      body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 
   // Glossary + AI assistant
   getGlossaries: (page = 1, pageSize = 50) =>
     locFetch<GetGlossariesResponse>('/api/Glossary/Gets', {
-      query: { ProjectKey: PROJECT_KEY, PageNumber: page, PageSize: pageSize },
+      query: { ProjectKey: X_BLOCKS_KEY, PageNumber: page, PageSize: pageSize },
     }),
   getTranslationSuggestion: (body: Omit<SuggestLanguageRequest, 'projectKey'>) =>
     // response shape not documented in swagger — inspect live once, then refine this type
     locFetch<unknown>('/api/Assistant/GetTranslationSuggestion', {
       method: 'POST',
-      body: JSON.stringify({ ...body, projectKey: PROJECT_KEY }),
+      body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 
   // Runtime language file (call GenerateUilmFile after content changes — see the language-files flow)
   getUilmFile: (language: string, moduleName: string) =>
     // swagger documents this only as "a JSON UILM file" — verify the live shape, then narrow the type
     locFetch<unknown>('/api/Key/GetUilmFile', {
-      query: { Language: language, ModuleName: moduleName, ProjectKey: PROJECT_KEY },
+      query: { Language: language, ModuleName: moduleName, ProjectKey: X_BLOCKS_KEY },
     }),
   tagGlossaryToModule: (moduleId: string, glossaryIds: string[]) =>
     locFetch<BaseMutationResponse>('/api/Module/TagGlossary', {
       method: 'POST',
-      body: JSON.stringify({ moduleId, glossaryIds, projectKey: PROJECT_KEY }),
+      body: JSON.stringify({ moduleId, glossaryIds, projectKey: X_BLOCKS_KEY }),
     }),
 };
 ```

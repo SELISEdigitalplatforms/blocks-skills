@@ -20,7 +20,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
 
    ```json
    {
-     "projectKey": "<PROJECT_SLUG>",
+     "projectKey": "<X_BLOCKS_KEY>",       // projectKey = your Blocks Key (x-blocks-key value)
      "name": "nightly-export-job",
      "repoId": null,
      "repoName": null,
@@ -36,12 +36,12 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
    - There is no `url` field — the platform does not probe you; you ping it (step 2).
    - `repoId`/`repoName` or `externalServiceId` optionally tie the check to a Blocks repo or
      external service.
-   - Valid `monitorSourceType` strings are not enumerated in swagger — create one in Cloud Portal
+   - Valid `monitorSourceType` strings are not enumerated in swagger — create one in OS portal
      first and read the value back, or verify live.
    - Response undocumented — inspect it for the new `itemId`. If it isn't returned, swagger
      exposes no dedicated Health list endpoint; check whether the config shows up in
      `GET /api/Monitor/GetMonitorList` (health configs share the `monitorSourceType` field, so
-     they may be listed there — unverified), or read the id from Cloud Portal.
+     they may be listed there — unverified), or read the id from OS portal.
 
 2. Wire the heartbeat: have the job call `GET /api/Health/Ping/{itemId}` at the end of each
    successful run (at least once per `intervalInSeconds`). `itemId` is a required **path**

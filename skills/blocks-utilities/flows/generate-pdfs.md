@@ -30,7 +30,7 @@ Omit `engine` or send `1` unless you have a reason not to.
    - Header/footer: set `hasHeader`/`hasFooter` with `headerHtmlFileId`/`footerHtmlFileId` and `headerHeight`/`footerHeight`; first-page variants via `hasFirstPageHeader`/`hasFirstPageFooter` + `firstPageHeaderFileId`/`firstPageFooterFileId`.
    - Page numbers: `isPageNumberEnabled`, `isTotalPageCountEnabled`, `pageNumberText`.
    - `openInBrowser: true` makes the eventual download URL render inline instead of downloading.
-   - Top-level: `projectKey`, `messageCoRelationId` (supply your own GUID to correlate), optional `eventReferenceData` key/values echoed on completion events, `engine`.
+   - Top-level: `projectKey` (projectKey = your Blocks Key, the same value as `X_BLOCKS_KEY`), `messageCoRelationId` (supply your own GUID to correlate), optional `eventReferenceData` key/values echoed on completion events, `engine`.
 
    **B. Template + data → PDF:** `POST /api/PdfGenerator/CreatePdfsFromHtmlUsingTemplateEngine`
    - Same command shape plus: `templateFileId` (the HTML template in Storage), `filteredSqlQueryDatas[]` (`entityName`, `filterQuery`, `filterParameters` — pulls entity data into the template context), and `metaDataList[]` (`key`/`value` pairs available to the template).

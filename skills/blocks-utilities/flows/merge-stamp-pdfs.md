@@ -11,7 +11,7 @@ Endpoint reference: [endpoints.md#pdfgenerator](../endpoints.md#pdfgenerator).
 `POST /api/PdfGenerator/MergePdfs`
 
 1. Build `pdfFilesToBeMerged[]`: `{ order, pdfFileId }` per source — `order` controls page sequence in the output.
-2. Set `outputPdfFileId` (new GUID) + `outputPdfFileName`, `projectKey`, `engine: 2`, optional `messageCoRelationId`.
+2. Set `outputPdfFileId` (new GUID) + `outputPdfFileName`, `projectKey` (projectKey = your Blocks Key, the same value as `X_BLOCKS_KEY`), `engine: 2`, optional `messageCoRelationId`.
 3. `handleCorruptedPdf: true` resaves corrupted sources before merging instead of failing; `openInBrowser: true` makes the download URL open inline.
 4. Response: `{ isSuccess, outputPdfFileId, message }` — the merged file lands in Storage under `outputPdfFileId`.
 

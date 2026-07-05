@@ -10,7 +10,6 @@ Do **not** call Secrets or Storage endpoints from the browser — their response
 # .env — client-safe values only (VITE_ prefix exposes them to the bundle)
 VITE_BLOCKS_API_URL=https://api.seliseblocks.com
 VITE_X_BLOCKS_KEY=<your x-blocks-key>
-VITE_PROJECT_SLUG=<projectKey / client_id>
 ```
 
 Never put passwords or non-public keys in `VITE_` vars. Token acquisition/refresh is covered by the **blocks-setup** skill; this guide assumes a Zustand auth store holding `accessToken`.
@@ -84,7 +83,7 @@ import type {
   GetSubscriptionsResponse,
 } from "@/types/blocks-os";
 
-const projectKey = import.meta.env.VITE_PROJECT_SLUG;
+const projectKey = import.meta.env.VITE_X_BLOCKS_KEY; // projectKey = your Blocks Key
 
 // --- Captcha (see flows/captcha-lifecycle.md) ---
 

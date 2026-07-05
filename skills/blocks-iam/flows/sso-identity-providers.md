@@ -42,7 +42,7 @@ Endpoints: endpoints.md → [Authentication](../endpoints.md#authentication)
    Either give `wellKnownUrl` (endpoints discovered) or spell out
    `issuer`/`authorizationUrl`/`tokenUrl`/`userInfoUrl`/`jwksUri` manually. The exact
    accepted values for `provider`/`providerType`/`protocol`/`tokenEndpointAuthMethod`
-   are not enumerated in swagger — mirror what the Cloud Portal produces or verify
+   are not enumerated in swagger — mirror what the OS portal produces or verify
    live. `initialRoles`/`initialPermissions` are granted to just-in-time-provisioned
    users. Apple needs the extra `teamId`, `keyId`, `privateKey`, `appleAudience`
    fields. The platform validates the config and tests the JWKS endpoint on save
@@ -58,13 +58,15 @@ Endpoints: endpoints.md → [Authentication](../endpoints.md#authentication)
    screen's SSO buttons from this endpoint instead of hardcoding.
 
 4. Runtime login round trip (your UI, API pattern):
-   1. `GET /api/auth/social/initiate?clientId=<PROJECT_SLUG>&redirectUri=<your callback>` —
-      generates PKCE + state and returns the provider authorization URL (response
-      undocumented — inspect live). Redirect the browser there.
+   1. `GET /api/auth/social/initiate?redirectUri=<your callback>` — the
+      `x-blocks-key` header carries the project context (the `clientId` query param
+      is optional in swagger); generates PKCE + state and returns the provider
+      authorization URL (response undocumented — inspect live). Redirect the
+      browser there.
    2. Provider authenticates the user and redirects back to your app with
       `code` + `state`.
    3. `POST /api/auth/social/callback` with snake_case body
-      `{ "client_id", "code", "state", "provider" }` — exchanges the code, validates
+      `{ "code", "state", "provider" }` — exchanges the code, validates
       the JWT, creates/updates the user, and sets a secure HTTP-only token cookie.
       If the account has MFA, resubmit with `mfa_id`/`mfa_code`/`mfa_type` like
       embedded login ([embedded-login.md](embedded-login.md)).
@@ -98,7 +100,8 @@ Endpoints: endpoints.md → [OidcClients](../endpoints.md#oidcclients),
    against `GET /{tenant_id}/.well-known/jwks.json`.
 
 3. Code flow: send the browser to `GET /api/oidc/authorize` with the standard query
-   params (`client_id`, `response_type=code`, `redirect_uri`, `scope`, `state`,
+   params (`client_id` — your registered OIDC client's id, not a project
+   identifier — `response_type=code`, `redirect_uri`, `scope`, `state`,
    `nonce`, `code_challenge`, `code_challenge_method`, optional `prompt`,
    `tenant_id`); receive the code on your redirect URI; exchange at
    `POST /api/oidc/token` (supports authorization_code and refresh_token grants; the

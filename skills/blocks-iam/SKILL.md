@@ -21,12 +21,14 @@ app MFA is the lowercase `/api/mfa/*` here.
 
 ## Prerequisites
 
-- `blocks-setup` skill: env vars (`BLOCKS_API_URL`, `X_BLOCKS_KEY`, `PROJECT_SLUG`,
+- `blocks-setup` skill: env vars (`BLOCKS_API_URL`, `X_BLOCKS_KEY`,
   `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`) and how to obtain/refresh tokens.
 - Every request needs the `x-blocks-key: <X_BLOCKS_KEY>` header; authenticated
   operations also need `Authorization: Bearer <access_token>`.
-- `client_id` in auth payloads is the project's short key / slug (`PROJECT_SLUG`,
-  e.g. `dbahjq`) — not an OAuth client GUID.
+- Login/refresh bodies carry no `client_id` or project identifier — the
+  `x-blocks-key` header carries the project context. Where `client_id` does appear
+  in this skill (`/api/oidc/*`, client credentials, identity-provider configs) it
+  identifies an OAuth/OIDC client app, not the project.
 - Captcha: when an endpoint accepts `captcha_code`/`captchaCode`, the captcha itself
   is issued/verified by the platform Captcha controller — see `blocks-os`.
 
@@ -57,8 +59,9 @@ app MFA is the lowercase `/api/mfa/*` here.
 
 ## Key concepts
 
-- **client_id / project slug** — identifies your project in token flows
-  (`login`, `refresh`, `social/callback`, `oidc/login`). Same value as `PROJECT_SLUG`.
+- **Project context** — carried by the `x-blocks-key` header on every call; token
+  flows (`login`, `refresh`) take no project identifier in the body. `client_id`
+  elsewhere means an OAuth/OIDC client app (`oidc/login`, `oidc/token`, oidc-clients).
 - **Access + refresh token** — issued by `POST /api/auth/login`; lifetimes are
   configurable via `POST /api/auth/config`. Refresh with `POST /api/auth/refresh`.
 - **User** — the IAM profile (`/api/iam/users*`, `/api/iam/me`). Distinct from
@@ -99,7 +102,7 @@ app MFA is the lowercase `/api/mfa/*` here.
   public endpoints (`login`, `login-options`, `signup`, `activate`, `recover`,
   `reset-password`, discovery/JWKS).
 - **snake_case vs camelCase — copy field names verbatim from endpoints.md, never
-  "normalize" them.** Token-flow bodies are snake_case: `client_id`, `username`,
+  "normalize" them.** Token-flow bodies are snake_case: `username`,
   `password`, `captcha_code`, `mfa_id`, `mfa_code`, `refresh_token`,
   `organization_id`, `targeted_tenant_id` (login, refresh, switch-org, impersonate,
   impersonation/stop, social/callback, oidc/login). Account-lifecycle and admin

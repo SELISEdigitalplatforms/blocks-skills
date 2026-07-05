@@ -5,8 +5,8 @@ Zustand (matches `blocks-construct-react`). This guide wires the `logic/v4` serv
 that stack: a typed fetch slice, query/mutation hooks for the highest-value endpoints,
 and one component sketch.
 
-Env (see `blocks-setup`): `VITE_BLOCKS_API_URL` (`https://api.seliseblocks.com`),
-`VITE_X_BLOCKS_KEY`, `VITE_PROJECT_SLUG`. Never put credentials or non-public keys in
+Env (see `blocks-setup`): `VITE_BLOCKS_API_URL` (`https://api.seliseblocks.com`) and
+`VITE_X_BLOCKS_KEY` — nothing else. Never put credentials or non-public keys in
 `VITE_` vars — the Bearer token comes from the auth store at runtime, not from env.
 
 ## API client slice
@@ -16,7 +16,8 @@ Env (see `blocks-setup`): `VITE_BLOCKS_API_URL` (`https://api.seliseblocks.com`)
 import { useAuthStore } from '@/state/auth-store'; // Zustand store from blocks-setup wiring
 
 const BASE = `${import.meta.env.VITE_BLOCKS_API_URL}/logic/v4`;
-export const PROJECT_KEY = import.meta.env.VITE_PROJECT_SLUG as string;
+// projectKey = your Blocks Key — the same value sent in the x-blocks-key header.
+export const X_BLOCKS_KEY = import.meta.env.VITE_X_BLOCKS_KEY as string;
 
 export class LogicApiError extends Error {
   constructor(public status: number, public body: unknown) {
@@ -29,7 +30,7 @@ export async function logicFetch<T>(path: string, init: RequestInit = {}): Promi
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
-      'x-blocks-key': import.meta.env.VITE_X_BLOCKS_KEY as string,
+      'x-blocks-key': X_BLOCKS_KEY,
       ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...(init.body ? { 'Content-Type': 'application/json' } : {}),
       ...init.headers,
@@ -87,7 +88,7 @@ export const logicKeys = {
 ```ts
 // src/features/logic/api/hooks.ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { logicFetch, PROJECT_KEY } from './client';
+import { logicFetch, X_BLOCKS_KEY } from './client';
 import { logicKeys } from './keys';
 
 // POST /api/Workflow/GetAll — list workflows (body pagination)
@@ -97,7 +98,7 @@ export function useWorkflows(params: Omit<WorkflowGetsRequestDto, 'projectKey'> 
     queryFn: () =>
       logicFetch<unknown>('/api/Workflow/GetAll', {
         method: 'POST',
-        body: JSON.stringify({ projectKey: PROJECT_KEY, pageSize: 20, pageNumber: 1, ...params }),
+        body: JSON.stringify({ projectKey: X_BLOCKS_KEY, pageSize: 20, pageNumber: 1, ...params }),
       }),
   });
 }
@@ -109,7 +110,7 @@ export function useWorkflow(workflowId: string) {
     enabled: !!workflowId,
     queryFn: () =>
       logicFetch<unknown>(
-        `/api/Workflow/Get?WorkflowId=${encodeURIComponent(workflowId)}&ProjectKey=${PROJECT_KEY}`,
+        `/api/Workflow/Get?WorkflowId=${encodeURIComponent(workflowId)}&ProjectKey=${X_BLOCKS_KEY}`,
       ),
   });
 }
@@ -121,7 +122,7 @@ export function useCreateWorkflow() {
     mutationFn: (body: Omit<WorkflowCreateRequestDto, 'projectKey'>) =>
       logicFetch<unknown>('/api/Workflow/Create', {
         method: 'POST',
-        body: JSON.stringify({ projectKey: PROJECT_KEY, ...body }),
+        body: JSON.stringify({ projectKey: X_BLOCKS_KEY, ...body }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['logic', 'workflows'] }),
   });
@@ -134,7 +135,7 @@ export function useUpdateWorkflow() {
     mutationFn: (body: Omit<WorkflowUpdateRequestDto, 'projectKey'>) =>
       logicFetch<unknown>('/api/Workflow/Update', {
         method: 'PUT',
-        body: JSON.stringify({ projectKey: PROJECT_KEY, ...body }),
+        body: JSON.stringify({ projectKey: X_BLOCKS_KEY, ...body }),
       }),
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: logicKeys.workflow(vars.itemId) });
@@ -150,7 +151,7 @@ export function usePublishNewVersion() {
     mutationFn: (body: Omit<WorkflowPublishNewVersionRequestDto, 'projectKey'>) =>
       logicFetch<unknown>('/api/Workflow/PublishNewVersion', {
         method: 'POST',
-        body: JSON.stringify({ projectKey: PROJECT_KEY, ...body }),
+        body: JSON.stringify({ projectKey: X_BLOCKS_KEY, ...body }),
       }),
     onSuccess: (_d, vars) =>
       qc.invalidateQueries({ queryKey: logicKeys.workflow(vars.workflowId) }),
@@ -165,7 +166,7 @@ export function useExecutions(workflowId: string) {
     refetchInterval: 5_000, // executions change while runs are in flight
     queryFn: () =>
       logicFetch<unknown>(
-        `/api/Workflow/GetExecutions?ProjectKey=${PROJECT_KEY}&WorkflowId=${encodeURIComponent(workflowId)}`,
+        `/api/Workflow/GetExecutions?ProjectKey=${X_BLOCKS_KEY}&WorkflowId=${encodeURIComponent(workflowId)}`,
       ),
   });
 }
@@ -176,7 +177,7 @@ export function useStepExecute() {
     mutationFn: (body: Omit<StepExecuteRequestDto, 'projectKey'>) =>
       logicFetch<unknown>('/api/Workflow/StepExecute', {
         method: 'POST',
-        body: JSON.stringify({ projectKey: PROJECT_KEY, ...body }),
+        body: JSON.stringify({ projectKey: X_BLOCKS_KEY, ...body }),
       }),
   });
 }
@@ -186,7 +187,7 @@ export function useMailConfigurations() {
   return useQuery({
     queryKey: logicKeys.mailConfigs(),
     queryFn: () =>
-      logicFetch<MailServerConfiguration[]>(`/api/Mail/Gets?ProjectKey=${PROJECT_KEY}`),
+      logicFetch<MailServerConfiguration[]>(`/api/Mail/Gets?ProjectKey=${X_BLOCKS_KEY}`),
   });
 }
 
@@ -198,7 +199,7 @@ export function useUploadLogicFile() {
         '/api/Storage/GetPreSignedUrlForUpload',
         {
           method: 'POST',
-          body: JSON.stringify({ name: file.name, projectKey: PROJECT_KEY }),
+          body: JSON.stringify({ name: file.name, projectKey: X_BLOCKS_KEY }),
         },
       );
       if (!slot.isSuccess || !slot.uploadUrl) throw new Error('No upload URL granted');

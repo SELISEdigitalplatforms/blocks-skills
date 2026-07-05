@@ -20,7 +20,7 @@ look at `error` / `reason` / `statusCode` on failure.
    (payload shape undocumented — inspect live).
 
 2. If not authorized, run the GitHub OAuth handshake:
-   - Start the OAuth authorization from the Blocks Cloud Portal (deployment/GitHub
+   - Start the OAuth authorization from the Blocks OS portal (deployment/GitHub
      connect UI). The GitHub OAuth client and authorize URL are **not exposed in the v4
      swagger** — the portal initiates the redirect to GitHub.
    - After the user approves, GitHub redirects back with an authorization `code`.

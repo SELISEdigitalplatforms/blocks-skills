@@ -19,11 +19,11 @@ Base URL: `https://api.seliseblocks.com/release/v4`.
    indicator. If already authorized, skip to step 4.
 
 3. Authorize GitHub. The OAuth *initiation* (GitHub consent screen) is **not exposed in the v4
-   swagger** — start it from Cloud Portal (project → CI/CD / GitHub integration). The swagger only
+   swagger** — start it from OS portal (project → CI/CD / GitHub integration). The swagger only
    exposes the code exchange:
    - `GET /api/Auth/AccessToken?code=<oauth_code>` — exchanges a GitHub OAuth `code` for a stored
      authorization. You only call this yourself if you obtained a `code` through your own OAuth
-     redirect; the Cloud Portal flow handles it for you. Response shape not documented in swagger.
+     redirect; the OS portal flow handles it for you. Response shape not documented in swagger.
    Re-run step 2 afterwards to confirm.
 
 4. `GET /api/Github/user` — confirm *which* GitHub account is linked (avoid building against the
@@ -51,7 +51,7 @@ Base URL: `https://api.seliseblocks.com/release/v4`.
 ### Branches / error paths
 
 - **401 on any step** → token expired; refresh per blocks-setup, retry once.
-- **Step 2 says not authorized and no Cloud Portal access** → you cannot complete this flow via
+- **Step 2 says not authorized and no OS portal access** → you cannot complete this flow via
   API alone (no OAuth-initiation endpoint in v4); hand off to someone with Portal access.
 - **Disconnect GitHub** → two endpoints exist and the swagger does not document the difference:
   `DELETE /api/Auth/DeleteAuthorization` and `POST /api/Auth/RemoveAuthorization`. Try
@@ -69,4 +69,4 @@ Base URL: `https://api.seliseblocks.com/release/v4`.
   `…/release/v4/api/Github/webhook` after step 7.
 - End-to-end: push a trivial commit to the deploy branch, then check that a new build appears
   (`GET /api/Build?buildId=…` once you have an id, or via the configure-and-run-build flow's
-  listing steps / Cloud Portal build history).
+  listing steps / OS portal build history).

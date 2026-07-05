@@ -83,7 +83,8 @@ import type {
   SaveMonitorConfigurationRequest, UpdateMonitorConfigurationRequest,
 } from './types';
 
-const PROJECT_KEY = import.meta.env.VITE_PROJECT_SLUG as string;
+// projectKey = your Blocks Key — the same value the `x-blocks-key` header sends.
+const BLOCKS_KEY = import.meta.env.VITE_X_BLOCKS_KEY as string;
 
 // -- Logs -----------------------------------------------------------------
 
@@ -92,7 +93,7 @@ export function useServiceLogs(req: Omit<LogsByDateRequest, 'projectKey'>) {
   return useQuery({
     queryKey: ['monitor', 'logs', req],
     queryFn: () =>
-      post<GetLogsResponse>('/api/Log/GetLogsByDate', { ...req, projectKey: PROJECT_KEY }),
+      post<GetLogsResponse>('/api/Log/GetLogsByDate', { ...req, projectKey: BLOCKS_KEY }),
     enabled: !!req.serviceName, // serviceName is required by the API
   });
 }
@@ -107,7 +108,7 @@ export function useLiveLogs(serviceName: string, enabled: boolean) {
       const data = await get<unknown>('/api/Log/Live', {
         Name: serviceName,           // PascalCase — required
         LastDate: cursor.current,    // advance after inspecting the live shape
-        ProjectKey: PROJECT_KEY,
+        ProjectKey: BLOCKS_KEY,
       });
       // TODO after live inspection: cursor.current = newest entry timestamp from `data`
       return data;
@@ -124,7 +125,7 @@ export function useLiveLogs(serviceName: string, enabled: boolean) {
 export function useTraces(req: Omit<GetTracesRequest, 'projectKey'>) {
   return useQuery({
     queryKey: ['monitor', 'traces', req],
-    queryFn: () => post<unknown>('/api/Trace/GetTraces', { ...req, projectKey: PROJECT_KEY }),
+    queryFn: () => post<unknown>('/api/Trace/GetTraces', { ...req, projectKey: BLOCKS_KEY }),
   });
 }
 
@@ -133,7 +134,7 @@ export function useTrace(traceId: string | undefined) {
   return useQuery({
     queryKey: ['monitor', 'trace', traceId],
     queryFn: () =>
-      get<unknown>('/api/Trace/GetTrace', { TraceId: traceId!, ProjectKey: PROJECT_KEY }),
+      get<unknown>('/api/Trace/GetTrace', { TraceId: traceId!, ProjectKey: BLOCKS_KEY }),
     enabled: !!traceId,
   });
 }
@@ -143,7 +144,7 @@ export function useServiceAnalytics(req: Omit<GetHttpStatusAnalyticsRequest, 'pr
   return useQuery({
     queryKey: ['monitor', 'service-analytics', req],
     queryFn: () =>
-      post<unknown>('/api/Trace/GetServiceAnalytics', { ...req, projectKey: PROJECT_KEY }),
+      post<unknown>('/api/Trace/GetServiceAnalytics', { ...req, projectKey: BLOCKS_KEY }),
     enabled: !!req.startTime && !!req.endTime,
   });
 }
@@ -156,7 +157,7 @@ export function useMonitors(pageNumber = 1, pageSize = 20) {
     queryKey: ['monitor', 'monitors', pageNumber, pageSize],
     queryFn: () =>
       get<unknown>('/api/Monitor/GetMonitorList', {
-        projectKey: PROJECT_KEY,
+        projectKey: BLOCKS_KEY,
         pageNumber,
         pageSize,
       }),
@@ -180,7 +181,7 @@ export function useSaveMonitor() {
     mutationFn: (body: SaveMonitorConfigurationRequest | UpdateMonitorConfigurationRequest) =>
       post<unknown>(
         'itemId' in body && body.itemId ? '/api/Monitor/UpdateMonitor' : '/api/Monitor/SaveMonitor',
-        { ...body, projectKey: PROJECT_KEY },
+        { ...body, projectKey: BLOCKS_KEY },
       ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['monitor', 'monitors'] }),
   });
@@ -250,6 +251,6 @@ export function LogsPanel({ serviceName }: { serviceName: string }) {
 - Documented envelopes carry failures in `errors` (`Record<string, string>`) with `isSuccess:
   false` — surface those alongside HTTP errors.
 - Back-office `/api/Iam/*` hooks (e.g. a `useAccounts` hook wrapping `POST /api/Iam/GetUsers` with
-  `GetUsersRequest`/`GetUsersResponse`) follow the same pattern — but they are Cloud-Portal-grade
+  `GetUsersRequest`/`GetUsersResponse`) follow the same pattern — but they are OS-portal-grade
   admin calls needing an admin token. Never ship them in an end-user app; app auth/profile UI
   belongs to **blocks-iam**.

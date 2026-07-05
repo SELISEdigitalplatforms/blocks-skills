@@ -7,10 +7,9 @@ Env (`.env`) — client-safe values only, prefixed for Vite:
 ```bash
 VITE_BLOCKS_API_URL=https://api.seliseblocks.com
 VITE_X_BLOCKS_KEY=<your x-blocks-key>
-VITE_PROJECT_KEY=<your projectKey>
 ```
 
-Never put passwords or non-public secrets in `VITE_` vars. Tokens come from the auth store at runtime (login/refresh flows: **blocks-setup** / **blocks-iam**).
+These are the only two Vite vars. Where API payloads or queries need a `projectKey`, **projectKey = your Blocks Key** — reuse `VITE_X_BLOCKS_KEY`; there is no separate env var. Never put passwords or non-public secrets in `VITE_` vars. Tokens come from the auth store at runtime (login/refresh flows: **blocks-setup** / **blocks-iam**).
 
 ## Types
 
@@ -101,7 +100,8 @@ async function dataFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-const PROJECT_KEY = import.meta.env.VITE_PROJECT_KEY;
+// projectKey = your Blocks Key (same value as the x-blocks-key header).
+const PROJECT_KEY = import.meta.env.VITE_X_BLOCKS_KEY;
 const qs = (params: Record<string, string | number | boolean | undefined>) =>
   "?" +
   new URLSearchParams(

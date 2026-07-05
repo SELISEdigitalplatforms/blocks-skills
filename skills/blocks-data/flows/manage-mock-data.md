@@ -1,8 +1,8 @@
 # Inventory and delete mock data
 
-Use when checking which collections contain seeded sample records, or cleaning them out before go-live ("remove the demo data", "reset the sample records"). Preconditions: Bearer token and `projectKey`.
+Use when checking which collections contain seeded sample records, or cleaning them out before go-live ("remove the demo data", "reset the sample records"). Preconditions: Bearer token and your Blocks Key (**`projectKey` = your Blocks Key**, the `X_BLOCKS_KEY` value).
 
-**Generation is not exposed in v4.** There is no mock-data *creation* endpoint in the v4 swagger — generate sample data in the Cloud Portal (Data section) or insert real records through the runtime gateway. The API's job here is inventory and deletion.
+**Generation is not exposed in v4.** There is no mock-data *creation* endpoint in the v4 swagger — generate sample data in the OS portal (Data section) or insert real records through the runtime gateway. The API's job here is inventory and deletion.
 
 ## Steps
 
@@ -14,7 +14,7 @@ Use when checking which collections contain seeded sample records, or cleaning t
 3. `DELETE /api/mock-data` — delete mock data for the selected schemas.
    ```json
    {
-     "projectKey": "<projectKey>",
+     "projectKey": "$X_BLOCKS_KEY",
      "schemaNames": ["Product", "Order"]
    }
    ```
@@ -27,4 +27,4 @@ Error paths: 401 → refresh via blocks-setup. 400 `ProblemDetails` → check `s
 ## Verify
 
 - Re-run `GET /api/data-manage/mock-data` — the deleted schemas should disappear from `items` (or show `count: 0`).
-- Sanity-check that real data is untouched: query the affected collections through the runtime gateway or check counts in the Cloud Portal.
+- Sanity-check that real data is untouched: query the affected collections through the runtime gateway or check counts in the OS portal.

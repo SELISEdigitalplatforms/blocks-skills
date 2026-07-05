@@ -198,7 +198,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useBuild, useTriggerBuild } from '../api/hooks';
 
-export function DeployPanel({ repoId, projectKey }: { repoId: string; projectKey: string }) {
+export function DeployPanel({ repoId }: { repoId: string }) {
   const [buildId, setBuildId] = useState<string>();
   const [watching, setWatching] = useState(false);
 
@@ -207,7 +207,8 @@ export function DeployPanel({ repoId, projectKey }: { repoId: string; projectKey
 
   const onDeploy = () =>
     trigger.mutate(
-      { repoId, projectKey },
+      // projectKey = your Blocks Key (same value as VITE_X_BLOCKS_KEY)
+      { repoId, projectKey: import.meta.env.VITE_X_BLOCKS_KEY },
       {
         onSuccess: (res) => {
           if (res.isSuccess && res.buildId) {

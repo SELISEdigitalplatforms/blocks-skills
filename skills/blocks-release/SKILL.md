@@ -11,7 +11,7 @@ Base URL: `https://api.seliseblocks.com/release/v4`
 
 ## Prerequisites
 
-- `blocks-setup` skill: env vars (`BLOCKS_API_URL`, `X_BLOCKS_KEY`, `PROJECT_SLUG`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`) and how to obtain/refresh a Bearer token.
+- `blocks-setup` skill: env vars (`BLOCKS_API_URL`, `X_BLOCKS_KEY`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`) and how to obtain/refresh a Bearer token.
 - Every request needs the `x-blocks-key` header; authenticated operations also need `Authorization: Bearer <access_token>`. One exception: `POST /api/Github/webhook` takes `x-blocks-key` as a **query parameter** (it is the receiver GitHub calls, and GitHub cannot set custom headers).
 - A GitHub account must be authorized before any `/api/Github/*` or build-trigger call works — see `flows/connect-github.md`.
 
@@ -64,8 +64,8 @@ Base URL: `https://api.seliseblocks.com/release/v4`
 - **`manual` vs `run-build`.** Both accept the same `RepoBuildRequest` body; the swagger does not document how they differ. Prefer `POST /api/Build/manual` for programmatic triggering (it is the one with a documented response including `buildId`); test `run-build` against your project before relying on it.
 - **Two disconnect endpoints.** `DELETE /api/Auth/DeleteAuthorization` and `POST /api/Auth/RemoveAuthorization` both exist; the difference is not documented. See flows/connect-github.md.
 - **Webhook receiver ≠ webhook creator.** You call `CreateWebhook`; GitHub calls `POST /api/Github/webhook?x-blocks-key=…`. You normally never call the latter yourself.
-- **OAuth initiation is not in the swagger.** Only the code exchange (`GET /api/Auth/AccessToken?code=…`) is exposed. Start the GitHub consent flow from Cloud Portal.
-- All request bodies are camelCase JSON (`repoId`, `projectKey`, `hostingProviderId`) — this service does **not** use the snake_case style of the iam login payloads.
+- **OAuth initiation is not in the swagger.** Only the code exchange (`GET /api/Auth/AccessToken?code=…`) is exposed. Start the GitHub consent flow from OS portal.
+- All request bodies are camelCase JSON (`repoId`, `projectKey`, `hostingProviderId`) — this service does **not** use the snake_case style of the iam login payloads. `projectKey` = your Blocks Key (`X_BLOCKS_KEY`).
 
 ## Files
 

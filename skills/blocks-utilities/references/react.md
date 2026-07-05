@@ -9,7 +9,6 @@ Types: copy the generated code block from [contracts.md](../contracts.md) into `
 ```env
 VITE_BLOCKS_API_URL=https://api.seliseblocks.com
 VITE_X_BLOCKS_KEY=<your project's blocks key>
-VITE_PROJECT_SLUG=<projectShortKey>
 ```
 
 Never put credentials or non-public secrets in `VITE_` vars. Login/refresh and the auth store come from **blocks-setup** — this guide assumes a Zustand store exposing `accessToken`.
@@ -21,7 +20,8 @@ Never put credentials or non-public secrets in `VITE_` vars. Login/refresh and t
 import { useAuthStore } from "@/stores/auth"; // from blocks-setup integration
 
 const BASE = `${import.meta.env.VITE_BLOCKS_API_URL}/utilities/v4`;
-export const PROJECT_KEY = import.meta.env.VITE_PROJECT_SLUG as string;
+// projectKey = your Blocks Key — the same value sent in the x-blocks-key header.
+export const PROJECT_KEY = import.meta.env.VITE_X_BLOCKS_KEY as string;
 
 export class BlocksApiError extends Error {
   constructor(

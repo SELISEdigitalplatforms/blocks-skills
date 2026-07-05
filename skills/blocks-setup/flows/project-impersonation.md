@@ -1,7 +1,7 @@
-# Enter a project context via impersonation (cloud login → tenant impersonation)
+# Enter a project context via impersonation (login → tenant impersonation)
 
 SELISE Blocks is multi-tenant: **each project is a tenant**, and to work *inside* a project your
-session must be impersonated into that project's tenant. The pattern: log in once at cloud level,
+session must be impersonated into that project's tenant. The pattern: log in once,
 discover the project's `tenantId`, then `POST /api/auth/impersonate` with `targeted_tenant_id` —
 the resulting session is project-scoped. Working in a different project means impersonating again
 with that project's tenant id.
@@ -10,41 +10,37 @@ Endpoint shapes: `../../blocks-iam/endpoints.md#authentication` (impersonate) an
 `../../blocks-os/endpoints.md#project` (project discovery). Several responses in this flow are
 **not documented in swagger** — inspect the live payloads before wiring code to field names.
 
-Preconditions: activated cloud account credentials; `.env` per
+Preconditions: activated account credentials; `.env` per
 [bootstrap-project](bootstrap-project.md).
 
 ## Steps
 
-### 1. Cloud login — `POST /iam/v4/api/auth/login`
+### 1. Login — `POST /iam/v4/api/auth/login`
 
-Same call as bootstrap-project step 3, but with the **cloud-level `client_id`** instead of a
-project slug:
+The standard login from bootstrap-project step 3 — `{ username, password }` with the
+`x-blocks-key` header, no project identifier in the body:
 
 ```bash
 curl -s -X POST "$BLOCKS_API_URL/iam/v4/api/auth/login" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
   -H "Content-Type: application/json" \
   -d "{
-    \"client_id\": \"$BLOCKS_CLOUD_CLIENT_ID\",
     \"username\": \"$BLOCKS_USERNAME\",
     \"password\": \"$BLOCKS_PASSWORD\"
   }"
 ```
 
-The cloud `client_id` value comes from your Cloud Portal / SELISE onboarding — **verify in portal
-UI** (it is not the project slug). Which `x-blocks-key` a cloud-level login expects (your
-project-environment key, as shown, or a cloud-level one) is not documented in swagger —
-**verify against your project**. Captcha/MFA branches behave exactly as in bootstrap-project.
-Response 200 is undocumented in swagger — keep the access + refresh tokens (cloud-scoped).
+Captcha/MFA branches behave exactly as in bootstrap-project.
+Response 200 is undocumented in swagger — keep the access + refresh tokens.
 
 ### 2. Discover the project's tenant — `GET /os/v4/api/Project/Gets`
 
-With the cloud token:
+With the token from step 1:
 
 ```bash
 curl -s "$BLOCKS_API_URL/os/v4/api/Project/Gets?Filter.SearchKey=<project name>" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
-  -H "Authorization: Bearer $CLOUD_ACCESS_TOKEN"
+  -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
 
 The documented response lists projects with, per project: `itemId`, `name`, **`tenantId`**,
@@ -63,7 +59,7 @@ The documented response lists projects with, per project: `itemId`, `name`, **`t
 ```bash
 curl -s -X POST "$BLOCKS_API_URL/iam/v4/api/auth/impersonate" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
-  -H "Authorization: Bearer $CLOUD_ACCESS_TOKEN" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
     \"targeted_tenant_id\": \"$PROJECT_TENANT_ID\"
@@ -77,8 +73,8 @@ is not documented — start with `targeted_tenant_id` alone and **verify against
 
 Response 200 is **not documented in swagger** — expect project-scoped access/refresh tokens;
 inspect the live payload for exact field names. From here on, use the impersonated token for all
-project work (data schemas, localization keys, workflows, …) — the cloud token is only for
-cloud-level operations like step 2.
+project work (data schemas, localization keys, workflows, …) — the pre-impersonation token is
+only for account-level operations like step 2.
 
 ### 4. Confirm the impersonated session
 
@@ -102,7 +98,7 @@ session; then impersonate again (step 3) with the next project's `tenantId`.
 ## Verify
 
 - `GET /api/auth/me` with the impersonated token returns 200 and its claims reflect the project
-  tenant (compare against the cloud-token `me` response — inspect live, shapes undocumented).
+  tenant (compare against the pre-impersonation `me` response — inspect live, shapes undocumented).
 - A project-scoped call succeeds — e.g. `GET /data/v4/api/schemas` (blocks-data) returns the
   project's schemas instead of an authorization error.
 

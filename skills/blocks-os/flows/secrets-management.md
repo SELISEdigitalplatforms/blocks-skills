@@ -2,7 +2,7 @@
 
 Keep server-side configuration values (API keys, third-party credentials, feature settings) in named secret bags per project, and read them back at runtime.
 
-Preconditions: `x-blocks-key` + bearer token; `projectKey`. Secrets are for **backend** consumption — never fetch them from browser code or expose them via `VITE_` vars.
+Preconditions: `x-blocks-key` + bearer token; `projectKey` (projectKey = your Blocks Key — the same value as `x-blocks-key`). Secrets are for **backend** consumption — never fetch them from browser code or expose them via `VITE_` vars.
 
 ## Steps
 

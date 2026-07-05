@@ -19,7 +19,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
 
    ```json
    {
-     "projectKey": "<PROJECT_SLUG>",
+     "projectKey": "<X_BLOCKS_KEY>",       // projectKey = your Blocks Key (x-blocks-key value)
      "name": "checkout-api",
      "url": "https://myapp.example.com/healthz",
      "monitorType": "<type>",
@@ -41,7 +41,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
 
    - `successHttpResponseCodes` is a **`string[]`** (`["200", "204"]`), not numbers.
    - The valid string values for `monitorType`, `protocolType`, `monitorSourceType`, and `regions`
-     are not enumerated in swagger — create one monitor in Cloud Portal first and read the values
+     are not enumerated in swagger — create one monitor in OS portal first and read the values
      back via step 2, or verify live.
    - `customHttpHeaders` / `customPayload` are single strings (likely serialized JSON) — verify the
      expected encoding live.
@@ -50,11 +50,11 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
      `GET /api/Monitor/IsExternalServiceConfigured?externalServiceId=<id>`.
    - Response undocumented — if it doesn't return the new id, get it from step 2.
 
-2. `GET /api/Monitor/GetMonitorList?projectKey=<PROJECT_SLUG>&pageNumber=1&pageSize=20` — list
+2. `GET /api/Monitor/GetMonitorList?projectKey=<X_BLOCKS_KEY>&pageNumber=1&pageSize=20` — list
    monitors (optionally add `monitorSourcetype=<source-type>`). Find your monitor and keep its id
    — this is the `monitorId`/`itemId` every other call needs.
 
-   Related: `GET /api/Monitor/GetMonitorListByRepoId?projectKey=<PROJECT_SLUG>&repoId=<id>` when
+   Related: `GET /api/Monitor/GetMonitorListByRepoId?projectKey=<X_BLOCKS_KEY>&repoId=<id>` when
    you linked the monitor to a repo.
 
 3. Inspect status and history (all camelCase query params; all responses undocumented):

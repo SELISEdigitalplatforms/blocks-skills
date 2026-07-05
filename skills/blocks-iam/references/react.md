@@ -15,9 +15,10 @@ field names). Exact endpoint shapes: [endpoints.md](../endpoints.md).
 # .env — client-safe values only (VITE_ vars ship in the bundle)
 VITE_BLOCKS_API_URL=https://api.seliseblocks.com
 VITE_X_BLOCKS_KEY=<your x-blocks-key>
-VITE_PROJECT_SLUG=<projectShortKey, e.g. dbahjq>   # this is the client_id
 ```
 
+These two are the only client-side vars — login/refresh take no `client_id` or
+project identifier; the `x-blocks-key` header carries the project context.
 Never put `BLOCKS_USERNAME` / `BLOCKS_PASSWORD` or any non-public secret into a
 `VITE_` var. See `blocks-setup` for the full env convention.
 
@@ -65,7 +66,6 @@ import type { RefreshRequest } from './types'; // from contracts.md
 
 const BASE = `${import.meta.env.VITE_BLOCKS_API_URL}/iam/v4`;
 const KEY = import.meta.env.VITE_X_BLOCKS_KEY;
-export const CLIENT_ID = import.meta.env.VITE_PROJECT_SLUG;
 
 async function rawFetch(path: string, init: RequestInit = {}) {
   const { tokens } = useAuthStore.getState();
@@ -90,7 +90,6 @@ async function tryRefresh(): Promise<boolean> {
   refreshing ??= (async () => {
     const body: RefreshRequest = {
       refresh_token: tokens.refresh_token, // snake_case — do not rename
-      client_id: CLIENT_ID,
     };
     const res = await fetch(`${BASE}/api/auth/refresh`, {
       method: 'POST',
@@ -130,7 +129,7 @@ with it.
 ```ts
 // src/features/auth/hooks.ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { iamFetch, CLIENT_ID } from './client';
+import { iamFetch } from './client';
 import { useAuthStore, type TokenSet } from './store';
 import type {
   EmbeddedLoginRequest,
@@ -143,14 +142,14 @@ import type {
   BaseResponse,
 } from './types'; // copied from contracts.md
 
-/** POST /api/auth/login — body is snake_case (client_id, mfa_id, captcha_code…). */
+/** POST /api/auth/login — body is snake_case (username, mfa_id, captcha_code…). */
 export function useLogin() {
   const setTokens = useAuthStore((s) => s.setTokens);
   return useMutation({
-    mutationFn: (input: Omit<EmbeddedLoginRequest, 'client_id'>) =>
+    mutationFn: (input: EmbeddedLoginRequest) =>
       iamFetch<TokenSet>('/api/auth/login', {
         method: 'POST',
-        body: JSON.stringify({ client_id: CLIENT_ID, ...input }),
+        body: JSON.stringify(input),
       }),
     onSuccess: (tokens) => setTokens(tokens),
   });

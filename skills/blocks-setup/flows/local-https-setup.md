@@ -1,49 +1,40 @@
-# Serve local development over HTTPS (mkcert + Vite)
+# Serve local development over HTTPS (openssl + Vite)
 
 SELISE Blocks expects browser apps to run on **HTTPS origins even in local development** — auth
 cookies are set as Secure cookies, and several flows (login redirects, cookie-domain matching)
-misbehave or silently fail on plain `http://localhost`. Developers often don't have a local SSL
-setup, so create one once per machine with `mkcert` (a locally-trusted CA — no browser warnings,
-no self-signed-cert clicking).
+misbehave or silently fail on plain `http://localhost`. `openssl` (already installed on macOS and
+Linux, and available in Git Bash on Windows) is all you need: generate a self-signed certificate
+once per project and point Vite at it.
 
-Run once per machine (CA install) + once per project (cert files). No Blocks API calls in this
-flow; it is pure local tooling.
+No Blocks API calls in this flow; it is pure local tooling.
 
 ## Steps
 
-### 1. Install mkcert and the local CA (once per machine)
-
-```bash
-# macOS
-brew install mkcert
-# Windows
-choco install mkcert     # or: scoop bucket add extras && scoop install mkcert
-# Linux
-sudo apt install libnss3-tools && brew install mkcert   # or grab the release binary
-
-mkcert -install   # creates and trusts a local CA (system + browser trust stores)
-```
-
-Restart the browser after `mkcert -install` so it picks up the new CA.
-
-### 2. Generate a cert for your dev origin (once per project)
+### 1. Generate a self-signed certificate (once per project)
 
 ```bash
 cd <your-app>
 mkdir -p .cert
-mkcert -key-file .cert/dev-key.pem -cert-file .cert/dev-cert.pem localhost 127.0.0.1 ::1
+
+openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 365 \
+  -keyout .cert/dev-key.pem -out .cert/dev-cert.pem \
+  -subj "/CN=localhost" \
+  -addext "subjectAltName=DNS:localhost,IP:127.0.0.1,IP:::1"
 ```
 
 Add `.cert/` to `.gitignore` — certs are per-machine, never committed.
 
 **Optional — named local domain.** If your project's cookie configuration requires a real domain
-(rather than `localhost`), add a hosts entry and include the name in the cert:
+(rather than `localhost`), add a hosts entry and include the name in the cert's SAN list:
 
 ```bash
 # /etc/hosts (or C:\Windows\System32\drivers\etc\hosts)
 127.0.0.1  myapp.dev.local
 
-mkcert -key-file .cert/dev-key.pem -cert-file .cert/dev-cert.pem myapp.dev.local localhost 127.0.0.1
+openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 365 \
+  -keyout .cert/dev-key.pem -out .cert/dev-cert.pem \
+  -subj "/CN=myapp.dev.local" \
+  -addext "subjectAltName=DNS:myapp.dev.local,DNS:localhost,IP:127.0.0.1"
 ```
 
 Whether a named domain is needed — and what it must match — depends on your project's cookie
@@ -51,7 +42,7 @@ domain settings (see [project-impersonation.md](project-impersonation.md) step 2
 `cookieDomain` / `applicationDomain` from `GET /os/v4/api/Project/Gets`, and the `blocks-monitor`
 skill for `POST /api/Domain/Configure`). **Verify against your project.**
 
-### 3. Point Vite at the cert
+### 2. Point Vite at the cert
 
 ```ts
 // vite.config.ts
@@ -69,7 +60,26 @@ export default defineConfig({
 });
 ```
 
-(Alternative: `vite-plugin-mkcert` automates steps 2–3, at the cost of a dev dependency.)
+### 3. Trust the certificate (or accept the warning)
+
+A self-signed cert triggers a one-time browser warning ("Your connection is not private"). Either
+click through it (Advanced → Proceed — fine for local dev), or trust the cert system-wide to make
+the warning disappear:
+
+```bash
+# macOS — add to the System keychain as trusted
+sudo security add-trusted-cert -d -r trustRoot \
+  -k /Library/Keychains/System.keychain .cert/dev-cert.pem
+
+# Windows (elevated prompt) — add to Trusted Root Certification Authorities
+certutil -addstore -f Root .cert\dev-cert.pem
+
+# Linux (Debian/Ubuntu system store; browsers may keep their own store)
+sudo cp .cert/dev-cert.pem /usr/local/share/ca-certificates/blocks-dev.crt && sudo update-ca-certificates
+```
+
+Restart the browser after trusting. Guide the user: ask which OS they're on, give them the one
+command for it, and have them confirm the padlock shows before moving on.
 
 ### 4. Run and use the HTTPS origin everywhere
 
@@ -78,12 +88,12 @@ npm run dev   # now serves https://localhost:5173
 ```
 
 Use the `https://` origin consistently — in the browser, in any OAuth/redirect URLs you register,
-and in portal settings that ask for your app's origin (verify in portal UI).
+and in portal settings that ask for your app's origin (verify in the OS portal UI).
 
 ## Verify
 
-- Opening `https://localhost:5173` shows the padlock with **no certificate warning** (if it warns,
-  `mkcert -install` didn't take — rerun it and restart the browser).
+- Opening `https://localhost:5173` loads the app over HTTPS (padlock if trusted; a click-through
+  warning otherwise is acceptable for local dev).
 - Log in through the app: the Blocks auth calls succeed and any cookies the platform sets are
   visible under DevTools → Application → Cookies for your https origin.
 
@@ -91,7 +101,8 @@ and in portal settings that ask for your app's origin (verify in portal UI).
 
 | Symptom | Fix |
 |---|---|
-| Browser warns about the cert | Rerun `mkcert -install`, restart browser; confirm the cert covers the exact hostname you're using |
+| Browser still warns after trusting | The cert on disk isn't the one you trusted (regenerated since?) — re-run the trust command; restart the browser; confirm the hostname you're using is in the cert's SAN list |
+| `openssl: unknown option -addext` | OpenSSL < 1.1.1 (common with macOS LibreSSL). Use `brew install openssl` and its binary, or generate with a config file that sets `subjectAltName` |
 | Auth cookies never appear / session lost on reload | You're on plain http, or the cookie domain doesn't match your origin — use this flow's https origin; check project `cookieDomain` (see project-impersonation step 2) |
-| Works in Chrome, fails in Firefox | Firefox has its own trust store — `mkcert -install` handles it, but only if `libnss3-tools`/`certutil` was present; reinstall and rerun |
-| CI / containers | mkcert's CA doesn't exist there — this flow is for local dev only; deployed environments get real certs (see `blocks-release` custom-domains flow) |
+| Cert expired after a year | Re-run step 1 (`-days 365`) and re-trust |
+| CI / containers | Self-signed local certs don't belong there — this flow is for local dev only; deployed environments get real certs (see `blocks-release` custom-domains flow) |

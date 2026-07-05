@@ -34,7 +34,7 @@ For hand-authored files (SKILL.md, flows, references):
 - Never use old v1 routes (`/idp/v1/`, `/uds/v1/`, `/uilm/v1/`, `/lmt/`, `/deployment/v1/` are all dead). Old names may appear only as recognition aliases in SKILL.md descriptions.
 - Many endpoints have **no response schema in swagger**. Say so explicitly ("response shape not documented in swagger — inspect the live response") and type them `unknown` in react.md. Do not fabricate response JSON.
 - Integer enums have no member names in swagger. Reference the numeric union from contracts.md and flag any interpretation as unverified.
-- If a logical step has no v4 endpoint, say so honestly ("not exposed in v4 — do this in Cloud Portal instead"). Do not invent routes.
+- If a logical step has no v4 endpoint, say so honestly ("not exposed in v4 — do this in OS portal instead"). Do not invent routes.
 
 ## Adding or improving a flow
 

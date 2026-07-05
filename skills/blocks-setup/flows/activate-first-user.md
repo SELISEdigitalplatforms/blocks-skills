@@ -4,7 +4,7 @@ When the developer account created during [bootstrap-project](bootstrap-project.
 login despite correct credentials, the usual cause is that it never completed activation. This flow
 takes an unactivated account to a working login: validate the code → activate → (resend if needed).
 
-Preconditions: the user exists in the project environment (created in the Cloud Portal or via the
+Preconditions: the user exists in the project environment (created in the OS portal or via the
 `blocks-iam` user endpoints); `.env` with `BLOCKS_API_URL` and `X_BLOCKS_KEY`. No user token needed —
 activation runs before the user can log in.
 
@@ -66,7 +66,7 @@ curl -s -X POST "$BLOCKS_API_URL/iam/v4/api/auth/resend-activation" \
   -d '{ "userId": "<the user'\''s id>" }'
 ```
 
-Get the `userId` from the Cloud Portal user list, or via the `blocks-iam` user query endpoints
+Get the `userId` from the OS portal user list, or via the `blocks-iam` user query endpoints
 (`POST /api/iam/users`). Then repeat steps 2–3 with the code from the **newest** email.
 
 - 400 — user not found **or already activated**. If already activated, the login 401 has a

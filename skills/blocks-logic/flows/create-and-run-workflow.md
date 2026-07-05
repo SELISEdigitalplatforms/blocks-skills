@@ -28,7 +28,7 @@ runs start from a trigger node (webhook) or node-by-node via `StepExecute`.
    `settings`, `isPublished`, `nodeOutputSchemas`.
    The catalog of valid node `category`/`type`/`version` values and per-node `parameters`
    is not published in the swagger. Practical approach: build one workflow of each kind in
-   the Cloud Portal designer, read it back with
+   the OS portal designer, read it back with
    `GET /api/Workflow/Get?WorkflowId=...&ProjectKey=...`, and reuse those node shapes.
    Include a webhook-trigger node if you want to run the workflow over HTTP.
 

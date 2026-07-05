@@ -4,12 +4,12 @@ Configure MFA for a project and drive the platform OTP engine: generate a one-ti
 
 Scope note: this is the **platform** MFA controller (PascalCase `/api/Mfa/*`). The login-time MFA handshake inside applications — where `POST /iam/v4/api/auth/login` returns an MFA requirement and you pass `mfa_id`/`mfa_code`/`mfa_type` back — is owned by **blocks-iam** (lowercase `/api/mfa/*`). Use this flow when configuring MFA for a project or building a custom verification step (e.g. step-up confirmation for a sensitive action, migration verification).
 
-Preconditions: `x-blocks-key` + bearer token; the target user's `userId` (from blocks-iam, e.g. `GET /iam/v4/api/auth/me`); `projectKey` of the project.
+Preconditions: `x-blocks-key` + bearer token; the target user's `userId` (from blocks-iam, e.g. `GET /iam/v4/api/auth/me`); `projectKey` of the project (projectKey = your Blocks Key — the same value as `x-blocks-key`).
 
 ## Steps
 
 1. **`GET /api/Mfa/Get`** — read the project's current MFA configuration ([endpoints.md#mfa](../endpoints.md#mfa)). Response: `{ enableMfa, userMfaType, mfaTemplate }`. `userMfaType` is an array of `0 | 1 | 2` — the member names are not published in swagger; observe your project's values before assuming meanings.
-2. **`POST /api/Mfa/Save`** — enable/adjust MFA: `{ enableMfa: true, userMfaType: [...], mfaTemplate: { templateName, templateId }, projectKey }`. `mfaTemplate` points at the message template used to deliver codes (templates are managed in blocks-utilities / Cloud Portal). Response is `BaseResponse` — check `isSuccess`.
+2. **`POST /api/Mfa/Save`** — enable/adjust MFA: `{ enableMfa: true, userMfaType: [...], mfaTemplate: { templateName, templateId }, projectKey }`. `mfaTemplate` points at the message template used to deliver codes (templates are managed in blocks-utilities / OS portal). Response is `BaseResponse` — check `isSuccess`.
 3. **`POST /api/Mfa/GenerateOTP`** — start a cycle: `{ userId, projectKey, mfaType, sendPhoneNumberAsEmailDomain }`. `mfaType` is `0–4` (int enum, unverified meanings). Response: `{ mfaId, isSuccess, errors }`. Keep `mfaId` — it identifies this OTP cycle. The code itself is delivered to the user out-of-band (per template/channel), never returned by the API.
 4. **(Optional) `POST /api/Mfa/ResendOtp`** — `{ mfaId, sendPhoneNumberAsEmailDomain }` if the code didn't arrive. Returns a `mfaId` again — use the returned value for subsequent calls.
 5. **`POST /api/Mfa/VerifyOTP`** — `{ verificationCode: "<user input>", mfaId, authType, projectKey, isFromTokenCall }`. `authType` uses the same `0–4` union as `mfaType`. Response: `{ isValid, userId, isSuccess, errors }`. Treat the cycle as passed only when `isSuccess && isValid`.

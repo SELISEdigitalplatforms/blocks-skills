@@ -2,7 +2,7 @@
 
 Use this when a project needs its language list created or changed: adding languages, renaming/correcting a language's code, choosing the default (source) language, or removing a language. Do this **before** creating translation keys — every key resource's `culture` must match a `languageCode` registered here, and machine translation needs a default language to translate *from*.
 
-Preconditions: `x-blocks-key` + Bearer token (see blocks-setup); the project's short key for `projectKey`.
+Preconditions: `x-blocks-key` + Bearer token (see blocks-setup). projectKey = your Blocks Key — pass the same `$X_BLOCKS_KEY` value wherever `projectKey` / `ProjectKey` is required.
 
 ## Steps
 

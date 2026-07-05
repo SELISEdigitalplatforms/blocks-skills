@@ -1,6 +1,6 @@
 # Upload and manage files (DMS)
 
-Use for any file storage task on the data service: upload via pre-signed URL, download, browse folders, delete. Preconditions: Bearer token and `projectKey`. All routes here are PascalCase (`/api/Files/*`) and do **not** use the standard data-service envelope — errors come back as `Record<string, string>` ([endpoints.md#files](../endpoints.md#files)).
+Use for any file storage task on the data service: upload via pre-signed URL, download, browse folders, delete. Preconditions: Bearer token and your Blocks Key (**`projectKey` = your Blocks Key**, the `X_BLOCKS_KEY` value). All routes here are PascalCase (`/api/Files/*`) and do **not** use the standard data-service envelope — errors come back as `Record<string, string>` ([endpoints.md#files](../endpoints.md#files)).
 
 ## Steps
 
@@ -8,7 +8,7 @@ Use for any file storage task on the data service: upload via pre-signed URL, do
    ```json
    {
      "name": "invoice-2026-07.pdf",
-     "projectKey": "<projectKey>",
+     "projectKey": "$X_BLOCKS_KEY",
      "accessModifier": "Private",
      "parentDirectoryId": null,
      "tags": "invoices",
@@ -26,7 +26,7 @@ Use for any file storage task on the data service: upload via pre-signed URL, do
 3. `POST /api/Files/UploadFile` — register/commit file metadata in DMS.
    ```json
    {
-     "projectKey": "<projectKey>",
+     "projectKey": "$X_BLOCKS_KEY",
      "upload": [
        {
          "itemId": "<fileId from step 1>",
@@ -41,13 +41,13 @@ Use for any file storage task on the data service: upload via pre-signed URL, do
    ```
    Response is `DmsResponse` — `result` is untyped in swagger and the linkage field for the pre-signed `fileId` (`itemId` vs `fileStorageId`) is not documented; the body above follows the legacy convention. **Verify against the live response**, and treat step 4 as the source of truth for whether the upload is fully registered. If `GetFile` in step 4 already returns your file, this step may be optional for plain uploads.
 
-4. `GET /api/Files/GetFile?FileId=<fileId>&ProjectKey=<projectKey>` — fetch the file record; `url` is the download link. Note the **PascalCase query params** (`FileId`, `Version`, `ConfigurationName`, `ProjectKey`). For several files at once: `POST /api/Files/GetFiles` with `{ "fileIds": ["<fileId>", …], "projectKey": "<projectKey>" }`.
+4. `GET /api/Files/GetFile?FileId=<fileId>&ProjectKey=$X_BLOCKS_KEY` — fetch the file record; `url` is the download link. Note the **PascalCase query params** (`FileId`, `Version`, `ConfigurationName`, `ProjectKey`). For several files at once: `POST /api/Files/GetFiles` with `{ "fileIds": ["<fileId>", …], "projectKey": "$X_BLOCKS_KEY" }`.
 
 5. Ongoing management, as needed:
    - Browse/paginate: `POST /api/Files/GetFilesInfo` with `{ page, pageSize, sort: { property, isDescending }, filter: { name?, additionalProperties? }, projectKey }` → `data[]` + `totalCount`.
    - Folders: `POST /api/Files/CreateFolder` (`artifactName` = folder name, `parentId` to nest); list a folder with `POST /api/Files/GetDmsFileAndFolder` (`parentId`, `skip`/`take`, `searchKey`); remove with `POST /api/Files/DeleteFolder` (`folderId` required).
    - Attach custom key-values: `POST /api/Files/updateFileAdditionalInfo` (`itemId`, `additionalProperties`) — response not documented in swagger.
-   - Delete a file: `POST /api/Files/DeleteFile` with `{ "fileId": "<fileId>", "projectKey": "<projectKey>" }` → `{ isSuccess }`.
+   - Delete a file: `POST /api/Files/DeleteFile` with `{ "fileId": "<fileId>", "projectKey": "$X_BLOCKS_KEY" }` → `{ isSuccess }`.
 
 Alternative for small/simple cases: `POST /api/Files/UploadFileToLocalStorage` uploads directly to local storage — the request body is **not documented in swagger** (likely multipart; verify live). Response gives `fileId` + `fileVersion`.
 
@@ -55,5 +55,5 @@ Error paths: 401 → refresh via blocks-setup. A failed pre-signed PUT (expired 
 
 ## Verify
 
-- `GET /api/Files/GetFile?FileId=<fileId>&ProjectKey=<projectKey>` → `isSuccess: true`, a non-null `url`, correct `name` and `sizeInBytes`. Download the `url` and compare bytes for a full round-trip check.
+- `GET /api/Files/GetFile?FileId=<fileId>&ProjectKey=$X_BLOCKS_KEY` → `isSuccess: true`, a non-null `url`, correct `name` and `sizeInBytes`. Download the `url` and compare bytes for a full round-trip check.
 - `POST /api/Files/GetFilesInfo` filtered by `name` → the file appears with the expected `currentVersion`.

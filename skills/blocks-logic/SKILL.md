@@ -14,11 +14,11 @@ CRUD for project mail (SMTP) configurations. Base URL: `https://api.seliseblocks
 ## Prerequisites
 
 - Complete the `blocks-setup` skill first: env vars (`BLOCKS_API_URL`, `X_BLOCKS_KEY`,
-  `PROJECT_SLUG`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`) and a Bearer access token.
+  `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`) and a Bearer access token.
 - Every request needs the `x-blocks-key` header; authenticated operations also need
   `Authorization: Bearer <access_token>`.
-- `projectKey` in request bodies and query strings is your project's short key / slug —
-  the same value as `client_id` at login (`PROJECT_SLUG`).
+- `projectKey` in request bodies and query strings is your Blocks Key (projectKey =
+  your Blocks Key) — the same value sent in the `x-blocks-key` header; use `$X_BLOCKS_KEY`.
 - GitHub deployment flows additionally require a GitHub account with access to the target
   repos, authorized once via OAuth (see the deployment flow).
 
@@ -45,7 +45,7 @@ CRUD for project mail (SMTP) configurations. Base URL: `https://api.seliseblocks
   position `{x, y}`, parameters, settings) connected by **edges**
   (source/target + sourceHandle/targetHandle). Stored per `projectKey`; has a draft state
   and an `isPublished` flag. The catalog of node categories/types is not published in the
-  swagger — build one workflow in the Cloud Portal designer and read it back with
+  swagger — build one workflow in the OS portal designer and read it back with
   `GET /api/Workflow/Get` to learn the shapes your project uses.
 - **Version** — a named snapshot of a workflow (`CreateVersion`), listable
   (`GetVersions`), readable (`GetWorkflowByVersion`), publishable (`PublishVersion` /

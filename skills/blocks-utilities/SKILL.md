@@ -11,7 +11,7 @@ The utilities service (`https://api.seliseblocks.com/utilities/v4`) is the SELIS
 
 ## Prerequisites
 
-- Environment + tokens: see the **blocks-setup** skill (`BLOCKS_API_URL`, `X_BLOCKS_KEY`, `PROJECT_SLUG`, credentials, obtaining/refreshing a Bearer token).
+- Environment + tokens: see the **blocks-setup** skill (`BLOCKS_API_URL`, `X_BLOCKS_KEY`, `BLOCKS_USERNAME`/`BLOCKS_PASSWORD`, obtaining/refreshing a Bearer token).
 - Every request needs `x-blocks-key: <X_BLOCKS_KEY>`; authenticated operations also need `Authorization: Bearer <access_token>`. `MagicLink/Invoke/{linkId}` is designed to be hit publicly by link recipients.
 - PDF flows reference files by **file ID** — HTML sources and output PDFs live in Storage, which is owned by the **blocks-os** skill. Upload inputs there first.
 
@@ -39,7 +39,7 @@ The utilities service (`https://api.seliseblocks.com/utilities/v4`) is the SELIS
 - **PDF engine** — numeric selector on PdfGenerator requests. Per the swagger docs: `1` = PuppeteerSharp (default for HTML→PDF, best modern CSS/JS), `2` = PdfSharpCore (free; merge/stamp only — returns null for HTML→PDF), `3` = Aspose, `4` = WkHtmlToPdf (deprecated). Merge and stamp need `2` or `3`; engine `1` returns null there.
 - **Template engine PDFs** — `CreatePdfsFromHtmlUsingTemplateEngine*` fill an HTML template (`templateFileId`) with data from `filteredSqlQueryDatas` (entity + filter query) and `metaDataList` key/values before rendering.
 - **EmailTemplate** — a stored template document (`name`, `templateSubject`, `templateBody`, `jsonContent`, `language`, `mailConfigurationId`) managed via `/api/Template/*` here.
-- **SendMail purpose** — `POST /api/Mail/Send` and `SendToAny` take a `purpose` string plus `subjectDataContext`/`bodyDataContext` placeholder maps. How `purpose` resolves to a configured template is not documented in swagger — it matches the mail purpose configured for your project (Cloud Portal mail settings); verify against your project.
+- **SendMail purpose** — `POST /api/Mail/Send` and `SendToAny` take a `purpose` string plus `subjectDataContext`/`bodyDataContext` placeholder maps. How `purpose` resolves to a configured template is not documented in swagger — it matches the mail purpose configured for your project (OS portal mail settings); verify against your project.
 - **Sequence** — a named, monotonically increasing counter identified by a free-form `context` string (e.g. `"invoice"`). `Next` returns decimal, `NextHex` hexadecimal; `Reset` restarts a context at a chosen value.
 - **Offline notification** — a stored notification targeted at `userIds`, `roles`, or `subscriptionFilters` (context/actionName/value triples), pushed via `POST /api/Notifier/Notify` and read via `GetNotifications`.
 
@@ -57,7 +57,7 @@ The utilities service (`https://api.seliseblocks.com/utilities/v4`) is the SELIS
 
 - **Headers:** `x-blocks-key` on every call; `Authorization: Bearer <token>` for everything except public link invocation. 401 → refresh via blocks-setup.
 - **Envelope:** most responses are `BaseResponse`-shaped (`isSuccess`, `errors`) plus endpoint-specific fields; many add `errorMessage`. Always check `isSuccess` — HTTP 200 does not mean the operation succeeded.
-- **`projectKey` everywhere:** nearly every request accepts `projectKey` (query param `ProjectKey` on GETs). Pass your project key (`PROJECT_SLUG`) explicitly for predictable multi-tenant behavior.
+- **`projectKey` everywhere:** nearly every request accepts `projectKey` (query param `ProjectKey` on GETs). projectKey = your Blocks Key — pass the same value as `X_BLOCKS_KEY` explicitly for predictable multi-tenant behavior.
 - **Pagination:** MagicLink and Mail lists use `PageNumber` (0-based) + `PageSize`; Notifier uses `Page` + `PageSize`; Template uses `PageNumber` + `PageSize` with `SortProperty`/`IsDescending`. Responses carry `totalCount` (or `totalNotificationsCount`).
 - **PDF generation is asynchronous:** `CreatePdfsFromHtml*` return only `messageCoRelationId` + `message` — never the PDF bytes. You supply `outputPdfFileId`; fetch the finished file from Storage (blocks-os) under that ID. The exact completion signal is not documented in swagger — bulk requests expose `raiseEventOnProcessEnding`/`notifyOnProcessEnding`; otherwise poll Storage.
 - **Undocumented responses:** `Mail/Send`, `Mail/SendToAny`, `Mail/GetMailBoxMail(s)`, `Template/Save`, `Template/Clone`, `Template/Delete`, and `MagicLink/Invoke` have **no response schema in swagger** — inspect the live response before relying on its shape.

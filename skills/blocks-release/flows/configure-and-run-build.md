@@ -4,8 +4,8 @@ Use when the user wants to deploy code: pick a repo, set (or confirm) its hostin
 trigger a build, and watch it finish.
 
 Preconditions: `x-blocks-key` + Bearer token (blocks-setup); GitHub authorized and the repo
-visible to the service (see `connect-github.md`). Keep `PROJECT_SLUG` handy — it is the
-`projectKey` in request bodies.
+visible to the service (see `connect-github.md`). `projectKey` in request bodies = your Blocks
+Key — the same value as `$X_BLOCKS_KEY`.
 
 Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/release/v4`.
 
@@ -13,7 +13,7 @@ Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/rele
 
 1. `GET /api/Build/repos-list` — list repos the release service knows about; pick the target and
    keep its `repoId`. Response shape not documented in swagger — inspect the live response. If the
-   repo is not listed, it has not been registered for builds yet — register it in Cloud Portal (no
+   repo is not listed, it has not been registered for builds yet — register it in OS portal (no
    dedicated "connect repo" endpoint is exposed in the v4 swagger; `POST /api/Build/repo-update`
    only associates repo↔domain pairs, see `custom-domains.md`).
 
@@ -32,7 +32,7 @@ Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/rele
 
    ```json
    {
-     "projectKey": "<PROJECT_SLUG>",
+     "projectKey": "<X_BLOCKS_KEY>",
      "repoId": "<repoId>",
      "hostingProviderId": "<from step 2>",
      "regionId": "<from step 2>",
@@ -51,7 +51,7 @@ Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/rele
    ```json
    {
      "repoId": "<repoId>",
-     "projectKey": "<PROJECT_SLUG>",
+     "projectKey": "<X_BLOCKS_KEY>",
      "hostingProviderId": "<optional override>",
      "regionId": "<optional override>",
      "machineConfigId": "<optional override>"
@@ -80,7 +80,7 @@ Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/rele
 - **`isSuccess: false` on trigger** → read `errors` (dictionary keyed by field). Typical causes:
   missing hosting settings (redo step 4), repo not registered (step 1), branch/webhook problems
   (see `connect-github.md`).
-- **Build stuck non-terminal** → keep the `buildId` and check reports plus Cloud Portal logs;
+- **Build stuck non-terminal** → keep the `buildId` and check reports plus OS portal logs;
   build cancellation is not exposed in the v4 swagger.
 
 ## Verify

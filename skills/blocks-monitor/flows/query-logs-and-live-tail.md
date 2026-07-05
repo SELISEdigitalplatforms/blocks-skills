@@ -5,7 +5,7 @@ free-text search, or watch new entries arrive in near-real time.
 
 Preconditions: `x-blocks-key` header on every call; `Authorization: Bearer <access_token>`
 (see blocks-setup). You need the target `serviceName` — valid values are not published in swagger;
-use the service names shown in your project's Cloud Portal observability view (or the names that
+use the service names shown in your project's OS portal observability view (or the names that
 appear in trace analytics, see `flows/inspect-traces.md`) and verify live.
 
 Base URL: `https://api.seliseblocks.com/monitor/v4`
@@ -19,7 +19,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
    ```json
    {
      "serviceName": "<service>",            // REQUIRED
-     "projectKey": "<PROJECT_SLUG>",
+     "projectKey": "<X_BLOCKS_KEY>",       // projectKey = your Blocks Key (x-blocks-key value)
      "page": 0,
      "pageSize": 50,
      "sort": { "property": "<field>", "isDescending": true },
@@ -49,7 +49,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
 4. Live tail — poll `GET /api/Log/Live`:
 
    ```
-   GET /api/Log/Live?Name=<service>&LastDate=<ISO-8601>&ProjectKey=<PROJECT_SLUG>
+   GET /api/Log/Live?Name=<service>&LastDate=<ISO-8601>&ProjectKey=<X_BLOCKS_KEY>
    ```
 
    - `Name` is **required**; `LastDate` and `ProjectKey` are optional query params (PascalCase —
@@ -62,7 +62,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
 
 Error paths: `401` → refresh the token per blocks-setup. Empty `data` with `isSuccess`-style errors
 map: check `errors` in the envelope; a wrong `serviceName` typically yields an empty result rather
-than a 404 — verify the name against Cloud Portal.
+than a 404 — verify the name against OS portal.
 
 ## Verify
 
