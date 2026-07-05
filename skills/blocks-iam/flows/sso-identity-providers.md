@@ -73,7 +73,10 @@ Endpoints: endpoints.md → [Authentication](../endpoints.md#authentication)
 
    Alternative hosted pattern: `GET /api/idp/initiate?clientId=&redirectUri=` with the
    platform handling the return at `GET /api/idp/callback` (endpoints.md →
-   [Idp](../endpoints.md#idp)); UI hints via `GET /api/idp/oidc-ui-config`.
+   [Idp](../endpoints.md#idp)); UI hints via `GET /api/idp/oidc-ui-config`. For the full
+   single-button, cookie-session version of this (register a `blocks-oidc` identity
+   provider that points Blocks at itself, then drive it from one Login button) see the
+   dedicated [oidc-login.md](oidc-login.md) flow.
 
 5. SSO signups: allow them via `POST /api/iam/signup-settings`
    (`isSSoSignUpEnabled: true`, plus default roles). The signup body's `isSsoSignup`,

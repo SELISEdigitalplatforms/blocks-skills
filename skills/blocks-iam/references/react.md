@@ -15,12 +15,128 @@ field names). Exact endpoint shapes: [endpoints.md](../endpoints.md).
 # .env — client-safe values only (VITE_ vars ship in the bundle)
 VITE_BLOCKS_API_URL=https://api.seliseblocks.com
 VITE_X_BLOCKS_KEY=<your x-blocks-key>
+# Only for the hosted OIDC login button (see that section):
+VITE_OIDC_CLIENT_ID=<your OIDC client id from POST /api/oidc-clients>
 ```
 
-These two are the only client-side vars — login/refresh take no `client_id` or
-project identifier; the `x-blocks-key` header carries the project context.
-Never put `BLOCKS_USERNAME` / `BLOCKS_PASSWORD` or any non-public secret into a
-`VITE_` var. See `blocks-setup` for the full env convention.
+`VITE_BLOCKS_API_URL` + `VITE_X_BLOCKS_KEY` are the core client-side vars —
+login/refresh take no `client_id` or project identifier; the `x-blocks-key` header
+carries the project context. `VITE_OIDC_CLIENT_ID` is only needed for the hosted-OIDC
+button below. Never put `BLOCKS_USERNAME` / `BLOCKS_PASSWORD`, an OIDC **client
+secret**, or any non-public secret into a `VITE_` var. See `blocks-setup` for the full
+env convention.
+
+> **Choosing an auth pattern.** For a single **Login button** with no password UI, use
+> the **Hosted OIDC login** section directly below — the recommended default; it needs
+> no token store and no login form. The password-based store/client/hooks that follow
+> are only for apps that specifically implement embedded username/password login
+> ([flows/embedded-login.md](../flows/embedded-login.md)). Don't mix both in one app.
+
+## Hosted OIDC login (recommended): one button, cookie session
+
+Setup (register the OIDC client + `blocks-oidc` identity provider) is one-time and
+server-side — see [flows/oidc-login.md](../flows/oidc-login.md). The frontend is just a
+button that navigates to `GET /iam/v4/idp/initiate`; Blocks hosts the login, runs the
+authorization-code flow, and returns a **secure HTTP-only session cookie**. No tokens
+touch your JS, so there is no token store and no refresh logic here — the browser sends
+the cookie automatically once you opt in with `credentials: 'include'`.
+
+```ts
+// src/features/auth/oidc.ts
+const BASE = `${import.meta.env.VITE_BLOCKS_API_URL}/iam/v4`;
+const KEY = import.meta.env.VITE_X_BLOCKS_KEY;
+const CLIENT_ID = import.meta.env.VITE_OIDC_CLIENT_ID;
+
+/** Full-page redirect URL for the Login button. A top-level navigation can't send
+ *  headers, so x-blocks-key rides as a query param (per the platform integration doc —
+ *  not in the swagger param table; verify live). clientId/redirectUri are documented. */
+export function initiateLoginUrl(redirectUri = window.location.origin) {
+  const q = new URLSearchParams({
+    'x-blocks-key': KEY,
+    clientId: CLIENT_ID,
+    redirectUri,
+  });
+  return `${BASE}/api/idp/initiate?${q}`;
+}
+
+/** Cookie-based fetch — attaches the session cookie instead of a Bearer token. */
+async function sessionFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    ...init,
+    credentials: 'include', // send the Blocks session cookie
+    headers: { 'x-blocks-key': KEY, ...init.headers },
+  });
+  if (!res.ok) throw new Error(`iam ${init.method ?? 'GET'} ${path} → ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+// GET /api/oidc/session — typed in contracts.md (sessionId, accounts[], timestamps).
+// 401/404 => no session (show the Login button).
+export const getSession = () => sessionFetch<{
+  sessionId?: string | null;
+  accounts?: { userId?: string | null; displayName?: string | null }[];
+}>('/api/oidc/session');
+
+// GET /api/auth/me — OIDC UserInfo claims (shape undocumented; keep it loose).
+export const getMe = () => sessionFetch<Record<string, unknown>>('/api/auth/me');
+
+// POST /api/oidc/session/revoke — logout (clears the session cookie).
+export const revokeSession = () =>
+  sessionFetch<unknown>('/api/oidc/session/revoke', { method: 'POST' });
+```
+
+```tsx
+// src/features/auth/LoginButton.tsx — the entire app-facing login UI
+import { useQuery } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { initiateLoginUrl, getSession, revokeSession } from './oidc';
+
+export function LoginButton() {
+  const session = useQuery({
+    queryKey: ['oidc', 'session'],
+    queryFn: getSession,
+    retry: false, // a 401 here just means "not signed in"
+  });
+
+  if (session.isPending) return null;
+
+  // Signed in: the cookie resolved a session.
+  if (session.data?.sessionId) {
+    const name = session.data.accounts?.[0]?.displayName ?? 'account';
+    return (
+      <div className="flex items-center gap-3">
+        <span className="text-sm">Signed in as {name}</span>
+        <Button
+          variant="outline"
+          onClick={async () => {
+            await revokeSession();
+            window.location.reload();
+          }}
+        >
+          Log out
+        </Button>
+      </div>
+    );
+  }
+
+  // Signed out: one button kicks off the Blocks-hosted flow.
+  return (
+    <Button onClick={() => (window.location.href = initiateLoginUrl())}>
+      Log in
+    </Button>
+  );
+}
+```
+
+After the redirect back to your `redirectUri`, the cookie is set and
+`['oidc','session']` resolves to a session on the next render — no callback code to
+write (the platform handles `/api/idp/callback`). Requires HTTPS in local dev, or the
+`Secure` cookie is dropped (`blocks-setup` → local-https-setup).
+
+---
+
+The remainder of this guide covers **embedded username/password** login — use it only
+if your app implements that instead of (not alongside) the hosted button above.
 
 ## Auth store (Zustand)
 
@@ -306,8 +422,9 @@ export function LoginForm() {
   `logout` uses `refreshToken`, `/api/iam/*` bodies are camelCase. Import the types
   from contracts.md and let the compiler enforce it.
 - Persisting tokens in `localStorage` (the `persist` middleware above) is the simple
-  default; the platform can also set HTTP-only cookies for social/OIDC flows
-  (see `flows/sso-identity-providers.md`) — don't mix both patterns in one app.
+  default for embedded login; the hosted-OIDC button and social flows use HTTP-only
+  cookies instead (see `flows/oidc-login.md` and `flows/sso-identity-providers.md`) —
+  don't mix a token store and cookie sessions in one app.
 - For signup/activation/recovery pages, reuse `iamFetch` without a token — those
   endpoints need only `x-blocks-key` (see `flows/signup-activation.md` and
   `flows/password-recovery.md`).
