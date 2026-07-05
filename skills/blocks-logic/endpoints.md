@@ -5,6 +5,8 @@
 
 **Base URL:** `https://api.seliseblocks.com/logic/v4`
 
+**URL pattern:** every endpoint is `{base}/{endpoint}` — do **not** prefix with `/api/`. e.g. `POST {base}/Workflow/Create`, `POST {base}/Deployment/IsAuthorized`. The `/api/` from the swagger `basePath` is not part of the URL served by the gateway.
+
 **Authentication** (see `blocks-setup` skill for obtaining tokens):
 - `x-blocks-key: <X_BLOCKS_KEY>` header — required on every request
 - `Authorization: Bearer <access_token>` — required for authenticated operations
@@ -21,7 +23,7 @@
 
 ## Deployment
 
-### `GET /api/Deployment/AccessToken`
+### `GET /Deployment/AccessToken`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -41,7 +43,7 @@
 }
 ```
 
-### `DELETE /api/Deployment/DeleteAuthorization`
+### `DELETE /Deployment/DeleteAuthorization`
 
 **Response 200:**
 
@@ -57,7 +59,7 @@
 }
 ```
 
-### `GET /api/Deployment/GetBranches`
+### `GET /Deployment/GetBranches`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -77,7 +79,7 @@
 }
 ```
 
-### `GET /api/Deployment/GetRepos`
+### `GET /Deployment/GetRepos`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -99,7 +101,7 @@
 }
 ```
 
-### `GET /api/Deployment/GetReposList`
+### `GET /Deployment/GetReposList`
 
 **Response 200:**
 
@@ -115,7 +117,7 @@
 }
 ```
 
-### `GET /api/Deployment/GetUser`
+### `GET /Deployment/GetUser`
 
 **Response 200:**
 
@@ -131,7 +133,7 @@
 }
 ```
 
-### `GET /api/Deployment/GithubBranchExists`
+### `GET /Deployment/GithubBranchExists`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -151,7 +153,7 @@
 }
 ```
 
-### `GET /api/Deployment/IsAuthorized`
+### `GET /Deployment/IsAuthorized`
 
 **Response 200:**
 
@@ -167,7 +169,7 @@
 }
 ```
 
-### `POST /api/Deployment/RemoveAuthorization`
+### `POST /Deployment/RemoveAuthorization`
 
 **Response 200:**
 
@@ -185,7 +187,7 @@
 
 ## Mail
 
-### `DELETE /api/Mail/Delete`
+### `DELETE /Mail/Delete`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -194,7 +196,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Mail/Duplicate`
+### `POST /Mail/Duplicate`
 
 **Request body** (`application/json`):
 
@@ -207,7 +209,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Mail/Get`
+### `GET /Mail/Get`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -234,7 +236,7 @@
 }
 ```
 
-### `GET /api/Mail/Gets`
+### `GET /Mail/Gets`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -268,7 +270,7 @@
 }[]
 ```
 
-### `POST /api/Mail/Save`
+### `POST /Mail/Save`
 
 **Request body** (`application/json`):
 
@@ -294,7 +296,7 @@
 
 ## Storage
 
-### `POST /api/Storage/DeleteFile`
+### `POST /Storage/DeleteFile`
 
 **Request body** (`application/json`):
 
@@ -316,7 +318,7 @@
 }
 ```
 
-### `GET /api/Storage/GetFile`
+### `GET /Storage/GetFile`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -352,7 +354,7 @@
 }
 ```
 
-### `POST /api/Storage/GetFiles`
+### `POST /Storage/GetFiles`
 
 **Request body** (`application/json`):
 
@@ -391,7 +393,7 @@
 }[]
 ```
 
-### `POST /api/Storage/GetPreSignedUrlForUpload`
+### `POST /Storage/GetPreSignedUrlForUpload`
 
 **Request body** (`application/json`):
 
@@ -423,7 +425,7 @@
 
 ## Workflow
 
-### `POST /api/Workflow/Create`
+### `POST /Workflow/Create`
 
 **Request body** (`application/json`):
 
@@ -452,7 +454,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/CreateVersion`
+### `POST /Workflow/CreateVersion`
 
 **Request body** (`application/json`):
 
@@ -467,7 +469,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `DELETE /api/Workflow/Delete`
+### `DELETE /Workflow/Delete`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -476,7 +478,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/Duplicate`
+### `POST /Workflow/Duplicate`
 
 **Request body** (`application/json`):
 
@@ -490,7 +492,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Workflow/Get`
+### `GET /Workflow/Get`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -499,7 +501,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/GetAll`
+### `POST /Workflow/GetAll`
 
 **Request body** (`application/json`):
 
@@ -515,7 +517,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Workflow/GetExecution`
+### `GET /Workflow/GetExecution`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -524,7 +526,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Workflow/GetExecutions`
+### `GET /Workflow/GetExecutions`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -533,7 +535,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/GetVersions`
+### `POST /Workflow/GetVersions`
 
 **Request body** (`application/json`):
 
@@ -546,7 +548,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/GetWorkflowByVersion`
+### `POST /Workflow/GetWorkflowByVersion`
 
 **Request body** (`application/json`):
 
@@ -560,7 +562,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/PublishNewVersion`
+### `POST /Workflow/PublishNewVersion`
 
 **Request body** (`application/json`):
 
@@ -575,7 +577,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/PublishVersion`
+### `POST /Workflow/PublishVersion`
 
 **Request body** (`application/json`):
 
@@ -589,7 +591,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/Restore`
+### `POST /Workflow/Restore`
 
 **Request body** (`application/json`):
 
@@ -603,7 +605,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/StepExecute`
+### `POST /Workflow/StepExecute`
 
 **Request body** (`application/json`):
 
@@ -618,7 +620,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/Unpublish`
+### `POST /Workflow/Unpublish`
 
 **Request body** (`application/json`):
 
@@ -631,7 +633,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `PUT /api/Workflow/Update`
+### `PUT /Workflow/Update`
 
 **Request body** (`application/json`):
 
@@ -671,7 +673,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/UpdateVersion`
+### `POST /Workflow/UpdateVersion`
 
 **Request body** (`application/json`):
 
@@ -686,7 +688,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/Webhook/{projectKey}/{workflowId}/{webhookId}`
+### `POST /Workflow/Webhook/{projectKey}/{workflowId}/{webhookId}`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -696,7 +698,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Workflow/webhook-test/{projectKey}/{workflowId}/{webhookId}`
+### `POST /Workflow/webhook-test/{projectKey}/{workflowId}/{webhookId}`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -716,88 +718,88 @@ call them on this base URL only if you specifically need this service's instance
 
 | Method | Path | Summary |
 |---|---|---|
-| GET | `/api/Language/Gets` | Retrieves all available languages. |
+| GET | `/Language/Gets` | Retrieves all available languages. |
 
 ### Documented in `blocks-monitor`
 
 | Method | Path | Summary |
 |---|---|---|
-| DELETE | `/api/Health/DeleteHealth` |  |
-| GET | `/api/Health/Ping/{itemId}` |  |
-| POST | `/api/Health/SaveHealth` |  |
-| POST | `/api/Health/UpdateHealth` |  |
-| DELETE | `/api/Monitor/DeleteMonitor` |  |
-| GET | `/api/Monitor/GetIncidentList` |  |
-| GET | `/api/Monitor/GetMonitorById` |  |
-| GET | `/api/Monitor/GetMonitorDetails` |  |
-| GET | `/api/Monitor/GetMonitorDownTime` |  |
-| GET | `/api/Monitor/GetMonitorList` |  |
-| GET | `/api/Monitor/GetMonitorListByRepoId` |  |
-| GET | `/api/Monitor/GetMonitorResponseTime` |  |
-| GET | `/api/Monitor/IsExternalServiceConfigured` |  |
-| POST | `/api/Monitor/SaveMonitor` |  |
-| POST | `/api/Monitor/UpdateMonitor` |  |
+| DELETE | `/Health/DeleteHealth` |  |
+| GET | `/Health/Ping/{itemId}` |  |
+| POST | `/Health/SaveHealth` |  |
+| POST | `/Health/UpdateHealth` |  |
+| DELETE | `/Monitor/DeleteMonitor` |  |
+| GET | `/Monitor/GetIncidentList` |  |
+| GET | `/Monitor/GetMonitorById` |  |
+| GET | `/Monitor/GetMonitorDetails` |  |
+| GET | `/Monitor/GetMonitorDownTime` |  |
+| GET | `/Monitor/GetMonitorList` |  |
+| GET | `/Monitor/GetMonitorListByRepoId` |  |
+| GET | `/Monitor/GetMonitorResponseTime` |  |
+| GET | `/Monitor/IsExternalServiceConfigured` |  |
+| POST | `/Monitor/SaveMonitor` |  |
+| POST | `/Monitor/UpdateMonitor` |  |
 
 ### Documented in `blocks-os`
 
 | Method | Path | Summary |
 |---|---|---|
-| POST | `/api/Captcha/Create` |  |
-| GET | `/api/Captcha/Get` |  |
-| GET | `/api/Captcha/Gets` |  |
-| POST | `/api/Captcha/Save` |  |
-| POST | `/api/Captcha/Submit` |  |
-| POST | `/api/Captcha/UpdateStatus` |  |
-| GET | `/api/Captcha/Verify` |  |
-| POST | `/api/Mfa/DisableUserMfa` |  |
-| POST | `/api/Mfa/GenerateOTP` |  |
-| GET | `/api/Mfa/Get` |  |
-| POST | `/api/Mfa/ResendOtp` |  |
-| POST | `/api/Mfa/Save` |  |
-| GET | `/api/Mfa/SetUpTotp` |  |
-| POST | `/api/Mfa/VerifyOTP` |  |
-| POST | `/api/Migration/DataCleanup` |  |
-| GET | `/api/Migration/GetMigrationStatus` | Gets the migration status for projects with incomplete services. |
-| POST | `/api/Migration/Migrate` |  |
-| POST | `/api/Migration/Verify` | Verifies the OTP code for the migration process. |
-| DELETE | `/api/Notification/Delete` |  |
-| GET | `/api/Notification/Get` |  |
-| GET | `/api/Notification/Gets` |  |
-| POST | `/api/Notification/Save` |  |
-| POST | `/api/People/ConfirmInvitation` |  |
-| POST | `/api/People/Gets` |  |
-| POST | `/api/People/Invite` |  |
-| POST | `/api/People/RemoveAccess` |  |
-| POST | `/api/People/ResendInvitation` |  |
-| POST | `/api/People/Signup` |  |
-| POST | `/api/People/TransferOwnerShip` |  |
-| POST | `/api/Project/AddAsset` |  |
-| POST | `/api/Project/Create` |  |
-| POST | `/api/Project/Disable` |  |
-| GET | `/api/Project/Get` |  |
-| GET | `/api/Project/GetAsset` |  |
-| GET | `/api/Project/GetThirdPartyJWTClaims` |  |
-| GET | `/api/Project/GetTokenValidationParameters` |  |
-| GET | `/api/Project/Gets` |  |
-| POST | `/api/Project/Restore` |  |
-| POST | `/api/Project/SaveThirdPartyJWTClaims` |  |
-| POST | `/api/Project/UpdateProject` |  |
-| POST | `/api/Project/UpdateTenantGroup` |  |
-| POST | `/api/Project/UpdateTokenValidationParameters` |  |
-| POST | `/api/Service/GetAll` |  |
-| POST | `/api/Service/Register` |  |
-| POST | `/api/Storage/Delete` |  |
-| GET | `/api/Storage/Get` |  |
-| GET | `/api/Storage/Gets` |  |
-| POST | `/api/Storage/Save` |  |
+| POST | `/Captcha/Create` |  |
+| GET | `/Captcha/Get` |  |
+| GET | `/Captcha/Gets` |  |
+| POST | `/Captcha/Save` |  |
+| POST | `/Captcha/Submit` |  |
+| POST | `/Captcha/UpdateStatus` |  |
+| GET | `/Captcha/Verify` |  |
+| POST | `/Mfa/DisableUserMfa` |  |
+| POST | `/Mfa/GenerateOTP` |  |
+| GET | `/Mfa/Get` |  |
+| POST | `/Mfa/ResendOtp` |  |
+| POST | `/Mfa/Save` |  |
+| GET | `/Mfa/SetUpTotp` |  |
+| POST | `/Mfa/VerifyOTP` |  |
+| POST | `/Migration/DataCleanup` |  |
+| GET | `/Migration/GetMigrationStatus` | Gets the migration status for projects with incomplete services. |
+| POST | `/Migration/Migrate` |  |
+| POST | `/Migration/Verify` | Verifies the OTP code for the migration process. |
+| DELETE | `/Notification/Delete` |  |
+| GET | `/Notification/Get` |  |
+| GET | `/Notification/Gets` |  |
+| POST | `/Notification/Save` |  |
+| POST | `/People/ConfirmInvitation` |  |
+| POST | `/People/Gets` |  |
+| POST | `/People/Invite` |  |
+| POST | `/People/RemoveAccess` |  |
+| POST | `/People/ResendInvitation` |  |
+| POST | `/People/Signup` |  |
+| POST | `/People/TransferOwnerShip` |  |
+| POST | `/Project/AddAsset` |  |
+| POST | `/Project/Create` |  |
+| POST | `/Project/Disable` |  |
+| GET | `/Project/Get` |  |
+| GET | `/Project/GetAsset` |  |
+| GET | `/Project/GetThirdPartyJWTClaims` |  |
+| GET | `/Project/GetTokenValidationParameters` |  |
+| GET | `/Project/Gets` |  |
+| POST | `/Project/Restore` |  |
+| POST | `/Project/SaveThirdPartyJWTClaims` |  |
+| POST | `/Project/UpdateProject` |  |
+| POST | `/Project/UpdateTenantGroup` |  |
+| POST | `/Project/UpdateTokenValidationParameters` |  |
+| POST | `/Service/GetAll` |  |
+| POST | `/Service/Register` |  |
+| POST | `/Storage/Delete` |  |
+| GET | `/Storage/Get` |  |
+| GET | `/Storage/Gets` |  |
+| POST | `/Storage/Save` |  |
 
 ### Documented in `blocks-utilities`
 
 | Method | Path | Summary |
 |---|---|---|
-| GET | `/api/Notifier/GetNotifications` |  |
-| GET | `/api/Notifier/GetUnreadNotificationsBySubscriptionFilter` |  |
-| POST | `/api/Notifier/MarkAllNotificationAsRead` |  |
-| POST | `/api/Notifier/MarkNotificationAsRead` |  |
-| POST | `/api/Notifier/Notify` |  |
-| GET | `/api/Template/Gets` |  |
+| GET | `/Notifier/GetNotifications` |  |
+| GET | `/Notifier/GetUnreadNotificationsBySubscriptionFilter` |  |
+| POST | `/Notifier/MarkAllNotificationAsRead` |  |
+| POST | `/Notifier/MarkNotificationAsRead` |  |
+| POST | `/Notifier/Notify` |  |
+| GET | `/Template/Gets` |  |

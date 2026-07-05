@@ -11,12 +11,12 @@ Endpoint reference: [endpoints.md#sequence](../endpoints.md#sequence).
 1. Pick a `context` string per counter (e.g. `invoice`, `order-2026`). No registration endpoint exists — the context is established by first use (verify initial value behavior against your project; the swagger does not document what the first call returns).
 
 2. Draw a number when you create the document:
-   - `GET /api/Sequence/Next?Context=invoice&ProjectKey=$X_BLOCKS_KEY` → `{ isSuccess, context, currentNumber }` with `currentNumber` as a number. (`ProjectKey` = your Blocks Key, the same value as `X_BLOCKS_KEY`.)
-   - `GET /api/Sequence/NextHex?Context=invoice&ProjectKey=$X_BLOCKS_KEY` → same envelope but `currentNumber` is a **hexadecimal string** (swagger: "63 billion unique sequence of numbers in hexadecimal format") — use when you want short alphanumeric references.
+   - `GET /Sequence/Next?Context=invoice&ProjectKey=$X_BLOCKS_KEY` → `{ isSuccess, context, currentNumber }` with `currentNumber` as a number. (`ProjectKey` = your Blocks Key, the same value as `X_BLOCKS_KEY`.)
+   - `GET /Sequence/NextHex?Context=invoice&ProjectKey=$X_BLOCKS_KEY` → same envelope but `currentNumber` is a **hexadecimal string** (swagger: "63 billion unique sequence of numbers in hexadecimal format") — use when you want short alphanumeric references.
 
 3. Format the display number yourself: the service returns only the raw counter — prefixes/padding (`INV-2026-000123`) are your application's job. Store both the raw number and the formatted string with the document.
 
-4. *(admin, rare)* `POST /api/Sequence/Reset` with `{ context, value, projectKey }` — restarts the context so it continues from `value` (e.g. yearly rollover with a fresh context or a reset). `context` is the only required field. Response is the bare `{ isSuccess, errors }` envelope. Resetting to a value below already-issued numbers will cause duplicates — guard this behind an admin-only action.
+4. *(admin, rare)* `POST /Sequence/Reset` with `{ context, value, projectKey }` — restarts the context so it continues from `value` (e.g. yearly rollover with a fresh context or a reset). `context` is the only required field. Response is the bare `{ isSuccess, errors }` envelope. Resetting to a value below already-issued numbers will cause duplicates — guard this behind an admin-only action.
 
 Branches:
 - 401 → refresh the token via blocks-setup and retry the *whole* draw (never blind-retry a `Next` you are not sure failed — if the first call actually succeeded, a retry consumes a second number).
@@ -24,6 +24,6 @@ Branches:
 
 ## Verify
 
-- Call `GET /api/Sequence/Next?Context=<ctx>&ProjectKey=$X_BLOCKS_KEY` twice in a test context: the second `currentNumber` must be exactly the first + 1.
+- Call `GET /Sequence/Next?Context=<ctx>&ProjectKey=$X_BLOCKS_KEY` twice in a test context: the second `currentNumber` must be exactly the first + 1.
 - After `Reset` with `value: N`, the next draw should continue from `N` (verify whether it returns `N` or `N+1` against the live API — swagger doesn't say).
 - Distinct contexts don't interfere: drawing from `invoice-test-a` must not advance `invoice-test-b`.

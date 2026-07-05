@@ -12,7 +12,7 @@ Env (see `blocks-setup`): `VITE_BLOCKS_API_URL` (`https://api.seliseblocks.com`)
 ## API client slice
 
 ```ts
-// src/features/logic/api/client.ts
+// src/features/logic/client.ts
 import { useAuthStore } from '@/state/auth-store'; // Zustand store from blocks-setup wiring
 
 const BASE = `${import.meta.env.VITE_BLOCKS_API_URL}/logic/v4`;
@@ -37,7 +37,7 @@ export async function logicFetch<T>(path: string, init: RequestInit = {}): Promi
     },
   });
   if (res.status === 401) {
-    // Refresh via POST /iam/v4/api/auth/refresh, then retry once — see blocks-setup.
+    // Refresh via POST /iam/v4/auth/refresh, then retry once — see blocks-setup.
     await useAuthStore.getState().refresh();
     return logicFetch<T>(path, init);
   }
@@ -48,7 +48,7 @@ export async function logicFetch<T>(path: string, init: RequestInit = {}): Promi
 
 ## Types
 
-Mirror `contracts.md` into `src/features/logic/api/contracts.ts` and import by name:
+Mirror `contracts.md` into `src/features/logic/contracts.ts` and import by name:
 
 ```ts
 import type {
@@ -72,7 +72,7 @@ the live API once (e.g., with zod) — do not invent interfaces and trust them.
 ## Query keys
 
 ```ts
-// src/features/logic/api/keys.ts
+// src/features/logic/keys.ts
 export const logicKeys = {
   workflows: (params: Partial<WorkflowGetsRequestDto>) => ['logic', 'workflows', params] as const,
   workflow: (workflowId: string) => ['logic', 'workflow', workflowId] as const,
@@ -86,41 +86,41 @@ export const logicKeys = {
 ## Hooks
 
 ```ts
-// src/features/logic/api/hooks.ts
+// src/features/logic/hooks.ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { logicFetch, X_BLOCKS_KEY } from './client';
 import { logicKeys } from './keys';
 
-// POST /api/Workflow/GetAll — list workflows (body pagination)
+// POST /Workflow/GetAll — list workflows (body pagination)
 export function useWorkflows(params: Omit<WorkflowGetsRequestDto, 'projectKey'> = {}) {
   return useQuery({
     queryKey: logicKeys.workflows(params),
     queryFn: () =>
-      logicFetch<unknown>('/api/Workflow/GetAll', {
+      logicFetch<unknown>('/Workflow/GetAll', {
         method: 'POST',
         body: JSON.stringify({ projectKey: X_BLOCKS_KEY, pageSize: 20, pageNumber: 1, ...params }),
       }),
   });
 }
 
-// GET /api/Workflow/Get — single workflow definition (PascalCase query params!)
+// GET /Workflow/Get — single workflow definition (PascalCase query params!)
 export function useWorkflow(workflowId: string) {
   return useQuery({
     queryKey: logicKeys.workflow(workflowId),
     enabled: !!workflowId,
     queryFn: () =>
       logicFetch<unknown>(
-        `/api/Workflow/Get?WorkflowId=${encodeURIComponent(workflowId)}&ProjectKey=${X_BLOCKS_KEY}`,
+        `/Workflow/Get?WorkflowId=${encodeURIComponent(workflowId)}&ProjectKey=${X_BLOCKS_KEY}`,
       ),
   });
 }
 
-// POST /api/Workflow/Create
+// POST /Workflow/Create
 export function useCreateWorkflow() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Omit<WorkflowCreateRequestDto, 'projectKey'>) =>
-      logicFetch<unknown>('/api/Workflow/Create', {
+      logicFetch<unknown>('/Workflow/Create', {
         method: 'POST',
         body: JSON.stringify({ projectKey: X_BLOCKS_KEY, ...body }),
       }),
@@ -128,12 +128,12 @@ export function useCreateWorkflow() {
   });
 }
 
-// PUT /api/Workflow/Update — note the PUT verb
+// PUT /Workflow/Update — note the PUT verb
 export function useUpdateWorkflow() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Omit<WorkflowUpdateRequestDto, 'projectKey'>) =>
-      logicFetch<unknown>('/api/Workflow/Update', {
+      logicFetch<unknown>('/Workflow/Update', {
         method: 'PUT',
         body: JSON.stringify({ projectKey: X_BLOCKS_KEY, ...body }),
       }),
@@ -144,12 +144,12 @@ export function useUpdateWorkflow() {
   });
 }
 
-// POST /api/Workflow/PublishNewVersion — snapshot draft + publish
+// POST /Workflow/PublishNewVersion — snapshot draft + publish
 export function usePublishNewVersion() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: Omit<WorkflowPublishNewVersionRequestDto, 'projectKey'>) =>
-      logicFetch<unknown>('/api/Workflow/PublishNewVersion', {
+      logicFetch<unknown>('/Workflow/PublishNewVersion', {
         method: 'POST',
         body: JSON.stringify({ projectKey: X_BLOCKS_KEY, ...body }),
       }),
@@ -158,7 +158,7 @@ export function usePublishNewVersion() {
   });
 }
 
-// GET /api/Workflow/GetExecutions — run history for one workflow
+// GET /Workflow/GetExecutions — run history for one workflow
 export function useExecutions(workflowId: string) {
   return useQuery({
     queryKey: logicKeys.executions(workflowId),
@@ -166,37 +166,37 @@ export function useExecutions(workflowId: string) {
     refetchInterval: 5_000, // executions change while runs are in flight
     queryFn: () =>
       logicFetch<unknown>(
-        `/api/Workflow/GetExecutions?ProjectKey=${X_BLOCKS_KEY}&WorkflowId=${encodeURIComponent(workflowId)}`,
+        `/Workflow/GetExecutions?ProjectKey=${X_BLOCKS_KEY}&WorkflowId=${encodeURIComponent(workflowId)}`,
       ),
   });
 }
 
-// POST /api/Workflow/StepExecute — debug a single node
+// POST /Workflow/StepExecute — debug a single node
 export function useStepExecute() {
   return useMutation({
     mutationFn: (body: Omit<StepExecuteRequestDto, 'projectKey'>) =>
-      logicFetch<unknown>('/api/Workflow/StepExecute', {
+      logicFetch<unknown>('/Workflow/StepExecute', {
         method: 'POST',
         body: JSON.stringify({ projectKey: X_BLOCKS_KEY, ...body }),
       }),
   });
 }
 
-// GET /api/Mail/Gets — SMTP configurations (typed: MailServerConfiguration[])
+// GET /Mail/Gets — SMTP configurations (typed: MailServerConfiguration[])
 export function useMailConfigurations() {
   return useQuery({
     queryKey: logicKeys.mailConfigs(),
     queryFn: () =>
-      logicFetch<MailServerConfiguration[]>(`/api/Mail/Gets?ProjectKey=${X_BLOCKS_KEY}`),
+      logicFetch<MailServerConfiguration[]>(`/Mail/Gets?ProjectKey=${X_BLOCKS_KEY}`),
   });
 }
 
-// Pre-signed upload: POST /api/Storage/GetPreSignedUrlForUpload, then PUT the bytes
+// Pre-signed upload: POST /Storage/GetPreSignedUrlForUpload, then PUT the bytes
 export function useUploadLogicFile() {
   return useMutation({
     mutationFn: async (file: File) => {
       const slot = await logicFetch<GetPreSignedUrlForUploadResponse>(
-        '/api/Storage/GetPreSignedUrlForUpload',
+        '/Storage/GetPreSignedUrlForUpload',
         {
           method: 'POST',
           body: JSON.stringify({ name: file.name, projectKey: X_BLOCKS_KEY }),
@@ -257,14 +257,14 @@ export function WorkflowRunsPanel({ workflowId }: { workflowId: string }) {
 ## Notes
 
 - **401 / refresh**: `logicFetch` retries once after `useAuthStore.getState().refresh()`;
-  the refresh call itself (`POST /iam/v4/api/auth/refresh`) and store shape are defined
+  the refresh call itself (`POST /iam/v4/auth/refresh`) and store shape are defined
   in `blocks-setup` — keep a single retry to avoid loops when the refresh token is dead.
 - **Casing**: GET query params are PascalCase (`WorkflowId`, `ProjectKey`), JSON bodies
   camelCase. `Update` is a PUT; `Delete` endpoints use query strings, not bodies.
 - **Deployment endpoints** all return `DeploymentDriverBaseApiResponse` — type the hook
   as `DeploymentDriverBaseApiResponse`, then narrow `data` per live inspection.
-- **Webhook triggers** (`POST /api/Workflow/Webhook/{projectKey}/{workflowId}/{webhookId}`)
+- **Webhook triggers** (`POST /Workflow/Webhook/{projectKey}/{workflowId}/{webhookId}`)
   are for external callers; browser apps normally don't invoke them, but the same
-  `logicFetch` works for in-app test triggers via `/api/Workflow/webhook-test/...`.
-- **Secrets**: `MailServerConfiguration.accountPassword` comes back from `/api/Mail/Gets`
+  `logicFetch` works for in-app test triggers via `/Workflow/webhook-test/...`.
+- **Secrets**: `MailServerConfiguration.accountPassword` comes back from `/Mail/Gets`
   — never render or log it; mask in any admin UI.

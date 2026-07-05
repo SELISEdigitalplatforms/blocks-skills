@@ -76,49 +76,49 @@ function assertOk(r: ApiResponse): ApiResponse {
 export const localizationApi = {
   // Languages
   getLanguages: () =>
-    locFetch<Language[]>('/api/Language/Gets', { query: { ProjectKey: X_BLOCKS_KEY } }),
+    locFetch<Language[]>('/Language/Gets', { query: { ProjectKey: X_BLOCKS_KEY } }),
   saveLanguage: (body: Language) =>
-    locFetch<ApiResponse>('/api/Language/Save', {
+    locFetch<ApiResponse>('/Language/Save', {
       method: 'POST',
       body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }).then(assertOk),
 
   // Modules
   getModules: () =>
-    locFetch<BlocksLanguageModule[]>('/api/Module/Gets', { query: { ProjectKey: X_BLOCKS_KEY } }),
+    locFetch<BlocksLanguageModule[]>('/Module/Gets', { query: { ProjectKey: X_BLOCKS_KEY } }),
 
   // Keys
   getKeys: (filter: GetKeysRequest) =>
-    locFetch<GetKeysQueryResponse>('/api/Key/Gets', {
+    locFetch<GetKeysQueryResponse>('/Key/Gets', {
       method: 'POST',
       body: JSON.stringify({ ...filter, projectKey: X_BLOCKS_KEY }),
     }),
   saveKey: (key: Key) =>
-    locFetch<ApiResponse>('/api/Key/Save', {
+    locFetch<ApiResponse>('/Key/Save', {
       method: 'POST',
       body: JSON.stringify({ ...key, projectKey: X_BLOCKS_KEY }),
     }).then(assertOk),
   saveKeys: (keys: Key[]) =>
-    locFetch<ApiResponse>('/api/Key/SaveKeys', {
+    locFetch<ApiResponse>('/Key/SaveKeys', {
       method: 'POST',
       // NB: bare JSON array body
       body: JSON.stringify(keys.map((k) => ({ ...k, projectKey: X_BLOCKS_KEY }))),
     }).then(assertOk),
   translateKeys: (body: Omit<TranslateBlocksLanguageKeysRequest, 'projectKey'>) =>
     // async queue — resolves when enqueued, not when translated; response shape undocumented
-    locFetch<unknown>('/api/Key/TranslateKeys', {
+    locFetch<unknown>('/Key/TranslateKeys', {
       method: 'POST',
       body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 
   // Glossary + AI assistant
   getGlossaries: (page = 1, pageSize = 50) =>
-    locFetch<GetGlossariesResponse>('/api/Glossary/Gets', {
+    locFetch<GetGlossariesResponse>('/Glossary/Gets', {
       query: { ProjectKey: X_BLOCKS_KEY, PageNumber: page, PageSize: pageSize },
     }),
   getTranslationSuggestion: (body: Omit<SuggestLanguageRequest, 'projectKey'>) =>
     // response shape not documented in swagger — inspect live once, then refine this type
-    locFetch<unknown>('/api/Assistant/GetTranslationSuggestion', {
+    locFetch<unknown>('/Assistant/GetTranslationSuggestion', {
       method: 'POST',
       body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
@@ -126,11 +126,11 @@ export const localizationApi = {
   // Runtime language file (call GenerateUilmFile after content changes — see the language-files flow)
   getUilmFile: (language: string, moduleName: string) =>
     // swagger documents this only as "a JSON UILM file" — verify the live shape, then narrow the type
-    locFetch<unknown>('/api/Key/GetUilmFile', {
+    locFetch<unknown>('/Key/GetUilmFile', {
       query: { Language: language, ModuleName: moduleName, ProjectKey: X_BLOCKS_KEY },
     }),
   tagGlossaryToModule: (moduleId: string, glossaryIds: string[]) =>
-    locFetch<BaseMutationResponse>('/api/Module/TagGlossary', {
+    locFetch<BaseMutationResponse>('/Module/TagGlossary', {
       method: 'POST',
       body: JSON.stringify({ moduleId, glossaryIds, projectKey: X_BLOCKS_KEY }),
     }),
@@ -278,6 +278,6 @@ export function TranslationEditor({ moduleId }: { moduleId: string }) {
 ## Notes
 
 - **Save responses carry no ids** — after creating keys/languages, invalidate and refetch instead of patching the cache from the response.
-- **Runtime translations:** to drive the app's own UI strings, fetch per-module files with `useUilmFile(language, moduleName)` and feed the result into your i18n layer. Regenerate server-side (`POST /api/Key/GenerateUilmFile`) after content changes — see [flows/language-files-and-webhook.md](../flows/language-files-and-webhook.md); the file shape is undocumented in swagger, so verify once before typing it.
+- **Runtime translations:** to drive the app's own UI strings, fetch per-module files with `useUilmFile(language, moduleName)` and feed the result into your i18n layer. Regenerate server-side (`POST /Key/GenerateUilmFile`) after content changes — see [flows/language-files-and-webhook.md](../flows/language-files-and-webhook.md); the file shape is undocumented in swagger, so verify once before typing it.
 - **401 handling:** the thrown `{ status: 401 }` should be caught by the shared refresh-and-retry layer from **blocks-setup**; don't reimplement token refresh per feature.
 - **Undocumented responses** (`TranslateKeys`, `GetTranslationSuggestion`, `GetUilmFile`) are typed `unknown` on purpose — inspect the live payload, then narrow the types locally.

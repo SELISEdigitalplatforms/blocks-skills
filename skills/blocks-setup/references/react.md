@@ -69,7 +69,7 @@ export const useAuthStore = create<AuthState>()(
 ## Fetch wrapper with 401-refresh-retry
 
 One function all service slices call. Injects `x-blocks-key` + `Bearer`, single-flights the
-refresh so concurrent 401s trigger exactly one `POST /api/auth/refresh`, retries once.
+refresh so concurrent 401s trigger exactly one `POST /auth/refresh`, retries once.
 
 ```ts
 // src/lib/blocks/api.ts
@@ -88,11 +88,11 @@ export class BlocksApiError extends Error {
 
 let refreshInFlight: Promise<boolean> | null = null;
 
-/** POST /iam/v4/api/auth/refresh — body is snake_case by design. */
+/** POST /iam/v4/auth/refresh — body is snake_case by design. */
 async function refreshTokens(): Promise<boolean> {
   const { refreshToken, setTokens, clear } = useAuthStore.getState();
   if (!refreshToken) return false;
-  const res = await fetch(`${BLOCKS_API_URL}/iam/v4/api/auth/refresh`, {
+  const res = await fetch(`${BLOCKS_API_URL}/iam/v4/auth/refresh`, {
     method: "POST",
     headers: { "x-blocks-key": X_BLOCKS_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({ refresh_token: refreshToken }),
@@ -110,7 +110,7 @@ async function refreshTokens(): Promise<boolean> {
 
 export async function blocksFetch<T>(
   service: BlocksService,
-  path: string, // e.g. "/api/auth/me"
+  path: string, // e.g. "/auth/me"
   init: RequestInit = {},
   retried = false,
 ): Promise<T> {
@@ -162,7 +162,7 @@ export interface LoginResponse {
 }
 
 export async function login(creds: LoginRequest): Promise<LoginResponse> {
-  const data = await blocksFetch<LoginResponse>("iam", "/api/auth/login", {
+  const data = await blocksFetch<LoginResponse>("iam", "/auth/login", {
     method: "POST",
     body: JSON.stringify(creds),
   });
@@ -172,7 +172,7 @@ export async function login(creds: LoginRequest): Promise<LoginResponse> {
   return data; // caller checks for MFA challenge if tokens are absent
 }
 
-/** GET /api/auth/me — OIDC UserInfo claims (sub, email, name, + custom Blocks claims). */
+/** GET /auth/me — OIDC UserInfo claims (sub, email, name, + custom Blocks claims). */
 export interface Me {
   sub?: string;
   email?: string;
@@ -180,13 +180,13 @@ export interface Me {
   [claim: string]: unknown; // shape not documented in swagger
 }
 
-export const getMe = () => blocksFetch<Me>("iam", "/api/auth/me");
+export const getMe = () => blocksFetch<Me>("iam", "/auth/me");
 
-/** POST /api/auth/logout — NOTE: camelCase refreshToken here, per swagger. */
+/** POST /auth/logout — NOTE: camelCase refreshToken here, per swagger. */
 export async function logout(): Promise<void> {
   const { refreshToken, clear } = useAuthStore.getState();
   try {
-    await blocksFetch("iam", "/api/auth/logout", {
+    await blocksFetch("iam", "/auth/logout", {
       method: "POST",
       body: JSON.stringify({ refreshToken }),
     });
@@ -263,8 +263,8 @@ function LoginForm() {
 
 ## Notes for other skills
 
-- Import `blocksFetch` and pass your service name: `blocksFetch("data", "/api/…")`,
-  `blocksFetch("utilities", "/api/Mail/Send", { method: "POST", … })`, etc.
+- Import `blocksFetch` and pass your service name: `blocksFetch("data", "/{endpoint}")`,
+  `blocksFetch("utilities", "/Mail/Send", { method: "POST", … })`, etc.
 - 401 handling, refresh single-flighting, and token storage are already solved here — service
   slices should contain zero auth logic.
 - Error/refresh semantics and the storage rationale: [../flows/token-lifecycle.md](../flows/token-lifecycle.md).

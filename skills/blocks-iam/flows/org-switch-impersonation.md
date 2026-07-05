@@ -14,21 +14,21 @@ Two token-reissue operations for multi-tenant apps:
 
 Both use **snake_case** bodies. Preconditions: authenticated (Bearer + `x-blocks-key`).
 Multi-org must be enabled for switching (`isMultiOrgEnabled` — set via
-`POST /api/iam/organizations/config`; the GET returns an untyped `object`, inspect live).
+`POST /iam/organizations/config`; the GET returns an untyped `object`, inspect live).
 
 ## Part A — Organization switch
 
-1. `GET /api/iam/organizations/my` — the user's org memberships:
+1. `GET /iam/organizations/my` — the user's org memberships:
 
    ```json
    { "isSuccess": true, "organizations": [ { "itemId": "…", "name": "…", "createdDate": "…" } ] }
    ```
 
    Render these as the org picker. (The full org directory is
-   `GET /api/iam/organizations`, but note its `Filter.Name` query param is marked
+   `GET /iam/organizations`, but note its `Filter.Name` query param is marked
    required; `organizations/my` is the right call for a switcher UI.)
 
-2. `POST /api/auth/switch-org` (endpoints.md → [Authentication](../endpoints.md#authentication)):
+2. `POST /auth/switch-org` (endpoints.md → [Authentication](../endpoints.md#authentication)):
 
    ```json
    { "organization_id": "<itemId from step 1>" }
@@ -39,12 +39,12 @@ Multi-org must be enabled for switching (`isMultiOrgEnabled` — set via
    permissions are per-org (`roles: { "<orgId>": [...] }` on the user document), so
    the effective permissions change with the switch.
 
-3. Refresh app state: re-fetch `GET /api/auth/me` / `GET /api/iam/me` and invalidate
+3. Refresh app state: re-fetch `GET /auth/me` / `GET /iam/me` and invalidate
    any cached, org-scoped queries.
 
 ## Part B — Impersonation (admin)
 
-1. Start: `POST /api/auth/impersonate` — body fields exactly as in swagger:
+1. Start: `POST /auth/impersonate` — body fields exactly as in swagger:
 
    ```json
    {
@@ -62,10 +62,10 @@ Multi-org must be enabled for switching (`isMultiOrgEnabled` — set via
    store it separately from the admin's own tokens so you can revert.
 
 2. While impersonating, call APIs with the impersonation access token. Check state
-   anytime with `POST /api/auth/impersonation/status` (no body; response
+   anytime with `POST /auth/impersonation/status` (no body; response
    undocumented — inspect live).
 
-3. Stop: `POST /api/auth/impersonation/stop`:
+3. Stop: `POST /auth/impersonation/stop`:
 
    ```json
    { "refresh_token": "<impersonation refresh token>", "impersonation_id": "<target user id>" }
@@ -79,11 +79,11 @@ prominently, and never persist impersonation tokens beyond the session.
 
 ## Verify
 
-- After switch-org: `GET /api/auth/me` reflects the new organization context, and an
-  org-scoped call (e.g. `POST /api/iam/users` with `filter.org_id`) returns that
+- After switch-org: `GET /auth/me` reflects the new organization context, and an
+  org-scoped call (e.g. `POST /iam/users` with `filter.org_id`) returns that
   org's data.
-- During impersonation: `POST /api/auth/impersonation/status` reports it, and
-  `GET /api/auth/me` returns the target user's claims.
-- After stop: `GET /api/auth/me` returns the admin's claims again.
-- Audit: events appear in `GET /api/iam/history` / `GET /api/iam/sessions`
+- During impersonation: `POST /auth/impersonation/status` reports it, and
+  `GET /auth/me` returns the target user's claims.
+- After stop: `GET /auth/me` returns the admin's claims again.
+- Audit: events appear in `GET /iam/history` / `GET /iam/sessions`
   (filter by `Filter.UserId`).

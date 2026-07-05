@@ -10,7 +10,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
 
 ## Steps
 
-1. `POST /api/Trace/GetTraces` — search for traces. See [endpoints.md#trace](../endpoints.md#trace).
+1. `POST /Trace/GetTraces` — search for traces. See [endpoints.md#trace](../endpoints.md#trace).
    Body (`GetTracesRequest` in contracts.md):
 
    ```json
@@ -26,7 +26,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
        "excepts": [],
        "statusCodes": [500]
      },
-     "search": "/api/orders"
+     "search": "/orders"
    }
    ```
 
@@ -37,15 +37,15 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
    - Keep from the response: the trace id of the request you care about (field name must be
      confirmed from the live response — no schema in swagger).
 
-2. `GET /api/Trace/GetTrace?TraceId=<id>&ProjectKey=<X_BLOCKS_KEY>` — fetch the full trace.
+2. `GET /Trace/GetTrace?TraceId=<id>&ProjectKey=<X_BLOCKS_KEY>` — fetch the full trace.
    `TraceId` is **required** and PascalCase in the query string. Expect span-level detail
    (services, operations, timings) — response shape not documented in swagger; inspect it live.
 
-3. Correlate with logs: run `POST /api/Log/GetLogsByDate` with `filter.traceId` set to the same id
+3. Correlate with logs: run `POST /Log/GetLogsByDate` with `filter.traceId` set to the same id
    (and `filter.spanId` for a single span) to see the log lines emitted during that request. Full
    procedure: `flows/query-logs-and-live-tail.md`.
 
-4. Zoom out — service-level analytics. `POST /api/Trace/GetServiceAnalytics` (contracts.md:
+4. Zoom out — service-level analytics. `POST /Trace/GetServiceAnalytics` (contracts.md:
    `GetHttpStatusAnalyticsRequest`):
 
    ```json
@@ -61,7 +61,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
    live. Calling it without `serviceName` is also a practical way to discover the service names
    that logs/traces are recorded under.
 
-5. Zoom in — per-operation analytics. `POST /api/Trace/GetOperationalAnalytics` (contracts.md:
+5. Zoom in — per-operation analytics. `POST /Trace/GetOperationalAnalytics` (contracts.md:
    `GetApiAnalyticsRequest`):
 
    ```json

@@ -12,7 +12,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
 
 ## Steps
 
-1. `POST /api/Log/GetLogsByDate` — primary query endpoint (the only Log endpoint with a documented
+1. `POST /Log/GetLogsByDate` — primary query endpoint (the only Log endpoint with a documented
    response envelope: `{ data, errors, totalCount }`; the per-entry shape inside `data` is untyped
    in swagger — inspect the live response). See [endpoints.md#log](../endpoints.md#log). Body:
 
@@ -38,7 +38,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
    entries expose (you will need the timestamp field for the live tail cursor, and `traceId` for
    correlation).
 
-2. Optional — `POST /api/Log/GetLogs` — identical request shape (`GetLogsRequest` in contracts.md);
+2. Optional — `POST /Log/GetLogs` — identical request shape (`GetLogsRequest` in contracts.md);
    response has **no schema documented in swagger**. Prefer `GetLogsByDate` unless you observe a
    behavioral difference live.
 
@@ -46,10 +46,10 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
    to the id you got from a trace or an error log entry. This is the log↔trace join — see
    `flows/inspect-traces.md`.
 
-4. Live tail — poll `GET /api/Log/Live`:
+4. Live tail — poll `GET /Log/Live`:
 
    ```
-   GET /api/Log/Live?Name=<service>&LastDate=<ISO-8601>&ProjectKey=<X_BLOCKS_KEY>
+   GET /Log/Live?Name=<service>&LastDate=<ISO-8601>&ProjectKey=<X_BLOCKS_KEY>
    ```
 
    - `Name` is **required**; `LastDate` and `ProjectKey` are optional query params (PascalCase —

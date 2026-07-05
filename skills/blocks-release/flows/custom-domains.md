@@ -4,22 +4,22 @@ Use when a deployed app should be served from the user's own domain (e.g. `app.e
 instead of the default platform domain — for one repo or for several repos in one environment.
 
 Preconditions: `x-blocks-key` + Bearer token (blocks-setup); repo registered for builds
-(`GET /api/Build/repos-list` shows it); the user controls DNS for the domain.
+(`GET /Build/repos-list` shows it); the user controls DNS for the domain.
 
 Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/release/v4`.
 
 ## Steps
 
-1. `GET /api/Build/repos-list` — get the `repoId`(s) to map. Response shape not documented in
+1. `GET /Build/repos-list` — get the `repoId`(s) to map. Response shape not documented in
    swagger — inspect.
 
-2. `GET /api/Build/repo-details?RepoId=<repoId>` — check the current `customDomain` /
+2. `GET /Build/repo-details?RepoId=<repoId>` — check the current `customDomain` /
    deployment state before changing anything (PascalCase `RepoId`; response shape not documented
    in swagger).
 
 3. Pick one of two write paths:
 
-   **A. Single repo, alongside other settings** — `POST /api/Build/repo-settings-update`
+   **A. Single repo, alongside other settings** — `POST /Build/repo-settings-update`
    (`RepoUpdateRequest`; `projectKey` = your Blocks Key — the same value as `$X_BLOCKS_KEY`):
 
    ```json
@@ -32,7 +32,7 @@ Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/rele
 
    Response shape not documented in swagger.
 
-   **B. Batch, per environment** — `POST /api/Build/repo-update` (`RepoDomainUpdateRequest`):
+   **B. Batch, per environment** — `POST /Build/repo-update` (`RepoDomainUpdateRequest`):
 
    ```json
    {
@@ -58,10 +58,10 @@ Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/rele
    CNAME to your platform domain — confirm the exact target in OS portal).
 
    **Auth cookies on the new domain:** configure the project's cookie domain to match —
-   `POST /monitor/v4/api/Domain/Configure` with `{ projectKey, cookieDomain }` (blocks-monitor).
+   `POST /monitor/v4/Domain/Configure` with `{ projectKey, cookieDomain }` (blocks-monitor).
    Without this, the app serves but sessions/cookies fail on the custom domain. A few follow-up
    tweaks are commonly needed (exact domain form, re-login) — verify against your project.
-   Read back the effective values via `GET /os/v4/api/Project/Gets` (`cookieDomain`,
+   Read back the effective values via `GET /os/v4/Project/Gets` (`cookieDomain`,
    `customDomain`, `isDomainVerified`).
 
 5. Redeploy if needed — trigger a build (`configure-and-run-build.md`) so the new domain binding
@@ -77,7 +77,7 @@ Endpoints: `../endpoints.md#build`. Base URL: `https://api.seliseblocks.com/rele
 
 ## Verify
 
-- `GET /api/Build/repo-details?RepoId=<repoId>` reflects the new domain (response fields are
+- `GET /Build/repo-details?RepoId=<repoId>` reflects the new domain (response fields are
   undocumented — compare against what you sent).
 - After DNS propagation and a deploy, `https://app.example.com` serves the app with a valid
   certificate.

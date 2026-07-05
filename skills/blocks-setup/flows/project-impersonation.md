@@ -2,7 +2,7 @@
 
 SELISE Blocks is multi-tenant: **each project is a tenant**, and to work *inside* a project your
 session must be impersonated into that project's tenant. The pattern: log in once,
-discover the project's `tenantId`, then `POST /api/auth/impersonate` with `targeted_tenant_id` —
+discover the project's `tenantId`, then `POST /auth/impersonate` with `targeted_tenant_id` —
 the resulting session is project-scoped. Working in a different project means impersonating again
 with that project's tenant id.
 
@@ -15,13 +15,13 @@ Preconditions: activated account credentials; `.env` per
 
 ## Steps
 
-### 1. Login — `POST /iam/v4/api/auth/login`
+### 1. Login — `POST /iam/v4/auth/login`
 
 The standard login from bootstrap-project step 3 — `{ username, password }` with the
 `x-blocks-key` header, no project identifier in the body:
 
 ```bash
-curl -s -X POST "$BLOCKS_API_URL/iam/v4/api/auth/login" \
+curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/login" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
   -H "Content-Type: application/json" \
   -d "{
@@ -33,12 +33,12 @@ curl -s -X POST "$BLOCKS_API_URL/iam/v4/api/auth/login" \
 Captcha/MFA branches behave exactly as in bootstrap-project.
 Response 200 is undocumented in swagger — keep the access + refresh tokens.
 
-### 2. Discover the project's tenant — `GET /os/v4/api/Project/Gets`
+### 2. Discover the project's tenant — `GET /os/v4/Project/Gets`
 
 With the token from step 1:
 
 ```bash
-curl -s "$BLOCKS_API_URL/os/v4/api/Project/Gets?Filter.SearchKey=<project name>" \
+curl -s "$BLOCKS_API_URL/os/v4/Project/Gets?Filter.SearchKey=<project name>" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
   -H "Authorization: Bearer $ACCESS_TOKEN"
 ```
@@ -54,10 +54,10 @@ The documented response lists projects with, per project: `itemId`, `name`, **`t
 - `cookieDomain` / `applicationDomain` / `customDomain` → the domain configuration that local
   HTTPS ([local-https-setup](local-https-setup.md)) and deployed domains must line up with
 
-### 3. Impersonate into the project — `POST /iam/v4/api/auth/impersonate`
+### 3. Impersonate into the project — `POST /iam/v4/auth/impersonate`
 
 ```bash
-curl -s -X POST "$BLOCKS_API_URL/iam/v4/api/auth/impersonate" \
+curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/impersonate" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
@@ -80,26 +80,26 @@ only for account-level operations like step 2.
 
 ```bash
 # whoami under the impersonated session
-curl -s "$BLOCKS_API_URL/iam/v4/api/auth/me" \
+curl -s "$BLOCKS_API_URL/iam/v4/auth/me" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
   -H "Authorization: Bearer $PROJECT_ACCESS_TOKEN"
 
 # impersonation status (response undocumented — inspect live)
-curl -s -X POST "$BLOCKS_API_URL/iam/v4/api/auth/impersonation/status" \
+curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/impersonation/status" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
   -H "Authorization: Bearer $PROJECT_ACCESS_TOKEN"
 ```
 
-### 5. Leave the project context — `POST /iam/v4/api/auth/impersonation/stop`
+### 5. Leave the project context — `POST /iam/v4/auth/impersonation/stop`
 
 "Revert to Original Admin" (swagger summary). Call it when switching projects or ending the
 session; then impersonate again (step 3) with the next project's `tenantId`.
 
 ## Verify
 
-- `GET /api/auth/me` with the impersonated token returns 200 and its claims reflect the project
+- `GET /auth/me` with the impersonated token returns 200 and its claims reflect the project
   tenant (compare against the pre-impersonation `me` response — inspect live, shapes undocumented).
-- A project-scoped call succeeds — e.g. `GET /data/v4/api/schemas` (blocks-data) returns the
+- A project-scoped call succeeds — e.g. `GET /data/v4/schemas` (blocks-data) returns the
   project's schemas instead of an authorization error.
 
 ## Related
