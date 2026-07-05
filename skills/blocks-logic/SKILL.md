@@ -1,6 +1,6 @@
 ---
 name: blocks-logic
-description: "Use this skill for any task involving business logic, workflows, or automation on SELISE Blocks — creating, updating, versioning, publishing, duplicating, or deleting workflows (node/edge graphs), triggering runs via workflow webhooks, executing a single node (StepExecute), and inspecting workflow executions on the logic/v4 service. Also covers GitHub deployment authorization for logic deployments (connect GitHub, list repos and branches), logic file storage via pre-signed upload URLs (GetPreSignedUrlForUpload, GetFile, DeleteFile), and mail (SMTP) configuration CRUD (/api/Mail Save/Get/Gets/Delete/Duplicate — sending mail is blocks-utilities). Trigger when the user mentions Blocks Logic, workflow engine, workflow versions or executions, webhook triggers, GitHub repo/branch authorization for deployments, or mail server configuration on SELISE Blocks."
+description: "Use this skill for any task involving business logic, workflows, or automation on SELISE Blocks — creating, updating, versioning, publishing, duplicating, or deleting workflows (node/edge graphs), triggering runs via workflow webhooks, executing a single node (StepExecute), and inspecting workflow executions on the logic/v4 service. Also covers GitHub deployment authorization for logic deployments (connect GitHub, list repos and branches), logic file storage via pre-signed upload URLs (GetPreSignedUrlForUpload, GetFile, DeleteFile), and mail (SMTP) configuration CRUD (/Mail Save/Get/Gets/Delete/Duplicate — sending mail is blocks-utilities). Trigger when the user mentions Blocks Logic, workflow engine, workflow versions or executions, webhook triggers, GitHub repo/branch authorization for deployments, or mail server configuration on SELISE Blocks."
 ---
 
 # Blocks Logic
@@ -33,9 +33,9 @@ CRUD for project mail (SMTP) configurations. Base URL: `https://api.seliseblocks
 | Connect GitHub, pick a repo and branch for deployment | [flows/authorize-github-deployment.md](flows/authorize-github-deployment.md) · [endpoints.md#deployment](endpoints.md#deployment) |
 | Build/release the deployed logic (CI pipeline) | `blocks-release` skill |
 | Upload, fetch, or delete logic files | [flows/upload-and-manage-files.md](flows/upload-and-manage-files.md) · [endpoints.md#storage](endpoints.md#storage) |
-| Configure a storage provider (storage *configurations*) | `blocks-os` skill (`/api/Storage/Save|Get|Gets|Delete` config CRUD) |
+| Configure a storage provider (storage *configurations*) | `blocks-os` skill (`/Storage/Save|Get|Gets|Delete` config CRUD) |
 | Create/edit mail (SMTP) configurations | [flows/manage-mail-configurations.md](flows/manage-mail-configurations.md) · [endpoints.md#mail](endpoints.md#mail) |
-| Actually send an email, list mail templates | `blocks-utilities` skill (`/api/Mail/Send`, `/api/Template/Gets`) |
+| Actually send an email, list mail templates | `blocks-utilities` skill (`/Mail/Send`, `/Template/Gets`) |
 | Get/refresh a token, set env vars | `blocks-setup` skill |
 | Uptime monitors, health checks, logs | `blocks-monitor` skill |
 
@@ -46,16 +46,16 @@ CRUD for project mail (SMTP) configurations. Base URL: `https://api.seliseblocks
   (source/target + sourceHandle/targetHandle). Stored per `projectKey`; has a draft state
   and an `isPublished` flag. The catalog of node categories/types is not published in the
   swagger — build one workflow in the OS portal designer and read it back with
-  `GET /api/Workflow/Get` to learn the shapes your project uses.
+  `GET /Workflow/Get` to learn the shapes your project uses.
 - **Version** — a named snapshot of a workflow (`CreateVersion`), listable
   (`GetVersions`), readable (`GetWorkflowByVersion`), publishable (`PublishVersion` /
   `PublishNewVersion`), and restorable into the draft (`Restore`).
 - **Execution** — one run of a workflow. `GetExecutions` lists runs for a workflow;
   `GetExecution` returns one run by `ExecutionId`. There is **no generic
-  `/api/Workflow/Execute` endpoint in v4** — runs start from triggers (webhooks) or
+  `/Workflow/Execute` endpoint in v4** — runs start from triggers (webhooks) or
   per-node via `StepExecute`.
-- **Webhook trigger** — `POST /api/Workflow/Webhook/{projectKey}/{workflowId}/{webhookId}`
-  starts a published workflow; `POST /api/Workflow/webhook-test/{...}` is the test
+- **Webhook trigger** — `POST /Workflow/Webhook/{projectKey}/{workflowId}/{webhookId}`
+  starts a published workflow; `POST /Workflow/webhook-test/{...}` is the test
   variant (note the different casing — both routes are exact).
 - **StepExecute** — runs a single node (`nodeId`), optionally reusing upstream outputs
   from a previous run via `sourceExecutionId`. The debugging primitive.
@@ -87,27 +87,27 @@ CRUD for project mail (SMTP) configurations. Base URL: `https://api.seliseblocks
 - **Undocumented responses**: almost every `Workflow` endpoint returns
   `200 OK` with **no response schema in swagger** — inspect the live response before
   relying on its shape. Only the fields shown in `endpoints.md` are guaranteed.
-- **Deployment envelope**: all `/api/Deployment/*` endpoints return
+- **Deployment envelope**: all `/Deployment/*` endpoints return
   `DeploymentDriverBaseApiResponse` (`isSuccess`, `errors`, `message`, `statusCode`,
   `error`, `reason`) with the payload in `data: unknown` — the inner shape is untyped in
   swagger; inspect live.
-- **Casing is mixed and exact**: controllers are PascalCase (`/api/Workflow/Create`);
+- **Casing is mixed and exact**: controllers are PascalCase (`/Workflow/Create`);
   GET/DELETE query params are PascalCase (`WorkflowId`, `ProjectKey`, `ConfigurationId`);
   JSON bodies are camelCase (`projectKey`, `workflowId`). The two webhook routes differ
   only by casing: `Webhook/...` (production) vs `webhook-test/...`.
 - **Verb quirks**: most Workflow mutations are POST, but `Update` is PUT and `Delete` is
-  DELETE with query params (`Id`, `ProjectKey`). Listing is `POST /api/Workflow/GetAll`
-  with body pagination (`pageSize`, `pageNumber`), while `GET /api/Deployment/GetRepos`
+  DELETE with query params (`Id`, `ProjectKey`). Listing is `POST /Workflow/GetAll`
+  with body pagination (`pageSize`, `pageNumber`), while `GET /Deployment/GetRepos`
   paginates via query (`PageNumber`, `PageSize`).
 - **Int enums are unverified**: `provider` (0|1), `smtpClient` (0|1|2), `accessModifier`
   (0–3), `moduleName` (1–11), `statusCode` (HTTP codes). Member names are not in the
   swagger — treat meanings as unverified until observed live (see contracts.md).
-- **Two different `/api/Storage/*` route families** exist on this base URL: the logic
+- **Two different `/Storage/*` route families** exist on this base URL: the logic
   file APIs documented here (`GetPreSignedUrlForUpload`, `GetFile`, `GetFiles`,
   `DeleteFile`) and the platform storage *configuration* CRUD (`Save`, `Get`, `Gets`,
   `Delete`) which is canonical in `blocks-os`. Don't mix them up.
-- **Mail split**: `/api/Mail/Save|Get|Gets|Delete|Duplicate` (SMTP configurations) are
-  canonical here; `/api/Mail/Send` and template management are `blocks-utilities`.
+- **Mail split**: `/Mail/Save|Get|Gets|Delete|Duplicate` (SMTP configurations) are
+  canonical here; `/Mail/Send` and template management are `blocks-utilities`.
   `Gets` returns a different, richer shape (`MailServerConfiguration[]`, with `itemId`,
   `smtpClient`, `isDefault`) than `Get` (`MailConfiguration`).
 - Old v1 routes (`/lmt/`, `/deployment/v1/`, etc.) are dead — everything is

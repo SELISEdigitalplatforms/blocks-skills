@@ -98,7 +98,7 @@ export function useMagicLinks(page = 0, pageSize = 10) {
   return useQuery({
     queryKey: ["magic-links", page, pageSize],
     queryFn: () =>
-      utilitiesApi.get<GetMagicLinksResponse>("/api/MagicLink/GetLinks", {
+      utilitiesApi.get<GetMagicLinksResponse>("/MagicLink/GetLinks", {
         ProjectKey: X_BLOCKS_KEY,
         PageNumber: page,
         PageSize: pageSize,
@@ -110,7 +110,7 @@ export function useCreateMagicLink() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (req: CreateMagicLinkRequest) =>
-      utilitiesApi.post<CreateMagicLinkResponse>("/api/MagicLink/CreateLink", {
+      utilitiesApi.post<CreateMagicLinkResponse>("/MagicLink/CreateLink", {
         ...req,
         projectKey: X_BLOCKS_KEY,
       }),
@@ -122,7 +122,7 @@ export function useRemoveMagicLinks() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (linkIds: string[]) =>
-      utilitiesApi.post<RemoveMagicLinksResponse>("/api/MagicLink/RemoveLinks", {
+      utilitiesApi.post<RemoveMagicLinksResponse>("/MagicLink/RemoveLinks", {
         linkIds,
         projectKey: X_BLOCKS_KEY,
       }),
@@ -138,7 +138,7 @@ type SendMailResult = { isSuccess?: boolean; errors?: Record<string, string> };
 export function useSendMail() {
   return useMutation({
     mutationFn: (mail: SendMailToAny) =>
-      utilitiesApi.post<SendMailResult>("/api/Mail/SendToAny", {
+      utilitiesApi.post<SendMailResult>("/Mail/SendToAny", {
         ...mail,
         projectKey: X_BLOCKS_KEY,
       }),
@@ -151,7 +151,7 @@ export function useEmailTemplates(page = 0, pageSize = 20) {
   return useQuery({
     queryKey: ["email-templates", page, pageSize],
     queryFn: () =>
-      utilitiesApi.get<GetAllTemplatesResponse>("/api/Template/Gets", {
+      utilitiesApi.get<GetAllTemplatesResponse>("/Template/Gets", {
         ProjectKey: X_BLOCKS_KEY,
         PageNumber: page,
         PageSize: pageSize,
@@ -160,13 +160,13 @@ export function useEmailTemplates(page = 0, pageSize = 20) {
 }
 
 // --- Sequence ----------------------------------------------------------------
-// IMPORTANT: /api/Sequence/Next is a GET that CONSUMES a number on every call.
+// IMPORTANT: /Sequence/Next is a GET that CONSUMES a number on every call.
 // Model it as a mutation — never useQuery (refetch/remount would burn numbers).
 
 export function useNextSequenceNumber() {
   return useMutation({
     mutationFn: (context: string) =>
-      utilitiesApi.get<SequenceNumberQueryResponse>("/api/Sequence/Next", {
+      utilitiesApi.get<SequenceNumberQueryResponse>("/Sequence/Next", {
         Context: context,
         ProjectKey: X_BLOCKS_KEY,
       }),
@@ -179,7 +179,7 @@ export function useVisitorLocation() {
   return useQuery({
     queryKey: ["visitor-location"],
     queryFn: () =>
-      utilitiesApi.get<LocateIpResponse>("/api/Geolocation/Locate", {
+      utilitiesApi.get<LocateIpResponse>("/Geolocation/Locate", {
         ProjectKey: X_BLOCKS_KEY,
       }),
     staleTime: Infinity, // visitor IP location won't change mid-session
@@ -192,7 +192,7 @@ export function useNotifications(unreadOnly = false) {
   return useQuery({
     queryKey: ["notifications", unreadOnly],
     queryFn: () =>
-      utilitiesApi.get<GetNotificationsResponse>("/api/Notifier/GetNotifications", {
+      utilitiesApi.get<GetNotificationsResponse>("/Notifier/GetNotifications", {
         IsUnreadOnly: unreadOnly,
         Page: 0,
         PageSize: 20,
@@ -205,7 +205,7 @@ export function useMarkNotificationRead() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      utilitiesApi.post("/api/Notifier/MarkNotificationAsRead", { id }),
+      utilitiesApi.post("/Notifier/MarkNotificationAsRead", { id }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }
@@ -277,7 +277,7 @@ export function MagicLinkPanel() {
 
 ## Notes
 
-- **401 handling / token refresh:** wire the client's 401 branch into the refresh flow from **blocks-setup** (`POST /iam/v4/api/auth/refresh`). Retry once after refresh; log out on repeat failure.
-- **Never retry sequence draws blindly:** a retried `/api/Sequence/Next` after an ambiguous failure may consume two numbers. Set `retry: false` on that mutation.
+- **401 handling / token refresh:** wire the client's 401 branch into the refresh flow from **blocks-setup** (`POST /iam/v4/auth/refresh`). Retry once after refresh; log out on repeat failure.
+- **Never retry sequence draws blindly:** a retried `/Sequence/Next` after an ambiguous failure may consume two numbers. Set `retry: false` on that mutation.
 - **Undocumented responses:** `Mail/Send*`, `Template/Save|Clone|Delete`, and mailbox reads have no swagger response schema — keep their result types minimal (envelope only) until you've inspected live responses.
 - **PDF generation from the browser:** the Create endpoints are async and return no bytes — pair them with Storage uploads/downloads from the **blocks-os** skill; see [flows/generate-pdfs.md](../flows/generate-pdfs.md).

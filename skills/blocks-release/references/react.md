@@ -12,7 +12,7 @@ role, and only expose the x-blocks-key value that is safe for client use in your
 ## API client slice
 
 ```ts
-// src/features/release/api/client.ts
+// src/features/release/client.ts
 // Types generated from swagger — see ../../../contracts.md
 import type {
   BaseApiResponse,
@@ -49,58 +49,58 @@ async function releaseFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 // Response shape not documented in swagger — keep `unknown` until observed live.
 export const getGithubAuthorized = () =>
-  releaseFetch<unknown>('/api/Auth/IsAuthorized');
+  releaseFetch<unknown>('/Auth/IsAuthorized');
 
 // ---- Github ----
 
-export const getGithubUser = () => releaseFetch<unknown>('/api/Github/user');
+export const getGithubUser = () => releaseFetch<unknown>('/Github/user');
 
 export const getGithubRepos = (p: { search?: string; pageNumber?: number; pageSize?: number }) => {
   const q = new URLSearchParams();
   if (p.search) q.set('Search', p.search);           // PascalCase — per swagger
   if (p.pageNumber != null) q.set('PageNumber', String(p.pageNumber));
   if (p.pageSize != null) q.set('PageSize', String(p.pageSize));
-  return releaseFetch<unknown>(`/api/Github/repos?${q}`);
+  return releaseFetch<unknown>(`/Github/repos?${q}`);
 };
 
 export const getGithubBranches = (repo: string) =>
-  releaseFetch<unknown>(`/api/Github/branches?repo=${encodeURIComponent(repo)}`);
+  releaseFetch<unknown>(`/Github/branches?repo=${encodeURIComponent(repo)}`);
 
 // NOTE: mutating GET — creates a webhook on the GitHub repo. Call only on explicit user action.
 export const createGithubWebhook = (repoId: string) =>
-  releaseFetch<unknown>(`/api/Github/CreateWebhook?RepoId=${encodeURIComponent(repoId)}`);
+  releaseFetch<unknown>(`/Github/CreateWebhook?RepoId=${encodeURIComponent(repoId)}`);
 
 // ---- Build ----
 
-export const getConnectedRepos = () => releaseFetch<unknown>('/api/Build/repos-list');
-export const getBuildSettings = () => releaseFetch<unknown>('/api/Build/settings');
+export const getConnectedRepos = () => releaseFetch<unknown>('/Build/repos-list');
+export const getBuildSettings = () => releaseFetch<unknown>('/Build/settings');
 
 export const getRepoDetails = (repoId: string) =>
-  releaseFetch<unknown>(`/api/Build/repo-details?RepoId=${encodeURIComponent(repoId)}`);
+  releaseFetch<unknown>(`/Build/repo-details?RepoId=${encodeURIComponent(repoId)}`);
 
 export const getBuild = (buildId: string) =>
-  releaseFetch<unknown>(`/api/Build?buildId=${encodeURIComponent(buildId)}`);
+  releaseFetch<unknown>(`/Build?buildId=${encodeURIComponent(buildId)}`);
 
 export const getBuildReports = (buildId: string, type?: string) => {
   const q = new URLSearchParams({ buildId });
   if (type) q.set('type', type); // valid values undocumented — derive from an unfiltered call
-  return releaseFetch<unknown>(`/api/Build/reports?${q}`);
+  return releaseFetch<unknown>(`/Build/reports?${q}`);
 };
 
 export const triggerManualBuild = (body: RepoBuildRequest) =>
-  releaseFetch<BuildResponse>('/api/Build/manual', {
+  releaseFetch<BuildResponse>('/Build/manual', {
     method: 'POST',
     body: JSON.stringify(body),
   });
 
 export const updateRepoSettings = (body: RepoUpdateRequest) =>
-  releaseFetch<unknown>('/api/Build/repo-settings-update', {
+  releaseFetch<unknown>('/Build/repo-settings-update', {
     method: 'POST',
     body: JSON.stringify(body),
   });
 
 export const updateRepoDomains = (body: RepoDomainUpdateRequest) =>
-  releaseFetch<BaseApiResponse>('/api/Build/repo-update', {
+  releaseFetch<BaseApiResponse>('/Build/repo-update', {
     method: 'POST',
     body: JSON.stringify(body),
   });
@@ -113,7 +113,7 @@ local interfaces — do not guess field names up front.
 ## TanStack Query hooks
 
 ```ts
-// src/features/release/api/hooks.ts
+// src/features/release/hooks.ts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { RepoBuildRequest, RepoUpdateRequest } from './contracts';
 import * as api from './client';
@@ -235,7 +235,7 @@ export function DeployPanel({ repoId }: { repoId: string }) {
 
       {buildId && (
         <pre className="max-h-64 overflow-auto rounded bg-muted p-2 text-xs">
-          {/* GET /api/Build response is undocumented in swagger — render raw until the
+          {/* GET /Build response is undocumented in swagger — render raw until the
               status field is confirmed, then switch to a proper status badge and stop
               polling (setWatching(false)) on terminal states. */}
           {JSON.stringify(build.data, null, 2)}
@@ -249,8 +249,8 @@ export function DeployPanel({ repoId }: { repoId: string }) {
 ## Errors & refresh
 
 - The client above retries once on 401 via the auth store's `refresh()` — the refresh endpoint
-  and store shape are defined in **blocks-setup** (`POST /iam/v4/api/auth/refresh`).
+  and store shape are defined in **blocks-setup** (`POST /iam/v4/auth/refresh`).
 - `errors` in documented envelopes is a dictionary (`{ field: message }`), not an array — render
   entries, don't index.
-- Do not wire `createGithubWebhook` or `GET /api/Github/clone` into queries — they are mutating
+- Do not wire `createGithubWebhook` or `GET /Github/clone` into queries — they are mutating
   GETs; call them only from explicit user actions (and never in `useQuery`, which refetches).

@@ -5,6 +5,8 @@
 
 **Base URL:** `https://api.seliseblocks.com/localization/v4`
 
+**URL pattern:** every endpoint is `{base}/{endpoint}` — do **not** prefix with `/api/`. e.g. `POST {base}/Key/Save`, `POST {base}/Language/Gets`. The `/api/` from the swagger `basePath` is not part of the URL served by the gateway.
+
 **Authentication** (see `blocks-setup` skill for obtaining tokens):
 - `x-blocks-key: <X_BLOCKS_KEY>` header — required on every request
 - `Authorization: Bearer <access_token>` — required for authenticated operations
@@ -22,7 +24,7 @@
 
 ## Assistant
 
-### `POST /api/Assistant/GetTranslationSuggestion`
+### `POST /Assistant/GetTranslationSuggestion`
 
 **Request body** (`application/json`):
 
@@ -47,7 +49,7 @@
 
 ## Config
 
-### `GET /api/Config/GetWebHook`
+### `GET /Config/GetWebHook`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -71,7 +73,7 @@
 }
 ```
 
-### `POST /api/Config/SaveWebHook`
+### `POST /Config/SaveWebHook`
 
 **Request body** (`application/json`):
 
@@ -111,7 +113,7 @@
 
 ## Glossary
 
-### `DELETE /api/Glossary/Delete`
+### `DELETE /Glossary/Delete`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -120,7 +122,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Glossary/Get`
+### `GET /Glossary/Get`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -129,7 +131,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Glossary/GetSuggestedGlossaries`
+### `GET /Glossary/GetSuggestedGlossaries`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -157,7 +159,7 @@
 }
 ```
 
-### `GET /api/Glossary/Gets`
+### `GET /Glossary/Gets`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -189,7 +191,7 @@
 }
 ```
 
-### `POST /api/Glossary/Save`
+### `POST /Glossary/Save`
 
 **Request body** (`application/json`):
 
@@ -229,7 +231,7 @@
 
 ## Key
 
-### `DELETE /api/Key/Delete`
+### `DELETE /Key/Delete`
 
 Deletes a specific key by item ID.
 
@@ -240,7 +242,7 @@ Deletes a specific key by item ID.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `DELETE /api/Key/DeleteKeys`
+### `DELETE /Key/DeleteKeys`
 
 Deletes multiple keys by a list of item IDs. All deleted keys share the same OperationId in the timeline.
 
@@ -255,7 +257,7 @@ Deletes multiple keys by a list of item IDs. All deleted keys share the same Ope
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Key/GenerateUilmFile`
+### `POST /Key/GenerateUilmFile`
 
 Generates a UILM file for download. Must be called before calling /key/getuilmfile.
 
@@ -271,7 +273,7 @@ Generates a UILM file for download. Must be called before calling /key/getuilmfi
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Key/Get`
+### `GET /Key/Get`
 
 Retrieves a specific key by item ID.
 
@@ -304,7 +306,7 @@ Retrieves a specific key by item ID.
 }
 ```
 
-### `GET /api/Key/GetLanguageFileGenerationHistory`
+### `GET /Key/GetLanguageFileGenerationHistory`
 
 Gets a paginated list of language file generation history entries.
 
@@ -316,7 +318,7 @@ Gets a paginated list of language file generation history entries.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Key/GetLocalizationTimeline`
+### `GET /Key/GetLocalizationTimeline`
 
 Retrieves the localization-level overview timeline grouped by operation.
 
@@ -390,7 +392,7 @@ Retrieves the localization-level overview timeline grouped by operation.
 }
 ```
 
-### `GET /api/Key/GetTimeline`
+### `GET /Key/GetTimeline`
 
 Retrieves Key timeline with pagination.
 
@@ -465,7 +467,7 @@ Retrieves Key timeline with pagination.
 }
 ```
 
-### `GET /api/Key/GetTimelineByOperationId`
+### `GET /Key/GetTimelineByOperationId`
 
 Retrieves timeline entries for a specific operation by OperationId.
 
@@ -535,7 +537,7 @@ Retrieves timeline entries for a specific operation by OperationId.
 }
 ```
 
-### `GET /api/Key/GetUilmExportedFiles`
+### `GET /Key/GetUilmExportedFiles`
 
 Gets a paginated list of exported UILM files.
 
@@ -550,7 +552,7 @@ Gets a paginated list of exported UILM files.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Key/GetUilmFile`
+### `GET /Key/GetUilmFile`
 
 Returns a JSON UILM file for a specified module and language.
 
@@ -562,7 +564,7 @@ Returns a JSON UILM file for a specified module and language.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Key/Gets`
+### `POST /Key/Gets`
 
 Retrieves all available keys based on applied filters.
 
@@ -623,7 +625,7 @@ Retrieves all available keys based on applied filters.
 }
 ```
 
-### `POST /api/Key/GetsByKeyNames`
+### `POST /Key/GetsByKeyNames`
 
 Retrieves keys by an array of key names without pagination or filtering.
 
@@ -664,7 +666,7 @@ Retrieves keys by an array of key names without pagination or filtering.
 }
 ```
 
-### `POST /api/Key/RollBack`
+### `POST /Key/RollBack`
 
 Reverts keys to a previous state.
 
@@ -679,7 +681,7 @@ Reverts keys to a previous state.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Key/Save`
+### `POST /Key/Save`
 
 Saves a new or existing key to the system.
 
@@ -725,7 +727,7 @@ Saves a new or existing key to the system.
 }
 ```
 
-### `POST /api/Key/SaveKeys`
+### `POST /Key/SaveKeys`
 
 Saves multiple keys to the system in a single operation.
 
@@ -771,7 +773,7 @@ Saves multiple keys to the system in a single operation.
 }
 ```
 
-### `POST /api/Key/TranslateAll`
+### `POST /Key/TranslateAll`
 
 Translates all keys without values. If a module is specified, only keys from that module are translated.
 
@@ -788,7 +790,7 @@ Translates all keys without values. If a module is specified, only keys from tha
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Key/TranslateKey`
+### `POST /Key/TranslateKey`
 
 Translates a specific BlocksLanguageKey by sending it to the translation queue.
 
@@ -805,7 +807,7 @@ Translates a specific BlocksLanguageKey by sending it to the translation queue.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Key/TranslateKeys`
+### `POST /Key/TranslateKeys`
 
 Translates multiple BlocksLanguageKeys by sending a single bulk event to the translation queue.  
 All translated keys share the same OperationId in the timeline.
@@ -823,7 +825,7 @@ All translated keys share the same OperationId in the timeline.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Key/UilmExport`
+### `POST /Key/UilmExport`
 
 Exports all modules or selected ones with their keys.
 
@@ -845,7 +847,7 @@ Exports all modules or selected ones with their keys.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Key/UilmImport`
+### `POST /Key/UilmImport`
 
 Imports a UILM file. Existing keys are updated. Existing modules are not replaced. New keys are added; removed keys are ignored.
 
@@ -863,7 +865,7 @@ Imports a UILM file. Existing keys are updated. Existing modules are not replace
 
 ## Language
 
-### `DELETE /api/Language/Delete`
+### `DELETE /Language/Delete`
 
 Deletes a specific language.
 
@@ -874,7 +876,7 @@ Deletes a specific language.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Language/Gets`
+### `GET /Language/Gets`
 
 Retrieves all available languages.
 
@@ -894,7 +896,7 @@ Retrieves all available languages.
 }[]
 ```
 
-### `POST /api/Language/Save`
+### `POST /Language/Save`
 
 Saves a new or existing language.
 
@@ -928,7 +930,7 @@ Saves a new or existing language.
 }
 ```
 
-### `POST /api/Language/SetDefault`
+### `POST /Language/SetDefault`
 
 Sets the default language.
 
@@ -945,7 +947,7 @@ Sets the default language.
 
 ## Module
 
-### `GET /api/Module/Gets`
+### `GET /Module/Gets`
 
 Retrieves a list of all available modules.
 
@@ -968,7 +970,7 @@ Retrieves a list of all available modules.
 }[]
 ```
 
-### `POST /api/Module/Save`
+### `POST /Module/Save`
 
 Saves a new module or updates an existing one.
 
@@ -1000,7 +1002,7 @@ Saves a new module or updates an existing one.
 }
 ```
 
-### `POST /api/Module/TagGlossary`
+### `POST /Module/TagGlossary`
 
 **Request body** (`application/json`):
 

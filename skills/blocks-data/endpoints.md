@@ -5,6 +5,8 @@
 
 **Base URL:** `https://api.seliseblocks.com/data/v4`
 
+**URL pattern:** every endpoint is `{base}/{endpoint}` — do **not** prefix with `/api/`. e.g. `POST {base}/schemas/define`, `GET {base}/configurations`. The `/api/` from the swagger `basePath` is not part of the URL served by the gateway.
+
 **Authentication** (see `blocks-setup` skill for obtaining tokens):
 - `x-blocks-key: <X_BLOCKS_KEY>` header — required on every request
 - `Authorization: Bearer <access_token>` — required for authenticated operations
@@ -25,7 +27,7 @@
 
 ## Configuration
 
-### `GET /api/configurations`
+### `GET /configurations`
 
 Retrieves the data source configuration for the current tenant.
 
@@ -59,7 +61,7 @@ Retrieves the data source configuration for the current tenant.
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/configurations`
+### `POST /configurations`
 
 Creates a new data source configuration. Use this endpoint to add a new database connection for your platform.
 
@@ -113,7 +115,7 @@ Creates a new data source configuration. Use this endpoint to add a new database
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `PUT /api/configurations`
+### `PUT /configurations`
 
 Updates an existing data source configuration. Use this endpoint to modify the connection string, database name, or other details for an existing data source.
 
@@ -171,7 +173,7 @@ Updates an existing data source configuration. Use this endpoint to modify the c
 
 ## DataAccess
 
-### `POST /api/data-access/policy/create`
+### `POST /data-access/policy/create`
 
 Creates a data access policy for a specific schema.
 
@@ -207,7 +209,7 @@ Creates a data access policy for a specific schema.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `DELETE /api/data-access/policy/delete`
+### `DELETE /data-access/policy/delete`
 
 Deletes a data access policy for a specific item.
 
@@ -218,7 +220,7 @@ Deletes a data access policy for a specific item.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/data-access/policy/get`
+### `GET /data-access/policy/get`
 
 Gets all data access policies for a specific schema.
 
@@ -229,7 +231,7 @@ Gets all data access policies for a specific schema.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/data-access/policy/update`
+### `POST /data-access/policy/update`
 
 Updates a data access policy for a specific item.
 
@@ -262,7 +264,7 @@ Updates a data access policy for a specific item.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `DELETE /api/data-access/policy/{itemId}/delete`
+### `DELETE /data-access/policy/{itemId}/delete`
 
 Cloud use only: Deletes a data access policy for a specific item.
 
@@ -273,7 +275,7 @@ Cloud use only: Deletes a data access policy for a specific item.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/data-access/policy/{schemaName}/get`
+### `GET /data-access/policy/{schemaName}/get`
 
 Cloud use only: Gets all data access policies for a specific schema.
 
@@ -284,7 +286,7 @@ Cloud use only: Gets all data access policies for a specific schema.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/data-access/security/change`
+### `POST /data-access/security/change`
 
 Configures the security for a specific schema.
 
@@ -342,7 +344,7 @@ Configures the security for a specific schema.
 
 ## DataValidation
 
-### `DELETE /api/data-validations`
+### `DELETE /data-validations`
 
 Deletes a data validation by its unique ID.
 
@@ -388,7 +390,7 @@ Deletes a data validation by its unique ID.
 }
 ```
 
-### `GET /api/data-validations`
+### `GET /data-validations`
 
 Retrieves a paginated list of all data validations. Use this endpoint to view all available validations, optionally filtered by schema ID or field name.
 
@@ -441,7 +443,7 @@ Retrieves a paginated list of all data validations. Use this endpoint to view al
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/data-validations`
+### `POST /data-validations`
 
 Creates a new data validation. Use this endpoint to define validation rules for a schema field.
 
@@ -501,7 +503,7 @@ Creates a new data validation. Use this endpoint to define validation rules for 
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `PUT /api/data-validations`
+### `PUT /data-validations`
 
 Updates an existing data validation. Use this endpoint to modify validation rules for a schema field.
 
@@ -562,7 +564,7 @@ Updates an existing data validation. Use this endpoint to modify validation rule
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/data-validations/by-schema-and-field`
+### `GET /data-validations/by-schema-and-field`
 
 Retrieves validation for a specific field in a schema.
 
@@ -605,7 +607,7 @@ Retrieves validation for a specific field in a schema.
 }
 ```
 
-### `GET /api/data-validations/by-schema-id`
+### `GET /data-validations/by-schema-id`
 
 Retrieves all validations for a specific schema.
 
@@ -649,7 +651,7 @@ Retrieves all validations for a specific schema.
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/data-validations/get-by-id`
+### `GET /data-validations/get-by-id`
 
 Retrieves the details of a specific data validation by its unique ID.
 
@@ -703,7 +705,7 @@ Retrieves the details of a specific data validation by its unique ID.
 }
 ```
 
-### `GET /api/data-validations/schema/{schemaId}`
+### `GET /data-validations/schema/{schemaId}`
 
 Cloud use only: Retrieves all validations for a specific schema.
 
@@ -747,7 +749,7 @@ Cloud use only: Retrieves all validations for a specific schema.
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/data-validations/schema/{schemaId}/field/{fieldName}`
+### `GET /data-validations/schema/{schemaId}/field/{fieldName}`
 
 Cloud use only: Retrieves validation for a specific field in a schema.
 
@@ -790,7 +792,7 @@ Cloud use only: Retrieves validation for a specific field in a schema.
 }
 ```
 
-### `DELETE /api/data-validations/{id}`
+### `DELETE /data-validations/{id}`
 
 Cloud use only: Deletes a data validation by its unique ID.
 
@@ -836,7 +838,7 @@ Cloud use only: Deletes a data validation by its unique ID.
 }
 ```
 
-### `GET /api/data-validations/{id}`
+### `GET /data-validations/{id}`
 
 Cloud use only: Retrieves the details of a specific data validation by its unique ID.
 
@@ -892,7 +894,7 @@ Cloud use only: Retrieves the details of a specific data validation by its uniqu
 
 ## Files
 
-### `POST /api/Files/CreateFolder`
+### `POST /Files/CreateFolder`
 
 **Request body** (`application/json`):
 
@@ -927,7 +929,7 @@ Cloud use only: Retrieves the details of a specific data validation by its uniqu
 }
 ```
 
-### `POST /api/Files/DeleteFile`
+### `POST /Files/DeleteFile`
 
 Deletes a file based on the provided request.
 
@@ -951,7 +953,7 @@ Deletes a file based on the provided request.
 }
 ```
 
-### `POST /api/Files/DeleteFolder`
+### `POST /Files/DeleteFolder`
 
 Deletes a folder based on the provided request.
 
@@ -974,7 +976,7 @@ Deletes a folder based on the provided request.
 }
 ```
 
-### `POST /api/Files/GetDmsFileAndFolder`
+### `POST /Files/GetDmsFileAndFolder`
 
 **Request body** (`application/json`):
 
@@ -1010,7 +1012,7 @@ Deletes a folder based on the provided request.
 }
 ```
 
-### `GET /api/Files/GetFile`
+### `GET /Files/GetFile`
 
 Retrieves a file for download based on the provided request.
 
@@ -1048,7 +1050,7 @@ Retrieves a file for download based on the provided request.
 }
 ```
 
-### `POST /api/Files/GetFiles`
+### `POST /Files/GetFiles`
 
 Retrieves multiple files for download based on the provided request.
 
@@ -1089,7 +1091,7 @@ Retrieves multiple files for download based on the provided request.
 }[]
 ```
 
-### `POST /api/Files/GetFilesInfo`
+### `POST /Files/GetFilesInfo`
 
 Retrieves multiple files Information.
 
@@ -1138,7 +1140,7 @@ Retrieves multiple files Information.
 }
 ```
 
-### `POST /api/Files/GetPreSignedUrlForUpload`
+### `POST /Files/GetPreSignedUrlForUpload`
 
 Generates a pre-signed URL for uploading a file.
 
@@ -1170,7 +1172,7 @@ Generates a pre-signed URL for uploading a file.
 }
 ```
 
-### `POST /api/Files/UploadFile`
+### `POST /Files/UploadFile`
 
 **Request body** (`application/json`):
 
@@ -1207,7 +1209,7 @@ Generates a pre-signed URL for uploading a file.
 }
 ```
 
-### `POST /api/Files/UploadFileToLocalStorage`
+### `POST /Files/UploadFileToLocalStorage`
 
 Uploads a file to local storage.
 
@@ -1222,7 +1224,7 @@ Uploads a file to local storage.
 }
 ```
 
-### `POST /api/Files/updateFileAdditionalInfo`
+### `POST /Files/updateFileAdditionalInfo`
 
 **Request body** (`application/json`):
 
@@ -1238,7 +1240,7 @@ Uploads a file to local storage.
 
 ## MockData
 
-### `DELETE /api/mock-data`
+### `DELETE /mock-data`
 
 Deletes mock data from the database.
 
@@ -1288,7 +1290,7 @@ Deletes mock data from the database.
 }
 ```
 
-### `GET /api/mock-data/mock-data`
+### `GET /mock-data/mock-data`
 
 Gets mock data from the database.
 
@@ -1332,7 +1334,7 @@ Gets mock data from the database.
 
 ## RegexAssistant
 
-### `POST /api/regex/generateregex`
+### `POST /regex/generateregex`
 
 Generates a regex pattern based on a text description using AI
 
@@ -1351,7 +1353,7 @@ Generates a regex pattern based on a text description using AI
 
 ## Schema
 
-### `DELETE /api/schemas`
+### `DELETE /schemas`
 
 Deletes a schema definition by its unique ID. This action cannot be undone.
 
@@ -1397,7 +1399,7 @@ Deletes a schema definition by its unique ID. This action cannot be undone.
 }
 ```
 
-### `GET /api/schemas`
+### `GET /schemas`
 
 Retrieves a paginated list of all schema definitions. Use this endpoint to view all available schemas, optionally filtered by a keyword.
 
@@ -1569,7 +1571,7 @@ Retrieves a paginated list of all schema definitions. Use this endpoint to view 
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/schemas/aggregation`
+### `GET /schemas/aggregation`
 
 Retrieves a paginated list of schema definitions along with an aggregation summary of access levels (Public, User, Custom) for Read, Write, Edit, and Delete operations.
 
@@ -1662,7 +1664,7 @@ Retrieves a paginated list of schema definitions along with an aggregation summa
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/schemas/define`
+### `POST /schemas/define`
 
 Creates a new schema definition. Use this endpoint to define a new schema, including its name, collection name, fields, and type.
 
@@ -1725,7 +1727,7 @@ Creates a new schema definition. Use this endpoint to define a new schema, inclu
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `PUT /api/schemas/define`
+### `PUT /schemas/define`
 
 Updates an existing schema definition. Use this endpoint to modify the structure or fields of an existing schema.
 
@@ -1789,7 +1791,7 @@ Updates an existing schema definition. Use this endpoint to modify the structure
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/schemas/fields`
+### `POST /schemas/fields`
 
 Saves field definitions for a schema. Use this endpoint to add or update fields in an existing schema.
 
@@ -1851,7 +1853,7 @@ Saves field definitions for a schema. Use this endpoint to add or update fields 
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/schemas/get-by-id`
+### `GET /schemas/get-by-id`
 
 Retrieves the details of a specific schema definition by its unique ID. Use this endpoint to get the schema definition details, including its fields and type.
 
@@ -2053,7 +2055,7 @@ Retrieves the details of a specific schema definition by its unique ID. Use this
 }
 ```
 
-### `GET /api/schemas/info`
+### `GET /schemas/info`
 
 Retrieves a list of all Entity-type schema collections with basic info.
 
@@ -2102,7 +2104,7 @@ Retrieves a list of all Entity-type schema collections with basic info.
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/schemas/info`
+### `POST /schemas/info`
 
 Saves field definitions for a schema. Use this endpoint to add or update fields in an existing schema.
 
@@ -2156,7 +2158,7 @@ Saves field definitions for a schema. Use this endpoint to add or update fields 
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `PUT /api/schemas/info`
+### `PUT /schemas/info`
 
 Updates an existing schema definition. Use this endpoint to modify the structure or fields of an existing schema.
 
@@ -2211,7 +2213,7 @@ Updates an existing schema definition. Use this endpoint to modify the structure
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/schemas/info-by-name`
+### `GET /schemas/info-by-name`
 
 Retrieves the details of a specific Entity-type schema by its collection name, including all fields.
 
@@ -2275,7 +2277,7 @@ Retrieves the details of a specific Entity-type schema by its collection name, i
 }
 ```
 
-### `GET /api/schemas/info/{projectSchemaName}`
+### `GET /schemas/info/{projectSchemaName}`
 
 Cloud use only: Retrieves the details of a specific Entity-type schema by its collection name, including all fields.
 
@@ -2339,7 +2341,7 @@ Cloud use only: Retrieves the details of a specific Entity-type schema by its co
 }
 ```
 
-### `GET /api/schemas/unadapted-change-logs`
+### `GET /schemas/unadapted-change-logs`
 
 Gets all unadapted schema change logs.
 
@@ -2386,7 +2388,7 @@ Gets all unadapted schema change logs.
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `DELETE /api/schemas/{id}`
+### `DELETE /schemas/{id}`
 
 Cloud use only: Deletes a schema definition by its unique ID. This action cannot be undone.
 
@@ -2432,7 +2434,7 @@ Cloud use only: Deletes a schema definition by its unique ID. This action cannot
 }
 ```
 
-### `GET /api/schemas/{id}`
+### `GET /schemas/{id}`
 
 Cloud use only: Retrieves the details of a specific schema definition by its unique ID. Use this endpoint to get the schema definition details, including its fields and type.
 
@@ -2636,7 +2638,7 @@ Cloud use only: Retrieves the details of a specific schema definition by its uni
 
 ## SchemaConfiguration
 
-### `POST /api/schema-configurations/reload`
+### `POST /schema-configurations/reload`
 
 Reloads the GraphQL schema configuration and resolves all unadapted changes.  
 This endpoint evicts the cached schema executor and marks all pending schema changes as adapted to the server.  
@@ -2666,7 +2668,7 @@ Use this endpoint after making changes to schema definitions or data sources to 
 
 ## SchemaExchange
 
-### `POST /api/schema-exchange/export`
+### `POST /schema-exchange/export`
 
 Initiates an async export of all schema definitions for a project.  
 Returns immediately with the fileId. The exported JSON file is delivered via notification using MessageCoRelationId.
@@ -2720,7 +2722,7 @@ Returns immediately with the fileId. The exported JSON file is delivered via not
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/schema-exchange/import`
+### `POST /schema-exchange/import`
 
 Initiates an async import of schema definitions from a previously exported file.  
 The FileId must reference a file uploaded to blob storage via an export operation.  

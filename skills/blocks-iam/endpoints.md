@@ -5,6 +5,8 @@
 
 **Base URL:** `https://api.seliseblocks.com/iam/v4`
 
+**URL pattern:** every endpoint is `{base}/{endpoint}` — do **not** prefix with `/api/`. e.g. `POST {base}/auth/login`, `GET {base}/iam/me`, `POST {base}/auth/activate`. The `/api/` from the swagger `basePath` is not part of the URL served by the gateway. (Exception: OIDC discovery stays at `GET {base}/.well-known/openid-configuration` etc.)
+
 **Authentication** (see `blocks-setup` skill for obtaining tokens):
 - `x-blocks-key: <X_BLOCKS_KEY>` header — required on every request
 - `Authorization: Bearer <access_token>` — required for authenticated operations
@@ -25,7 +27,7 @@
 
 ## Authentication
 
-### `POST /api/auth/activate`
+### `POST /auth/activate`
 
 Activate user account  
 Validates activation code and marks account as active  
@@ -49,7 +51,7 @@ User can log in after successful activation
 
 **Response 400:** Invalid or expired activation code — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/change-password`
+### `POST /auth/change-password`
 
 Update password for authenticated user  
 Requires current password for security validation
@@ -65,7 +67,7 @@ Requires current password for security validation
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/auth/client-credentials`
+### `GET /auth/client-credentials`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -92,7 +94,7 @@ Requires current password for security validation
 }[]
 ```
 
-### `POST /api/auth/client-credentials`
+### `POST /auth/client-credentials`
 
 **Request body** (`application/json`):
 
@@ -113,7 +115,7 @@ Requires current password for security validation
 }
 ```
 
-### `POST /api/auth/client-credentials/delete`
+### `POST /auth/client-credentials/delete`
 
 **Request body** (`application/json`):
 
@@ -132,7 +134,7 @@ Requires current password for security validation
 }
 ```
 
-### `GET /api/auth/config`
+### `GET /auth/config`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -140,7 +142,7 @@ Requires current password for security validation
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/config`
+### `POST /auth/config`
 
 **Request body** (`application/json`):
 
@@ -176,11 +178,11 @@ Requires current password for security validation
 }
 ```
 
-### `GET /api/auth/identity-providers`
+### `GET /auth/identity-providers`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/identity-providers`
+### `POST /auth/identity-providers`
 
 Create identity provider configuration  
 Registers new OAuth 2.0 / OIDC provider for tenant  
@@ -230,7 +232,7 @@ Requires authorization (admin role)
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/auth/identity-providers/{id}`
+### `GET /auth/identity-providers/{id}`
 
 Get identity provider by ID  
 Retrieves specific provider configuration  
@@ -242,7 +244,7 @@ Does NOT return sensitive credentials (client_secret)
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `PUT /api/auth/identity-providers/{id}`
+### `PUT /auth/identity-providers/{id}`
 
 Update identity provider configuration  
 Modifies existing provider settings  
@@ -295,7 +297,7 @@ Validates configuration and tests endpoints if changed
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `PATCH /api/auth/identity-providers/{id}/status`
+### `PATCH /auth/identity-providers/{id}/status`
 
 Enable or disable identity provider  
 Toggles provider activation status without deleting configuration  
@@ -315,7 +317,7 @@ Preferred over deletion for temporary disabling
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/impersonate`
+### `POST /auth/impersonate`
 
 **Request body** (`application/json`):
 
@@ -331,11 +333,11 @@ Preferred over deletion for temporary disabling
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/impersonation/status`
+### `POST /auth/impersonation/status`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/impersonation/stop`
+### `POST /auth/impersonation/stop`
 
 Stop user impersonation (Revert to Original Admin)  
 Admin stops impersonating user and reverts to original context
@@ -351,7 +353,7 @@ Admin stops impersonating user and reverts to original context
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/login`
+### `POST /auth/login`
 
 Execute password-based authentication (Embedded Login)  
 Validates username and password against stored user account  
@@ -373,14 +375,14 @@ Issues access and refresh tokens on success
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/auth/login-options`
+### `GET /auth/login-options`
 
 Retrieve available login options (identity providers and their metadata)  
 No authentication required - public discovery endpoint
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/logout`
+### `POST /auth/logout`
 
 Execute user logout  
 Revokes refresh token, invalidates session, clears cookies
@@ -395,7 +397,7 @@ Revokes refresh token, invalidates session, clears cookies
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/logout-all`
+### `POST /auth/logout-all`
 
 Execute global logout across all sessions (Logout All Devices)  
 Revokes all refresh tokens for user across all devices  
@@ -412,7 +414,7 @@ Optionally triggers backchannel logout notifications
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/auth/me`
+### `GET /auth/me`
 
 Retrieve authenticated user information (OIDC UserInfo Endpoint)  
 Returns user claims per OpenID Connect 1.0 specification  
@@ -421,7 +423,7 @@ RFC 3986: OpenID Connect UserInfo Endpoint
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/recover`
+### `POST /auth/recover`
 
 Initiate account recovery (password reset flow)  
 Sends recovery link to registered email address
@@ -438,7 +440,7 @@ Sends recovery link to registered email address
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/refresh`
+### `POST /auth/refresh`
 
 Refresh access token using refresh token  
 Validates refresh token and issues new tokens  
@@ -456,7 +458,7 @@ RFC 6749: OAuth 2.0 Refresh Token Grant
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/resend-activation`
+### `POST /auth/resend-activation`
 
 Resend account activation email  
 Generates new activation code and sends to user's email  
@@ -475,7 +477,7 @@ Use if user did not receive initial activation email
 
 **Response 400:** User not found or already activated — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/reset-password`
+### `POST /auth/reset-password`
 
 Execute password reset with recovery token  
 Validates token before allowing password change
@@ -493,7 +495,7 @@ Validates token before allowing password change
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/signup`
+### `POST /auth/signup`
 
 Execute user registration (Sign Up)  
 Creates new user account with provided credentials  
@@ -521,7 +523,7 @@ Issues access and refresh tokens on success
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/social/callback`
+### `POST /auth/social/callback`
 
 Social provider callback handler (API Pattern)  
 Receives authorization code from social provider via POST body  
@@ -547,7 +549,7 @@ RFC 6749: OAuth 2.0 | RFC 3986: OpenID Connect | RFC 7519: JWT
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/auth/social/initiate`
+### `GET /auth/social/initiate`
 
 Initiate social provider authentication (OAuth 2.0 Authorization Code Flow)  
 Generates PKCE code challenge and state parameter  
@@ -561,7 +563,7 @@ RFC 6749: OAuth 2.0 Framework | RFC 7636: PKCE
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/auth/switch-org`
+### `POST /auth/switch-org`
 
 Switch organization context (Multi-tenant Organization Switching)  
 Authenticated user switches to different organization  
@@ -577,7 +579,7 @@ Reissues tokens with new organization context
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/auth/user-codes`
+### `GET /auth/user-codes`
 
 **Response 200:**
 
@@ -594,7 +596,7 @@ Reissues tokens with new organization context
 }[]
 ```
 
-### `POST /api/auth/user-codes`
+### `POST /auth/user-codes`
 
 **Request body** (`application/json`):
 
@@ -615,7 +617,7 @@ Reissues tokens with new organization context
 }
 ```
 
-### `POST /api/auth/validate-activation`
+### `POST /auth/validate-activation`
 
 Validate account activation code  
 Checks if activation code is valid without activating account  
@@ -635,7 +637,7 @@ Use to verify code before user interaction
 
 ## Authorization
 
-### `GET /api/oidc/authorize`
+### `GET /oidc/authorize`
 
 OAuth 2.0 Authorization Endpoint (RFC 6749 Section 3.1)  
 Initiates authorization code flow with PKCE
@@ -655,7 +657,7 @@ Initiates authorization code flow with PKCE
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/oidc/callback`
+### `GET /oidc/callback`
 
 OIDC callback handler (Browser Redirect Pattern - GET)  
 Receives authorization code from provider via browser redirect  
@@ -678,7 +680,7 @@ RFC 6749: OAuth 2.0 | RFC 3986: OpenID Connect | RFC 7519: JWT | RFC 5280: X.509
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/oidc/callback`
+### `POST /oidc/callback`
 
 OIDC callback handler (Browser Redirect Pattern - GET)  
 Receives authorization code from provider via browser redirect  
@@ -701,7 +703,7 @@ RFC 6749: OAuth 2.0 | RFC 3986: OpenID Connect | RFC 7519: JWT | RFC 5280: X.509
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/oidc/login`
+### `POST /oidc/login`
 
 OIDC Login Endpoint — authenticates credentials, sets IDP session, then issues authorization code.  
 Use this for headless / API-based OIDC flows where the browser UI is not available.
@@ -730,7 +732,7 @@ Use this for headless / API-based OIDC flows where the browser UI is not availab
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/oidc/token`
+### `POST /oidc/token`
 
 OAuth 2.0 Token Endpoint (RFC 6749 Section 3.2)  
 Supports both authorization_code and refresh_token grants
@@ -841,7 +843,7 @@ Standard response caching: 1 hour
 
 ## Iam
 
-### `GET /api/iam/email/available`
+### `GET /iam/email/available`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -849,7 +851,7 @@ Standard response caching: 1 hour
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/iam/history`
+### `GET /iam/history`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -869,7 +871,7 @@ Standard response caching: 1 hour
 }
 ```
 
-### `GET /api/iam/me`
+### `GET /iam/me`
 
 **Response 200:**
 
@@ -880,7 +882,7 @@ Standard response caching: 1 hour
 }
 ```
 
-### `PATCH /api/iam/me`
+### `PATCH /iam/me`
 
 **Request body** (`application/json`):
 
@@ -903,7 +905,7 @@ Standard response caching: 1 hour
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/iam/organizations`
+### `GET /iam/organizations`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1001,7 +1003,7 @@ Standard response caching: 1 hour
 }
 ```
 
-### `GET /api/iam/organizations/config`
+### `GET /iam/organizations/config`
 
 **Response 200:**
 
@@ -1009,7 +1011,7 @@ Standard response caching: 1 hour
 object
 ```
 
-### `POST /api/iam/organizations/config`
+### `POST /iam/organizations/config`
 
 **Request body** (`application/json`):
 
@@ -1033,7 +1035,7 @@ object
 }
 ```
 
-### `POST /api/iam/organizations/create`
+### `POST /iam/organizations/create`
 
 **Request body** (`application/json`):
 
@@ -1071,7 +1073,7 @@ object
 }
 ```
 
-### `GET /api/iam/organizations/my`
+### `GET /iam/organizations/my`
 
 **Response 200:**
 
@@ -1087,7 +1089,7 @@ object
 }
 ```
 
-### `GET /api/iam/organizations/{id}`
+### `GET /iam/organizations/{id}`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1148,7 +1150,7 @@ object
 }
 ```
 
-### `POST /api/iam/organizations/{id}`
+### `POST /iam/organizations/{id}`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1204,7 +1206,7 @@ object
 }
 ```
 
-### `POST /api/iam/permissions`
+### `POST /iam/permissions`
 
 **Request body** (`application/json`):
 
@@ -1259,7 +1261,7 @@ object
 }
 ```
 
-### `GET /api/iam/permissions/by-severity`
+### `GET /iam/permissions/by-severity`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1274,7 +1276,7 @@ object
 }[]
 ```
 
-### `POST /api/iam/permissions/create`
+### `POST /iam/permissions/create`
 
 **Request body** (`application/json`):
 
@@ -1295,7 +1297,7 @@ object
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/iam/permissions/{id}`
+### `GET /iam/permissions/{id}`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1329,7 +1331,7 @@ object
 }
 ```
 
-### `POST /api/iam/permissions/{id}`
+### `POST /iam/permissions/{id}`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1356,7 +1358,7 @@ object
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/iam/resource-groups`
+### `GET /iam/resource-groups`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1371,7 +1373,7 @@ object
 }[]
 ```
 
-### `GET /api/iam/resource/features`
+### `GET /iam/resource/features`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1388,7 +1390,7 @@ object
 }[]
 ```
 
-### `POST /api/iam/roles`
+### `POST /iam/roles`
 
 **Request body** (`application/json`):
 
@@ -1434,7 +1436,7 @@ object
 }
 ```
 
-### `POST /api/iam/roles/assign-permissions`
+### `POST /iam/roles/assign-permissions`
 
 **Request body** (`application/json`):
 
@@ -1448,7 +1450,7 @@ object
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/iam/roles/assignable`
+### `GET /iam/roles/assignable`
 
 **Response 200:**
 
@@ -1465,7 +1467,7 @@ object
 }
 ```
 
-### `POST /api/iam/roles/create`
+### `POST /iam/roles/create`
 
 **Request body** (`application/json`):
 
@@ -1482,7 +1484,7 @@ object
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/iam/roles/update`
+### `POST /iam/roles/update`
 
 **Request body** (`application/json`):
 
@@ -1499,7 +1501,7 @@ object
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/iam/roles/{id}`
+### `GET /iam/roles/{id}`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1531,7 +1533,7 @@ object
 }
 ```
 
-### `GET /api/iam/sessions`
+### `GET /iam/sessions`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1551,7 +1553,7 @@ object
 }
 ```
 
-### `GET /api/iam/signup-settings`
+### `GET /iam/signup-settings`
 
 **Response 200:**
 
@@ -1559,7 +1561,7 @@ object
 object
 ```
 
-### `POST /api/iam/signup-settings`
+### `POST /iam/signup-settings`
 
 **Request body** (`application/json`):
 
@@ -1582,7 +1584,7 @@ object
 }
 ```
 
-### `POST /api/iam/users`
+### `POST /iam/users`
 
 **Request body** (`application/json`):
 
@@ -1623,7 +1625,7 @@ object
 }
 ```
 
-### `POST /api/iam/users/create`
+### `POST /iam/users/create`
 
 **Request body** (`application/json`):
 
@@ -1658,7 +1660,7 @@ object
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/iam/users/deactivate`
+### `POST /iam/users/deactivate`
 
 **Request body** (`application/json`):
 
@@ -1670,7 +1672,7 @@ object
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/iam/users/org-update`
+### `POST /iam/users/org-update`
 
 **Request body** (`application/json`):
 
@@ -1685,7 +1687,7 @@ object
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/iam/users/roles-and-permissions`
+### `POST /iam/users/roles-and-permissions`
 
 **Request body** (`application/json`):
 
@@ -1699,7 +1701,7 @@ object
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/iam/users/timeline`
+### `GET /iam/users/timeline`
 
 **Request body** (`application/json`):
 
@@ -1806,7 +1808,7 @@ object
 }[]
 ```
 
-### `GET /api/iam/users/{id}`
+### `GET /iam/users/{id}`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1822,7 +1824,7 @@ object
 }
 ```
 
-### `POST /api/iam/users/{id}`
+### `POST /iam/users/{id}`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1851,7 +1853,7 @@ object
 
 ## Idp
 
-### `GET /api/idp/callback`
+### `GET /idp/callback`
 
 Handle authorization code callback from IdP  
 Receives authorization code and state, exchanges for tokens, creates session  
@@ -1866,7 +1868,7 @@ RFC 6749: OAuth 2.0 Authorization Code Flow | RFC 7636: PKCE
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/idp/initiate`
+### `GET /idp/initiate`
 
 Initiate identity provider authentication flow for a specific client  
 Delegates to IDP service for OIDC param generation and URL building
@@ -1876,16 +1878,38 @@ Delegates to IDP service for OIDC param generation and URL building
 | `clientId` | query | string | no |  |
 | `redirectUri` | query | string | no |  |
 | `forwardedTo` | query | string | no |  |
+| `x-blocks-key` | query | string | no | Project Blocks Key. Lives as a query param because the SPA issues this as a `fetch` (not a browser navigation) and the `x-blocks-key` header isn't set by browsers on top-level loads. From the platform integration doc — not in the swagger param table; verify it against your project. |
 
-**Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
+**Response 200:**
 
-### `GET /api/idp/oidc-ui-config`
+The platform returns the URL the browser must navigate to (Blocks IAM authorize
+endpoint) in a JSON body. **The shape is not documented in swagger — verify
+against your live response.** The single canonical field name is:
+
+```jsonc
+{
+  "redirect_uri": "https://iam.seliseblocks.com/<X_BLOCKS_KEY>/oauth2/authorize?response_type=code&client_id=…&redirect_uri=…&state=…&code_challenge=…&code_challenge_method=S256&scope=openid"
+}
+```
+
+Other field names observed in older clients / dev sandboxes (`redirectUrl`, `url`,
+`authorizationUrl`, `authorization_url`, `authorizeUrl`, `authorize_url`) are
+**not** what the live `iam/v4` returns — they're leftover assumptions from earlier
+docs and should not be relied on. Code may keep a defensive fallback lookup that
+also tries those names, but treat them as deprecated and only `redirect_uri` as
+authoritative.
+
+Alternatively the platform may issue a **30x redirect with a `Location` header**
+instead of a 200 — the SPA handles both shapes. See `flows/oidc-login.md` and
+`references/react.md` for the canonical `startLogin()` implementation.
+
+### `GET /idp/oidc-ui-config`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
 ## IdpSession
 
-### `GET /api/oidc/session`
+### `GET /oidc/session`
 
 Get current session details  
 GET /oidc/session
@@ -1932,10 +1956,10 @@ GET /oidc/session
 }
 ```
 
-### `POST /api/oidc/session/account/add`
+### `POST /oidc/session/account/add`
 
 Add another account to current session  
-POST /api/oidc/session/add-account  
+POST /oidc/session/add-account  
 Allows user to authenticate with another account and add to same session  
 OIDC multi-account SSO support
 
@@ -1981,10 +2005,10 @@ OIDC multi-account SSO support
 }
 ```
 
-### `POST /api/oidc/session/account/select`
+### `POST /oidc/session/account/select`
 
 Select which account to use in this session  
-POST /api/oidc/session/select-account  
+POST /oidc/session/select-account  
 For multi-account SSO, switches context to different account  
 CSRF protection required
 
@@ -2029,7 +2053,7 @@ CSRF protection required
 }
 ```
 
-### `GET /api/oidc/session/accounts`
+### `GET /oidc/session/accounts`
 
 Get all accounts in current session  
 GET /oidc/session/accounts  
@@ -2060,10 +2084,10 @@ Supports multi-account SSO - user can see all accounts logged in this session
 }
 ```
 
-### `DELETE /api/oidc/session/accounts/{userId}`
+### `DELETE /oidc/session/accounts/{userId}`
 
 Remove account from session  
-DELETE /api/oidc/session/accounts/{userId}  
+DELETE /oidc/session/accounts/{userId}  
 Removes account from multi-account session
 
 | Param | In | Type | Required | Description |
@@ -2096,10 +2120,10 @@ Removes account from multi-account session
 }
 ```
 
-### `POST /api/oidc/session/revoke`
+### `POST /oidc/session/revoke`
 
 Revoke current session (logout)  
-POST /api/oidc/session/revoke  
+POST /oidc/session/revoke  
 Logs out all accounts in this session  
 CSRF protection required
 
@@ -2127,7 +2151,7 @@ CSRF protection required
 
 ## Mfa
 
-### `POST /api/mfa/admin/reset`
+### `POST /mfa/admin/reset`
 
 **Request body** (`application/json`):
 
@@ -2140,15 +2164,15 @@ CSRF protection required
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/mfa/backup-codes`
+### `GET /mfa/backup-codes`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/mfa/backup-codes/generate`
+### `POST /mfa/backup-codes/generate`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/mfa/backup-codes/use`
+### `POST /mfa/backup-codes/use`
 
 **Request body** (`application/json`):
 
@@ -2161,19 +2185,19 @@ CSRF protection required
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/mfa/disable`
+### `POST /mfa/disable`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/mfa/email/enable`
+### `POST /mfa/email/enable`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/mfa/policy`
+### `GET /mfa/policy`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `PUT /api/mfa/policy`
+### `PUT /mfa/policy`
 
 **Request body** (`application/json`):
 
@@ -2196,7 +2220,7 @@ CSRF protection required
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `PUT /api/mfa/preferred-method`
+### `PUT /mfa/preferred-method`
 
 **Request body** (`application/json`):
 
@@ -2208,15 +2232,15 @@ CSRF protection required
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/mfa/status`
+### `GET /mfa/status`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/mfa/totp/setup`
+### `POST /mfa/totp/setup`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/mfa/totp/verify-setup`
+### `POST /mfa/totp/verify-setup`
 
 **Request body** (`application/json`):
 
@@ -2230,7 +2254,7 @@ CSRF protection required
 
 ## OidcClients
 
-### `GET /api/oidc-clients`
+### `GET /oidc-clients`
 
 Retrieve all OIDC clients for the tenant  
 Returns list of registered OAuth 2.0 / OIDC client applications  
@@ -2242,7 +2266,7 @@ Sensitive fields (client_secret) are excluded from response
 
 **Response 401:** Authentication required — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/oidc-clients`
+### `POST /oidc-clients`
 
 Create or update OIDC client configuration (Upsert)  
 Registers new OIDC client or updates existing configuration  
@@ -2285,7 +2309,7 @@ Returns generated or existing client_secret
 
 **Response 401:** Authentication required — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `DELETE /api/oidc-clients/{clientId}`
+### `DELETE /oidc-clients/{clientId}`
 
 Delete OIDC client configuration  
 Removes client application and revokes all issued tokens  
@@ -2303,7 +2327,7 @@ Note: Deletion is irreversible
 
 **Response 404:** Client not found — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/oidc-clients/{clientId}`
+### `GET /oidc-clients/{clientId}`
 
 Retrieve specific OIDC client by client ID  
 Returns detailed configuration for single client application  
@@ -2323,20 +2347,20 @@ Sensitive fields (client_secret) are excluded from response
 
 ## TokenManagement
 
-### `POST /api/oidc/introspect`
+### `POST /oidc/introspect`
 
 RFC 7662: Token Introspection Endpoint  
 Allows authorized clients to introspect tokens and get claims/metadata
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/oidc/revocation-history`
+### `GET /oidc/revocation-history`
 
 Get revocation history for audit trail
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/oidc/revoke`
+### `POST /oidc/revoke`
 
 RFC 7009: Token Revocation Endpoint  
 Allows clients and resource owners to revoke access and refresh tokens
