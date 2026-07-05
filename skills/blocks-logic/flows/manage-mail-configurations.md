@@ -8,11 +8,12 @@ mail sending uses. CRUD for these is canonical here
 `blocks-utilities` skill.
 
 Preconditions: token + `x-blocks-key` (`blocks-setup`); SMTP credentials for the mail
-provider you're configuring. `ProjectKey` in these endpoints is your project slug.
+provider you're configuring. `ProjectKey` in these endpoints = your Blocks Key (the
+same value as `$X_BLOCKS_KEY`).
 
 ## Steps
 
-1. `GET /api/Mail/Gets?ProjectKey=<slug>` — list existing configurations first.
+1. `GET /api/Mail/Gets?ProjectKey=$X_BLOCKS_KEY` — list existing configurations first.
    Returns `MailServerConfiguration[]` — note this list shape is richer than the single
    `Get` shape: it includes `itemId`, `name`, `smtpClient` (int enum `0|1|2`, names
    unverified), `isDefault`, `useDefaultCredentials`, audit fields.
@@ -27,7 +28,7 @@ provider you're configuring. `ProjectKey` in these endpoints is your project slu
    in swagger — verify live). Response 200 has no documented schema — inspect the live
    response.
 
-3. `GET /api/Mail/Get?ConfigurationName=<name>&ProjectKey=<slug>` — read one
+3. `GET /api/Mail/Get?ConfigurationName=<name>&ProjectKey=$X_BLOCKS_KEY` — read one
    configuration back. Note the asymmetry: `Get` selects by **ConfigurationName**, while
    `Delete`/`Duplicate` use **ConfigurationId**. Keep `configurationId` from this
    response for later steps. `accountPassword` appears in the schema — treat responses
@@ -37,7 +38,7 @@ provider you're configuring. `ProjectKey` in these endpoints is your project slu
    a configuration (e.g., copy prod settings, then `Save` the copy with a different
    sender). Response shape not documented in swagger.
 
-5. `DELETE /api/Mail/Delete?ConfigurationId=<id>&ProjectKey=<slug>` — remove a
+5. `DELETE /api/Mail/Delete?ConfigurationId=<id>&ProjectKey=$X_BLOCKS_KEY` — remove a
    configuration. Response shape not documented in swagger.
 
 6. To use a configuration, send mail via `blocks-utilities`
@@ -54,7 +55,7 @@ Error paths:
 
 ## Verify
 
-- `GET /api/Mail/Gets?ProjectKey=<slug>` includes the new/updated configuration with the
+- `GET /api/Mail/Gets?ProjectKey=$X_BLOCKS_KEY` includes the new/updated configuration with the
   expected `host`/`senderAddress` (and no longer includes deleted ones).
 - End-to-end: send a test message via `blocks-utilities` `/api/Mail/Send` using this
   configuration and confirm delivery.

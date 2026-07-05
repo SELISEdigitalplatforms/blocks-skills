@@ -20,7 +20,7 @@ VITE_X_BLOCKS_KEY=<Blocks Key>       # client-visible by design
 Never expose `BLOCKS_USERNAME` / `BLOCKS_PASSWORD` or admin secrets via `VITE_`.
 
 **Serve dev over HTTPS.** Blocks sets Secure auth cookies — a plain `http://localhost` dev server
-breaks auth in confusing ways. One-time mkcert + Vite setup:
+breaks auth in confusing ways. One-time openssl + Vite setup:
 [../flows/local-https-setup.md](../flows/local-https-setup.md) (adds `server.https` with a
 locally-trusted cert to `vite.config.ts`).
 

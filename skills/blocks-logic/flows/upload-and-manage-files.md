@@ -16,7 +16,7 @@ swagger — verify on your project).
 1. `POST /api/Storage/GetPreSignedUrlForUpload` — request an upload slot.
    Body (all fields optional in schema; send what you know):
    - `name` — the file name (with extension).
-   - `projectKey` — your project slug.
+   - `projectKey` — your Blocks Key (projectKey = your Blocks Key, the same value as `$X_BLOCKS_KEY`).
    - `configurationName` — storage configuration to use (omit for default).
    - `parentDirectoryId` — target folder, if you use directories.
    - `accessModifier` — a **string** here (e.g. `"Public"`/`"Private"` — exact accepted
@@ -36,7 +36,7 @@ swagger — verify on your project).
    Bearer token. Send the file body with an appropriate `Content-Type`. The URL is
    time-limited — upload promptly and request a fresh one if it expires.
 
-3. `GET /api/Storage/GetFile?FileId=<fileId>&ProjectKey=<slug>` — confirm the upload and
+3. `GET /api/Storage/GetFile?FileId=<fileId>&ProjectKey=$X_BLOCKS_KEY` — confirm the upload and
    get the download `url`, plus metadata (`name`, `sizeInBytes`, `accessModifier`,
    `tags`, `metaData`, `createDate`, ...). Optional `Version` (int64) fetches a specific
    file version; `ConfigurationName` targets a non-default configuration.

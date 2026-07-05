@@ -12,7 +12,7 @@ export interface 0ServiceResponseOfPaginationResponse {
   isSuccess?: boolean;
   message?: string | null;
   httpStatusCode?: number;
-  data?: PaginationResponseOfSchemaDefinitionResponse;
+  data?: PaginationResponseOfDataValidationResponse;
   errors?: ValidationFailure[];
 }
 
@@ -20,7 +20,7 @@ export interface 0ServiceResponseOfPaginationResponse {
   isSuccess?: boolean;
   message?: string | null;
   httpStatusCode?: number;
-  data?: PaginationResponseOfDataValidationResponse;
+  data?: PaginationResponseOfSchemaDefinitionResponse;
   errors?: ValidationFailure[];
 }
 

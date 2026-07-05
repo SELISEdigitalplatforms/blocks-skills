@@ -4,10 +4,10 @@ Use when creating a new data model (collection) for a project, or when adding/ch
 
 ## Steps
 
-1. `GET /api/data-sources/get?projectKey=$X_BLOCKS_KEY` — confirm a data source exists and capture identifiers.
-   Keep `data.projectKey`, `data.projectShortKey`, `data.collectionNamePattern`, `data.isCollectionNameEditable` ([endpoints.md#datasource](../endpoints.md#datasource)).
-   - If `data` is null/empty, no data source is configured yet → `POST /api/data-sources/add` with `{ connectionString, databaseName, projectKey }` (ask the user: their own MongoDB connection string, or the Blocks-provided default set up in OS portal).
-   - `GET /api/configurations` returns the same configuration for the current tenant without a `projectKey` param.
+1. `GET /api/configurations` — confirm a data source exists for the current tenant and capture identifiers.
+   Keep `data.projectKey`, `data.projectShortKey`, `data.collectionNamePattern`, `data.isCollectionNameEditable` ([endpoints.md#configuration](../endpoints.md#configuration)).
+   - If `data` is null/empty, no data source is configured yet → `POST /api/configurations` with `{ connectionString, databaseName, projectKey }` (ask the user: their own MongoDB connection string, or the Blocks-provided default set up in OS portal). Update later with `PUT /api/configurations`.
+   - The `/api/data-sources/*` routes you may see in swagger are **deprecated** — don't use them.
 
 2. `GET /api/schemas?ProjectKey=$X_BLOCKS_KEY&SchemaName=<name>` — check whether the schema already exists ([endpoints.md#schema](../endpoints.md#schema)).
    - Exists → skip to step 4 to modify fields. Keep `data.items[0].id` (the schema id).
@@ -48,7 +48,7 @@ Use when creating a new data model (collection) for a project, or when adding/ch
    ```
    Put field names to remove in `deletableFieldNames`. To rewrite the whole definition instead, use `PUT /api/schemas/define` (same body as create plus `itemId`).
 
-5. `POST /api/schema-configurations/reload` — **mandatory** after any schema or field change. Staged changes are not live until this succeeds (`data: true`). `POST /api/configurations/reload` is documented with identical behavior.
+5. `POST /api/schema-configurations/reload` — **mandatory** after any schema or field change. Staged changes are not live until this succeeds (`data: true`). (The older `POST /api/configurations/reload` is deprecated — don't use it.)
 
 Error paths: 401 → refresh token via blocks-setup. 400 returns `ProblemDetails { type, title, status, detail }` — usually a naming-pattern or enum-value problem; read `detail`.
 

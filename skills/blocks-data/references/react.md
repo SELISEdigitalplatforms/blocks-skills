@@ -101,7 +101,7 @@ async function dataFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 // projectKey = your Blocks Key (same value as the x-blocks-key header).
-const PROJECT_KEY = import.meta.env.VITE_X_BLOCKS_KEY;
+const X_BLOCKS_KEY = import.meta.env.VITE_X_BLOCKS_KEY;
 const qs = (params: Record<string, string | number | boolean | undefined>) =>
   "?" +
   new URLSearchParams(
@@ -115,7 +115,7 @@ export const dataApi = {
   listSchemas: (opts: { keyword?: string; pageNo?: number; pageSize?: number } = {}) =>
     dataFetch<ApiEnvelope<{ totalCount?: number; items?: SchemaDefinitionResponse[] }>>(
       `/api/schemas${qs({
-        ProjectKey: PROJECT_KEY,
+        ProjectKey: X_BLOCKS_KEY,
         Keyword: opts.keyword,
         PageNo: opts.pageNo ?? 1,
         PageSize: opts.pageSize ?? 20,
@@ -124,19 +124,19 @@ export const dataApi = {
 
   getSchemaById: (id: string) =>
     dataFetch<ApiEnvelope<SchemaDefinitionResponse>>(
-      `/api/schemas/get-by-id${qs({ id, projectKey: PROJECT_KEY })}`,
+      `/api/schemas/get-by-id${qs({ id, projectKey: X_BLOCKS_KEY })}`,
     ),
 
   defineSchema: (body: CreateSchemaDefinitionRequest) =>
     dataFetch<ApiEnvelope<ActionResponse>>(`/api/schemas/define`, {
       method: "POST",
-      body: JSON.stringify({ ...body, projectKey: PROJECT_KEY }),
+      body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 
   saveFields: (body: SaveFieldDefinitionRequest) =>
     dataFetch<ApiEnvelope<ActionResponse>>(`/api/schemas/fields`, {
       method: "POST",
-      body: JSON.stringify({ ...body, projectKey: PROJECT_KEY }),
+      body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 
   reloadConfigurations: () =>
@@ -145,29 +145,29 @@ export const dataApi = {
   // Validations
   validationsBySchema: (schemaId: string) =>
     dataFetch<ApiEnvelope<DataValidationResponse[]>>(
-      `/api/data-validations/by-schema-id${qs({ schemaId, projectKey: PROJECT_KEY })}`,
+      `/api/data-validations/by-schema-id${qs({ schemaId, projectKey: X_BLOCKS_KEY })}`,
     ),
 
   createValidation: (body: CreateDataValidationRequest) =>
     dataFetch<ApiEnvelope<ActionResponse>>(`/api/data-validations`, {
       method: "POST",
-      body: JSON.stringify({ ...body, projectKey: PROJECT_KEY }),
+      body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 
   // Files / DMS — flat responses, NOT the ApiEnvelope
   getPresignedUploadUrl: (body: GetPreSignedUrlForUploadRequest) =>
     dataFetch<GetPreSignedUrlForUploadResponse>(`/api/Files/GetPreSignedUrlForUpload`, {
       method: "POST",
-      body: JSON.stringify({ ...body, projectKey: PROJECT_KEY }),
+      body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 
   getFile: (fileId: string) =>
-    dataFetch<FileResponse>(`/api/Files/GetFile${qs({ FileId: fileId, ProjectKey: PROJECT_KEY })}`),
+    dataFetch<FileResponse>(`/api/Files/GetFile${qs({ FileId: fileId, ProjectKey: X_BLOCKS_KEY })}`),
 
   getFilesInfo: (body: Omit<GetFilesInfoRequest, "projectKey">) =>
     dataFetch<GetFilesInfoResponse>(`/api/Files/GetFilesInfo`, {
       method: "POST",
-      body: JSON.stringify({ ...body, projectKey: PROJECT_KEY }),
+      body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 };
 ```

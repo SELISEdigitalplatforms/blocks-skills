@@ -11,6 +11,16 @@
 
 **61 endpoints** across 11 controllers.
 
+> ⚠️ **Deprecated routes still present in swagger** — obsoleted by the platform team; use the replacement instead:
+> - `POST /api/configurations/reload` → `POST /api/schema-configurations/reload`
+> - `GET /api/data-manage/mock-data` → `GET /api/mock-data` (swagger currently documents it as `GET /api/mock-data/mock-data` — verify which path responds)
+> - `POST /api/data-manage/mock-data` → `DELETE /api/mock-data`
+> - `GET /api/data-manage/{projectKey}/mock-data` → `GET /api/mock-data`
+> - `POST /api/data-sources/add` → `POST /api/configurations`
+> - `GET /api/data-sources/get` → `GET /api/configurations`
+> - `PUT /api/data-sources/update` → `PUT /api/configurations`
+> - `GET /api/data-sources/{projectKey}/get` → `GET /api/configurations`
+
 ## Contents
 
 - [Configuration](#configuration) (4)
@@ -172,6 +182,8 @@ Updates an existing data source configuration. Use this endpoint to modify the c
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
 ### `POST /api/configurations/reload`
+
+> ⚠️ **DEPRECATED** — obsoleted by the platform team; use `POST /api/schema-configurations/reload` instead.
 
 Reloads the GraphQL schema configuration and resolves all unadapted changes.  
 This endpoint evicts the cached schema executor and marks all pending schema changes as adapted to the server.  
@@ -374,6 +386,8 @@ Configures the security for a specific schema.
 
 ### `GET /api/data-manage/mock-data`
 
+> ⚠️ **DEPRECATED** — obsoleted by the platform team; use `GET /api/mock-data` (swagger currently documents it as `GET /api/mock-data/mock-data` — verify which path responds) instead.
+
 Gets mock data from the database.
 
 **Response 200:**
@@ -415,6 +429,8 @@ Gets mock data from the database.
 ```
 
 ### `POST /api/data-manage/mock-data`
+
+> ⚠️ **DEPRECATED** — obsoleted by the platform team; use `DELETE /api/mock-data` instead.
 
 Deletes mock data from the database.
 
@@ -466,6 +482,8 @@ Deletes mock data from the database.
 
 ### `GET /api/data-manage/{projectKey}/mock-data`
 
+> ⚠️ **DEPRECATED** — obsoleted by the platform team; use `GET /api/mock-data` instead.
+
 Cloud use only: Gets mock data from the database.
 
 | Param | In | Type | Required | Description |
@@ -513,6 +531,8 @@ Cloud use only: Gets mock data from the database.
 ## DataSource
 
 ### `POST /api/data-sources/add`
+
+> ⚠️ **DEPRECATED** — obsoleted by the platform team; use `POST /api/configurations` instead.
 
 Creates a new data source configuration. Use this endpoint to add a new database connection for your platform.
 
@@ -568,6 +588,8 @@ Creates a new data source configuration. Use this endpoint to add a new database
 
 ### `GET /api/data-sources/get`
 
+> ⚠️ **DEPRECATED** — obsoleted by the platform team; use `GET /api/configurations` instead.
+
 Retrieves the data source configuration for a specific project. Use this endpoint to get the database connection details for your platform.
 
 | Param | In | Type | Required | Description |
@@ -605,6 +627,8 @@ Retrieves the data source configuration for a specific project. Use this endpoin
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
 ### `PUT /api/data-sources/update`
+
+> ⚠️ **DEPRECATED** — obsoleted by the platform team; use `PUT /api/configurations` instead.
 
 Updates an existing data source configuration. Use this endpoint to modify the connection string, database name, or other details for an existing data source.
 
@@ -661,6 +685,8 @@ Updates an existing data source configuration. Use this endpoint to modify the c
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
 
 ### `GET /api/data-sources/{projectKey}/get`
+
+> ⚠️ **DEPRECATED** — obsoleted by the platform team; use `GET /api/configurations` instead.
 
 Cloud use only: Retrieves the data source configuration for a specific project. Use this endpoint to get the database connection details for your platform.
 

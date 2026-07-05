@@ -4,7 +4,8 @@ Use when building a new automation on Blocks Logic end to end: create the workfl
 give it a node/edge graph, publish, trigger a run, then read the execution history.
 
 Preconditions: `x-blocks-key` + Bearer token (see `blocks-setup`); `projectKey` = your
-project slug. Important: there is **no generic `/api/Workflow/Execute` endpoint in v4** —
+Blocks Key (the same value as `$X_BLOCKS_KEY`). Important: there is **no generic
+`/api/Workflow/Execute` endpoint in v4** —
 runs start from a trigger node (webhook) or node-by-node via `StepExecute`.
 
 ## Steps
@@ -51,8 +52,8 @@ runs start from a trigger node (webhook) or node-by-node via `StepExecute`.
    `sourceExecutionId` from a previous run to reuse upstream node outputs instead of
    re-running the whole chain. Response shape not documented in swagger.
 
-7. Inspect runs — `GET /api/Workflow/GetExecutions?ProjectKey=<slug>&WorkflowId=<id>`,
-   then drill in with `GET /api/Workflow/GetExecution?ProjectKey=<slug>&ExecutionId=<id>`.
+7. Inspect runs — `GET /api/Workflow/GetExecutions?ProjectKey=$X_BLOCKS_KEY&WorkflowId=<id>`,
+   then drill in with `GET /api/Workflow/GetExecution?ProjectKey=$X_BLOCKS_KEY&ExecutionId=<id>`.
    Both response shapes are not documented in swagger — expect a run list with ids/status
    and per-node results on the single execution, but verify against the live response.
 
@@ -63,7 +64,7 @@ Error paths:
   `{projectKey}/{workflowId}/{webhookId}` exactly match the definition.
 - Wrong graph saved → fix with another `PUT /api/Workflow/Update`, or roll back via
   `POST /api/Workflow/Restore` (see [version-publish-restore.md](version-publish-restore.md)).
-- Dead end? `DELETE /api/Workflow/Delete?Id=<id>&ProjectKey=<slug>` removes the workflow;
+- Dead end? `DELETE /api/Workflow/Delete?Id=<id>&ProjectKey=$X_BLOCKS_KEY` removes the workflow;
   `POST /api/Workflow/Duplicate` (`{ projectKey, name, workflowId }`) forks it instead.
 
 ## Verify

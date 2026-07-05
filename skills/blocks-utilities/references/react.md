@@ -21,7 +21,7 @@ import { useAuthStore } from "@/stores/auth"; // from blocks-setup integration
 
 const BASE = `${import.meta.env.VITE_BLOCKS_API_URL}/utilities/v4`;
 // projectKey = your Blocks Key — the same value sent in the x-blocks-key header.
-export const PROJECT_KEY = import.meta.env.VITE_X_BLOCKS_KEY as string;
+export const X_BLOCKS_KEY = import.meta.env.VITE_X_BLOCKS_KEY as string;
 
 export class BlocksApiError extends Error {
   constructor(
@@ -79,7 +79,7 @@ export const utilitiesApi = {
 ```ts
 // src/lib/blocks/utilities.hooks.ts
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { utilitiesApi, PROJECT_KEY } from "./utilities.client";
+import { utilitiesApi, X_BLOCKS_KEY } from "./utilities.client";
 import type {
   CreateMagicLinkRequest,
   CreateMagicLinkResponse,
@@ -99,7 +99,7 @@ export function useMagicLinks(page = 0, pageSize = 10) {
     queryKey: ["magic-links", page, pageSize],
     queryFn: () =>
       utilitiesApi.get<GetMagicLinksResponse>("/api/MagicLink/GetLinks", {
-        ProjectKey: PROJECT_KEY,
+        ProjectKey: X_BLOCKS_KEY,
         PageNumber: page,
         PageSize: pageSize,
       }),
@@ -112,7 +112,7 @@ export function useCreateMagicLink() {
     mutationFn: (req: CreateMagicLinkRequest) =>
       utilitiesApi.post<CreateMagicLinkResponse>("/api/MagicLink/CreateLink", {
         ...req,
-        projectKey: PROJECT_KEY,
+        projectKey: X_BLOCKS_KEY,
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["magic-links"] }),
   });
@@ -124,7 +124,7 @@ export function useRemoveMagicLinks() {
     mutationFn: (linkIds: string[]) =>
       utilitiesApi.post<RemoveMagicLinksResponse>("/api/MagicLink/RemoveLinks", {
         linkIds,
-        projectKey: PROJECT_KEY,
+        projectKey: X_BLOCKS_KEY,
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["magic-links"] }),
   });
@@ -140,7 +140,7 @@ export function useSendMail() {
     mutationFn: (mail: SendMailToAny) =>
       utilitiesApi.post<SendMailResult>("/api/Mail/SendToAny", {
         ...mail,
-        projectKey: PROJECT_KEY,
+        projectKey: X_BLOCKS_KEY,
       }),
   });
 }
@@ -152,7 +152,7 @@ export function useEmailTemplates(page = 0, pageSize = 20) {
     queryKey: ["email-templates", page, pageSize],
     queryFn: () =>
       utilitiesApi.get<GetAllTemplatesResponse>("/api/Template/Gets", {
-        ProjectKey: PROJECT_KEY,
+        ProjectKey: X_BLOCKS_KEY,
         PageNumber: page,
         PageSize: pageSize,
       }),
@@ -168,7 +168,7 @@ export function useNextSequenceNumber() {
     mutationFn: (context: string) =>
       utilitiesApi.get<SequenceNumberQueryResponse>("/api/Sequence/Next", {
         Context: context,
-        ProjectKey: PROJECT_KEY,
+        ProjectKey: X_BLOCKS_KEY,
       }),
   });
 }
@@ -180,7 +180,7 @@ export function useVisitorLocation() {
     queryKey: ["visitor-location"],
     queryFn: () =>
       utilitiesApi.get<LocateIpResponse>("/api/Geolocation/Locate", {
-        ProjectKey: PROJECT_KEY,
+        ProjectKey: X_BLOCKS_KEY,
       }),
     staleTime: Infinity, // visitor IP location won't change mid-session
   });
