@@ -1,0 +1,42 @@
+# Send templated transactional mail
+
+Use for sending transactional email (welcome mails, password-reset style notices, receipts) and managing the EmailTemplate documents behind them. Requires `x-blocks-key` + Bearer token, and a mail configuration set up for the project (SMTP/provider settings are configured in the Cloud Portal — not exposed in this service's v4 swagger).
+
+Endpoint reference: [endpoints.md#mail](../endpoints.md#mail), [endpoints.md#template](../endpoints.md#template).
+
+**Ownership split — read this first:**
+- Mail **sending** (`/api/Mail/Send`, `/api/Mail/SendToAny`) and mailbox reads (`/api/Mail/GetMailBoxMail(s)`) are canonical **here** in blocks-utilities.
+- Mail-**template** CRUD at `/api/Mail/Save|Get|Gets|Delete|Duplicate` is canonical in the **blocks-logic** skill — those routes are not in this service's swagger.
+- The `/api/Template/*` controller **here** is a separate EmailTemplate store (`name`, `templateSubject`, `templateBody`, `jsonContent`, `mailConfigurationId`, `language`).
+
+## Manage templates (`/api/Template/*`)
+
+1. `POST /api/Template/Save` — create or update. Key fields: `name`, `templateSubject`, `templateBody` (HTML), `jsonContent` (editor state, if you use a visual builder), `language`, `mailConfigurationId`, `projectKey`. Omit `itemId` to create; pass an existing `itemId` to update. Response shape not documented in swagger — inspect the live response (expect a BaseResponse-style envelope; grab the created id from it or re-query).
+2. `GET /api/Template/Gets?ProjectKey=<key>&PageNumber=0&PageSize=20` — list; supports `SearchKey`, `SortProperty` + `IsDescending`, and filters `MailConfigurationId`, `Language`. Response: `{ totalCount, templates: EmailTemplate[] }`.
+3. `GET /api/Template/Get?ItemId=<id>&ProjectKey=<key>` — full template incl. `templateBody`.
+4. `POST /api/Template/Clone` — duplicate a template (e.g. per language): `itemId` (source), new `name`, `language`, `templateSubject`, `mailConfigurationId`, `projectKey`. Response not documented in swagger.
+5. `DELETE /api/Template/Delete?ItemId=<id>&ProjectKey=<key>` — remove. Response not documented in swagger.
+
+Placeholders: templates are filled at send time from `subjectDataContext`/`bodyDataContext` string maps. The placeholder syntax inside `templateBody` is not documented in swagger — check an existing template in your project for the expected token format.
+
+## Send mail
+
+`POST /api/Mail/Send` — the standard transactional send:
+
+- `to` / `cc` / `bcc` / `replyTo`: arrays of addresses.
+- `purpose`: selects which configured template/mail-purpose to send. The resolution of `purpose` → template is not documented in swagger; it matches the mail purpose configured for your project's mail configuration — verify against your project setup.
+- `language`: picks the language variant of the template.
+- `subjectDataContext` / `bodyDataContext`: `{ [placeholder]: value }` string maps merged into the template.
+- `attachments`: `string[]` — likely file references (Storage file IDs from blocks-os), but the expected value format is not documented in swagger; verify with a test send.
+- `sendPhoneNumberAsEmail`, `projectKey`.
+
+`POST /api/Mail/SendToAny` — identical shape plus `isTestMail`. The naming suggests `Send` targets known/registered recipients while `SendToAny` allows arbitrary external addresses, but swagger does not document the distinction — verify against your project. Use `isTestMail: true` for smoke tests.
+
+Both send endpoints have **no response schema in swagger** — inspect the live response; at minimum expect the usual `isSuccess`/`errors` envelope, but do not rely on that shape untested.
+
+## Verify
+
+- `GET /api/Mail/GetMailBoxMails?ProjectKey=<key>&PageNumber=0&PageSize=10` — the project mailbox/outbox; filter by `Status`, `SearchText`, `SendDateRange.StartDate`/`EndDate`, `IsInbound`. Response shape not documented in swagger — inspect live. Your sent message should appear here.
+- `GET /api/Mail/GetMailBoxMail?ProjectKey=<key>&MessageId=<id>` — single message detail (shape undocumented — inspect live).
+- Check the recipient inbox for a test send (`SendToAny` with `isTestMail: true`) and confirm placeholders were replaced — unreplaced tokens mean the key in `bodyDataContext` doesn't match the template's placeholder name.
+- Template edits: `GET /api/Template/Get` after `Save` to confirm `templateBody`/`lastUpdatedDate` changed.

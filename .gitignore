@@ -9,3 +9,6 @@ benchmark.json
 # OS
 .DS_Store
 .kilo/
+
+# Swagger spec cache (regenerate via tools/generate-api-docs.py)
+.swagger-cache/
