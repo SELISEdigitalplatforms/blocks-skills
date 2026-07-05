@@ -28,6 +28,8 @@ python3 tools/generate-api-docs.py iam data     # specific services
 
 The generator reads `.swagger-cache/<svc>.json`, downloading from `https://api.seliseblocks.com/<svc>/v4/swagger/v1/swagger.json` on a cache miss. Delete a cached file to force a re-download.
 
+**Deprecated routes are excluded, not documented.** Routes the platform team has obsoleted (they carry `deprecated: true` in swagger) are listed in `DEPRECATED_ROUTES` in the generator and skipped entirely — they never appear in `endpoints.md`. So a route being present in swagger but absent from the generated docs is intentional, not a bug. When a route is deprecated, add it to `DEPRECATED_ROUTES` (with its replacement as a reference comment), regenerate, and remove any hand-authored mentions from that skill's SKILL.md/flows.
+
 For hand-authored files (SKILL.md, flows, references):
 
 - Every endpoint path, HTTP method, request field, response field, header, and type name must exist **verbatim** in that skill's `endpoints.md` / `contracts.md`. Cross-references to another service's routes must name the owning skill.

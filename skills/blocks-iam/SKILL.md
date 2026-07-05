@@ -1,6 +1,6 @@
 ---
 name: blocks-iam
-description: "Application identity & access on SELISE Blocks (iam/v4 service). Use this skill for any task involving login pages, signup, account activation, password recovery/reset/change, token refresh, logout, MFA (TOTP, backup codes, MFA policy), user management, roles & permissions (RBAC), organizations and org switching, impersonation, sessions, SSO with external identity providers (Google, Azure AD, Okta, Apple), OIDC client registration, token introspection/revocation, or machine-to-machine client credentials. Trigger when the user mentions auth, authentication, sign in / sign up, JWT, access token, refresh token, IAM, IDP or blocks-idp (legacy v1 names — routes here now), user roles, RBAC, SSO, OIDC, MFA, 2FA, or 'sign in with Google/Microsoft' on SELISE Blocks. Owns /api/auth/*, /api/iam/*, /api/mfa/*, and /api/oidc* endpoints."
+description: "Application identity & access on SELISE Blocks (iam/v4 service). Use this skill for any task involving login pages, signup, account activation, password recovery/reset/change, token refresh, logout, MFA (TOTP, backup codes, MFA policy), user management, roles & permissions (RBAC), organizations and org switching, impersonation, sessions, SSO with external identity providers (Google, Azure AD, Okta, Apple), single-button Blocks-hosted OIDC login (authorization-code flow with a cookie session, no password form), OIDC client registration, token introspection/revocation, or machine-to-machine client credentials. Trigger when the user mentions auth, authentication, sign in / sign up, login button, JWT, access token, refresh token, IAM, IDP or blocks-idp (legacy v1 names — routes here now), user roles, RBAC, SSO, OIDC, blocks-oidc, idp/initiate, hosted login, MFA, 2FA, or 'sign in with Google/Microsoft' on SELISE Blocks. Owns /api/auth/*, /api/iam/*, /api/mfa/*, and /api/oidc* endpoints."
 ---
 
 # Blocks IAM — Application Identity & Access
@@ -36,6 +36,7 @@ app MFA is the lowercase `/api/mfa/*` here.
 
 | I need to… | Go to |
 |---|---|
+| **App auth with a single Login button** (Blocks-hosted OIDC, cookie session, no password form) | [flows/oidc-login.md](flows/oidc-login.md) |
 | Build a login page (password, captcha, MFA challenge) | [flows/embedded-login.md](flows/embedded-login.md) |
 | Sign up a user, activate the account, first login | [flows/signup-activation.md](flows/signup-activation.md) |
 | Forgot / reset / change password | [flows/password-recovery.md](flows/password-recovery.md) |
@@ -77,6 +78,13 @@ app MFA is the lowercase `/api/mfa/*` here.
   Apple) registered under `/api/auth/identity-providers` so users can SSO *into* your app.
 - **OIDC client** — the reverse direction: an app registered under `/api/oidc-clients`
   that uses *Blocks* as its OIDC provider (`/api/oidc/authorize`, `/api/oidc/token`).
+- **Hosted OIDC login** — the simplest app-auth path: a single Login button redirects to
+  `/api/idp/initiate`, Blocks hosts credential entry and the authorization-code flow, and
+  `/api/idp/callback` sets a **secure HTTP-only session cookie** (no password form, no raw
+  tokens in the browser). Enabled by a `blocks-oidc` identity provider that points Blocks
+  at itself, plus an OIDC client with `useTokensCookie: true`. See
+  [flows/oidc-login.md](flows/oidc-login.md). Cookie-based → browser calls send
+  `credentials: "include"` and require HTTPS even in local dev (`blocks-setup`).
 - **Client credential** — a named machine-to-machine credential (`/api/auth/client-credentials`)
   with `roles` and `permissionsByOrg`; carries a `clientSecret`.
 - **MFA** — per-user methods (TOTP via `/api/mfa/totp/*`, email via
@@ -89,6 +97,7 @@ app MFA is the lowercase `/api/mfa/*` here.
 
 | Flow | Use when |
 |---|---|
+| [oidc-login.md](flows/oidc-login.md) | Single Login button → Blocks-hosted OIDC authorization-code flow → cookie session. Setup (OIDC client + `blocks-oidc` identity provider) and frontend (`/api/idp/initiate` → `/api/idp/callback`). No password/signup UI in your app |
 | [embedded-login.md](flows/embedded-login.md) | Password login end-to-end: captcha branch, MFA branch, refresh, `/api/auth/me`, logout; plus TOTP enrollment |
 | [signup-activation.md](flows/signup-activation.md) | Self-service signup → activation email → set password → first login (and admin-created users) |
 | [password-recovery.md](flows/password-recovery.md) | Forgot-password recovery + reset, and authenticated password change |
