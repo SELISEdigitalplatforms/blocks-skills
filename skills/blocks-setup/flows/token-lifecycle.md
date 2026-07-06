@@ -13,7 +13,7 @@ not documented in swagger; verify against your project, and re-impersonate after
 
 ## Steps
 
-### 1. Login — `POST /iam/v4/api/auth/login`
+### 1. Login — `POST /iam/v4/auth/login`
 
 Body (snake_case): `{ username, password }` — no project identifier; the `x-blocks-key` header
 carries project context — plus `captcha_code` / `mfa_id` / `mfa_code`
@@ -34,15 +34,15 @@ Authorization: Bearer <access_token>
 
 Access tokens are JWTs — you can decode the payload locally to read `exp` and refresh proactively
 instead of waiting for a 401. Token lifetimes are configured per project via
-`POST /iam/v4/api/auth/config` (`accessTokenValidForNumberMinutes`,
+`POST /iam/v4/auth/config` (`accessTokenValidForNumberMinutes`,
 `refreshTokenValidForNumberMinutes`, …) — admin operation, documented in blocks-iam.
 
-### 3. Refresh — `POST /iam/v4/api/auth/refresh`
+### 3. Refresh — `POST /iam/v4/auth/refresh`
 
 When the access token expires (proactively on `exp`, or reactively on a 401):
 
 ```bash
-curl -s -X POST "$BLOCKS_API_URL/iam/v4/api/auth/refresh" \
+curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/refresh" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
   -H "Content-Type: application/json" \
   -d "{ \"refresh_token\": \"$REFRESH_TOKEN\" }"
@@ -62,13 +62,13 @@ step 1 (full login).
 
 Never write tokens to logs, git, or `VITE_`-prefixed env vars.
 
-### 5. Logout — `POST /iam/v4/api/auth/logout`
+### 5. Logout — `POST /iam/v4/auth/logout`
 
 Revokes the refresh token, invalidates the session, clears cookies. **Note the casing**: this body
 is camelCase `refreshToken`, unlike login/refresh — verbatim from swagger:
 
 ```bash
-curl -s -X POST "$BLOCKS_API_URL/iam/v4/api/auth/logout" \
+curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/logout" \
   -H "x-blocks-key: $X_BLOCKS_KEY" \
   -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
@@ -76,7 +76,7 @@ curl -s -X POST "$BLOCKS_API_URL/iam/v4/api/auth/logout" \
 ```
 
 Then delete both tokens from local storage/state. To revoke **every** session for the user
-(all devices): `POST /iam/v4/api/auth/logout-all` with body `{ "useBackchannel": false }`.
+(all devices): `POST /iam/v4/auth/logout-all` with body `{ "useBackchannel": false }`.
 
 ## Error paths
 
@@ -91,6 +91,6 @@ Then delete both tokens from local storage/state. To revoke **every** session fo
 
 ## Verify
 
-- After login or refresh: `GET /iam/v4/api/auth/me` returns 200 with the user's claims.
-- After logout: `POST /iam/v4/api/auth/refresh` with the revoked token returns an error (expect
+- After login or refresh: `GET /iam/v4/auth/me` returns 200 with the user's claims.
+- After logout: `POST /iam/v4/auth/refresh` with the revoked token returns an error (expect
   401 — exact status/shape not documented in swagger), proving revocation took effect.

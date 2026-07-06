@@ -5,6 +5,8 @@
 
 **Base URL:** `https://api.seliseblocks.com/release/v4`
 
+**URL pattern:** every endpoint is `{base}/{endpoint}` — do **not** prefix with `/api/`. e.g. `GET {base}/Github/IsAuthorized`, `POST {base}/Build/trigger`. The `/api/` from the swagger `basePath` is not part of the URL served by the gateway.
+
 **Authentication** (see `blocks-setup` skill for obtaining tokens):
 - `x-blocks-key: <X_BLOCKS_KEY>` header — required on every request
 - `Authorization: Bearer <access_token>` — required for authenticated operations
@@ -21,7 +23,7 @@
 
 ## AnalyticsTool
 
-### `GET /api/AnalyticsTool/ProcessDependencyTrackUser`
+### `GET /AnalyticsTool/ProcessDependencyTrackUser`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -29,7 +31,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/AnalyticsTool/ProcessSonarQubeUser`
+### `GET /AnalyticsTool/ProcessSonarQubeUser`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -39,7 +41,7 @@
 
 ## Auth
 
-### `GET /api/Auth/AccessToken`
+### `GET /Auth/AccessToken`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -47,25 +49,25 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `DELETE /api/Auth/DeleteAuthorization`
+### `DELETE /Auth/DeleteAuthorization`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Auth/IsAuthorized`
+### `GET /Auth/IsAuthorized`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Auth/RemoveAuthorization`
+### `POST /Auth/RemoveAuthorization`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Auth/TestPing`
+### `GET /Auth/TestPing`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
 ## Build
 
-### `GET /api/Build`
+### `GET /Build`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -73,7 +75,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Build/manual`
+### `POST /Build/manual`
 
 **Request body** (`application/json`):
 
@@ -100,7 +102,7 @@
 }
 ```
 
-### `GET /api/Build/repo-details`
+### `GET /Build/repo-details`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -108,7 +110,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Build/repo-settings-update`
+### `POST /Build/repo-settings-update`
 
 **Request body** (`application/json`):
 
@@ -160,7 +162,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Build/repo-update`
+### `POST /Build/repo-update`
 
 **Request body** (`application/json`):
 
@@ -188,7 +190,7 @@
 }
 ```
 
-### `GET /api/Build/reports`
+### `GET /Build/reports`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -197,11 +199,11 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Build/repos-list`
+### `GET /Build/repos-list`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Build/run-build`
+### `POST /Build/run-build`
 
 **Request body** (`application/json`):
 
@@ -217,13 +219,13 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Build/settings`
+### `GET /Build/settings`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
 ## DeploymentHubBroadcast
 
-### `POST /api/DeploymentHubBroadcast/broadcast`
+### `POST /DeploymentHubBroadcast/broadcast`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -242,7 +244,7 @@
 
 ## Github
 
-### `GET /api/Github/CreateWebhook`
+### `GET /Github/CreateWebhook`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -250,7 +252,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Github/GithubBranchExists`
+### `GET /Github/GithubBranchExists`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -258,7 +260,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Github/branches`
+### `GET /Github/branches`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -266,7 +268,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Github/clone`
+### `GET /Github/clone`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -274,7 +276,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Github/repos`
+### `GET /Github/repos`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -284,11 +286,11 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Github/user`
+### `GET /Github/user`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Github/webhook`
+### `POST /Github/webhook`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|

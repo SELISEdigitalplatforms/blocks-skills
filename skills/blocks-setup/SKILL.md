@@ -1,6 +1,6 @@
 ---
 name: blocks-setup
-description: "Use this skill for any task involving getting started with SELISE Blocks — creating a project in the OS portal, copying the Blocks Key, setting up environments, writing .env files, serving local dev over HTTPS (openssl/SSL certificates), obtaining an access token via login, entering a project context via tenant impersonation, refreshing tokens, calling /api/auth/me, logging out, or debugging 401/403/blocks-key/cookie errors. Trigger when the user mentions setup, bootstrap, onboarding, environment variables, BLOCKS_API_URL, X_BLOCKS_KEY, x-blocks-key, blocks key, tenant id, impersonate, https, ssl, certificate, openssl, cookie domain, login, access token, refresh token, bearer token, authentication headers, or 'how do I connect to Blocks'. Every other blocks-* skill points here for prerequisites; this is the first skill to read when starting a SELISE Blocks app."
+description: "Use this skill for any task involving getting started with SELISE Blocks — creating a project in the OS portal, copying the Blocks Key, setting up environments, writing .env files, serving local dev over HTTPS (openssl/SSL certificates), obtaining an access token via login, entering a project context via tenant impersonation, refreshing tokens, calling /auth/me, logging out, or debugging 401/403/blocks-key/cookie errors. Trigger when the user mentions setup, bootstrap, onboarding, environment variables, BLOCKS_API_URL, X_BLOCKS_KEY, x-blocks-key, blocks key, tenant id, impersonate, https, ssl, certificate, openssl, cookie domain, login, access token, refresh token, bearer token, authentication headers, or 'how do I connect to Blocks'. Every other blocks-* skill points here for prerequisites; this is the first skill to read when starting a SELISE Blocks app."
 ---
 
 # SELISE Blocks — Project Setup & Authentication Bootstrap
@@ -9,6 +9,13 @@ This is the bootstrap skill for the SELISE Blocks platform (v4 API). It covers e
 before any other skill is usable: OS portal prerequisites, environment variable conventions,
 obtaining and refreshing access tokens, and the auth headers every request needs. All other
 `blocks-*` skills assume the setup described here is done.
+
+> **URL pattern (read first — applies to every service in this workspace).**
+> Every endpoint is `https://api.seliseblocks.com/{service-name}/v4/{endpoint}`.
+> Do **NOT** prefix `{endpoint}` with `/api/`. Example: `POST {iam-base}/auth/login` hits
+> `https://api.seliseblocks.com/iam/v4/auth/login` — never `…/iam/v4/api/auth/login`. The swagger
+> sources carry an `/api/` `basePath` that the gateway strips; the live URL does **not** include
+> that segment. Every endpoint reference in every `blocks-*` skill follows this convention.
 
 ## Guided setup — how to drive it
 
@@ -25,7 +32,7 @@ Blocks work starts (this skill or any other), run this gate first:
    where described, ask the user what they see and adapt.
 3. **Validate before proceeding**: `BLOCKS_API_URL` must be `https://api.seliseblocks.com`; the
    Blocks Key must be non-empty and not a placeholder; credentials present for flows that log in.
-4. **Prove it works** with the smoke test (login + `GET /api/auth/me` —
+4. **Prove it works** with the smoke test (login + `GET /auth/me` —
    [flows/bootstrap-project.md](flows/bootstrap-project.md) steps 3–4) before building anything
    on top. On failure, use the troubleshooting table below and tell the user the *one* thing to
    fix, then re-test.
@@ -52,7 +59,7 @@ confusing failures that cost far more time than the check.
 | Work inside a project (login → tenant impersonation) | [flows/project-impersonation.md](flows/project-impersonation.md) |
 | Activate an account that 401s on login (unactivated user) | [flows/activate-first-user.md](flows/activate-first-user.md) |
 | Log in, refresh, store, and revoke tokens | [flows/token-lifecycle.md](flows/token-lifecycle.md) |
-| Set the cookie domain for a **deployed** custom domain | `blocks-monitor` (`POST /api/Domain/Configure`) + `blocks-release` custom-domains flow |
+| Set the cookie domain for a **deployed** custom domain | `blocks-monitor` (`POST /Domain/Configure`) + `blocks-release` custom-domains flow |
 | Set up the React auth foundation (fetch wrapper, auth store) | [references/react.md](references/react.md) |
 | Exact login/refresh/logout/me request shapes | `../blocks-iam/endpoints.md#authentication` |
 | Users, roles, permissions, MFA management, OIDC | `blocks-iam` skill |
@@ -67,19 +74,19 @@ confusing failures that cost far more time than the check.
   `ProjectKey`, use this **same value** — they are the same key.
 - **Access token** — short-lived JWT. Sent as `Authorization: Bearer <access_token>` on
   authenticated operations.
-- **Refresh token** — exchanged at `POST /api/auth/refresh` for new tokens; treat it as an opaque
+- **Refresh token** — exchanged at `POST /auth/refresh` for new tokens; treat it as an opaque
   string (format and lifetime are not documented in swagger). The only auth credential worth
   persisting client-side.
 - **Environment** — a project can have several (dev/stage/prod). Each has its own Blocks Key and
   its own users/data. Tokens from one environment do not work in another.
 - **Tenant / project impersonation** — every project is a tenant. To work *inside* a project, a
   session may need to be impersonated into that project's tenant
-  (`POST /api/auth/impersonate` with `targeted_tenant_id`); the impersonated tokens are
+  (`POST /auth/impersonate` with `targeted_tenant_id`); the impersonated tokens are
   project-scoped. See [flows/project-impersonation.md](flows/project-impersonation.md).
 - **Cookie domain** — auth cookies are bound to a configured domain per project
-  (`cookieDomain` in `GET /os/v4/api/Project/Gets`). Local dev must be HTTPS
+  (`cookieDomain` in `GET /os/v4/Project/Gets`). Local dev must be HTTPS
   ([flows/local-https-setup.md](flows/local-https-setup.md)); deployed custom domains may need
-  `POST /monitor/v4/api/Domain/Configure` (see `blocks-monitor`), and a few tweaks are commonly
+  `POST /monitor/v4/Domain/Configure` (see `blocks-monitor`), and a few tweaks are commonly
   needed there — verify against your project.
 
 ## Environment variable conventions
@@ -92,7 +99,7 @@ X_BLOCKS_KEY=<Blocks Key from the OS portal>
 BLOCKS_USERNAME=<login email of your dev/service user>
 BLOCKS_PASSWORD=<its password>
 # Only when using tenant impersonation (see flows/project-impersonation.md):
-PROJECT_TENANT_ID=<tenantId from GET /os/v4/api/Project/Gets — cached after first discovery>
+PROJECT_TENANT_ID=<tenantId from GET /os/v4/Project/Gets — cached after first discovery>
 ```
 
 React/Vite apps expose only client-safe values with the `VITE_` prefix:
@@ -129,15 +136,15 @@ Deprecated names you may see in older projects — do not introduce them in new 
 - **Login sends no project identifier.** The body is just `{ username, password }` (plus
   `captcha_code` / `mfa_id` / `mfa_code` / `mfa_type` on branch paths) — the `x-blocks-key`
   header carries the project context. The swagger also lists an optional `client_id` field;
-  leave it out. (Note: OIDC **client** operations in `blocks-iam` — `/api/oidc/token`,
+  leave it out. (Note: OIDC **client** operations in `blocks-iam` — `/oidc/token`,
   client-credentials — have their own `client_id` meaning an OAuth client; that one stays.)
 - **Auth payloads are snake_case** — `username`, `password`, `captcha_code`, `mfa_id`,
   `mfa_code`, `refresh_token`. This is intentional; do not camelCase them.
-- **Exception**: `POST /api/auth/logout` takes camelCase `{ "refreshToken": "..." }` — verbatim
+- **Exception**: `POST /auth/logout` takes camelCase `{ "refreshToken": "..." }` — verbatim
   from swagger. Login/refresh snake_case, logout camelCase. Copy shapes from
   `../blocks-iam/endpoints.md#authentication`, don't guess.
 - **Login/refresh/me responses are not documented in swagger.** Expect token fields on login and
-  refresh, and OIDC claims (`sub`, `email`, `name`, …) on `/api/auth/me`, but inspect the live
+  refresh, and OIDC claims (`sub`, `email`, `name`, …) on `/auth/me`, but inspect the live
   response before wiring code to exact field names.
 - `mfa_type` is an integer enum `0 | 1 | 2 | 3 | 4` with no member names in swagger. When login
   returns an MFA challenge, echo back the values the challenge gives you — don't hardcode meanings.
@@ -156,15 +163,15 @@ Deprecated names you may see in older projects — do not introduce them in new 
 |---|---|---|
 | 401 on login | Wrong username/password, or user not activated | Check credentials; run [flows/activate-first-user.md](flows/activate-first-user.md) |
 | 401 on any other call | Missing/expired `Authorization` header | Send `Bearer <access_token>`; refresh if expired (token-lifecycle flow) |
-| 401 right after a period of inactivity | Access token expired | `POST /api/auth/refresh` with the stored `refresh_token` |
-| 403 | Token valid but user lacks role/permission | Grant role via blocks-iam (`/api/iam/users/roles-and-permissions`) or use an account with the needed role |
+| 401 right after a period of inactivity | Access token expired | `POST /auth/refresh` with the stored `refresh_token` |
+| 403 | Token valid but user lacks role/permission | Grant role via blocks-iam (`/iam/users/roles-and-permissions`) or use an account with the needed role |
 | 404 on an endpoint you copied from old docs | v1 route — the platform renamed everything for v4 | Use the v4 path from the relevant skill's endpoints.md |
 | Rejected before auth / "blocks key" error / unrecognized-project response | Missing or wrong `x-blocks-key`, or key from a different environment | Re-copy the Blocks Key for the *same* environment you're logging into (verify in OS portal) |
 | Login succeeds but tokens don't work on another service | Environment mismatch | All calls must use the same environment's Blocks Key |
 | Login returns a captcha demand | Too many failed attempts or project policy | Solve via blocks-os Captcha controller, retry login with `captcha_code` |
 | Auth works via curl but the browser app never gets a session / cookies missing | Local dev on plain http — Secure cookies dropped | Serve dev over HTTPS: [flows/local-https-setup.md](flows/local-https-setup.md) |
 | Login works but project APIs return errors/empty data | Session not impersonated into the project tenant | Run [flows/project-impersonation.md](flows/project-impersonation.md) and use the impersonated token |
-| Cookies/session broken on a deployed custom domain | `cookieDomain` not configured for that domain | `POST /monitor/v4/api/Domain/Configure` (`blocks-monitor`); expect a few tweaks — verify against your project |
+| Cookies/session broken on a deployed custom domain | `cookieDomain` not configured for that domain | `POST /monitor/v4/Domain/Configure` (`blocks-monitor`); expect a few tweaks — verify against your project |
 
 ## Files
 

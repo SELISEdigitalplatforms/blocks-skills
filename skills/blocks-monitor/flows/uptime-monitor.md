@@ -13,7 +13,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
 
 ## Steps
 
-1. `POST /api/Monitor/SaveMonitor` — create the monitor. See
+1. `POST /Monitor/SaveMonitor` — create the monitor. See
    [endpoints.md#monitor](../endpoints.md#monitor) (`SaveMonitorConfigurationRequest` in
    contracts.md). Minimal HTTP-probe body:
 
@@ -47,32 +47,32 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
      expected encoding live.
    - `repoId`/`repoName` or `externalServiceId`/`externalServiceName` link the monitor to a Blocks
      repo or an external service instead of a raw URL. For external services, check first with
-     `GET /api/Monitor/IsExternalServiceConfigured?externalServiceId=<id>`.
+     `GET /Monitor/IsExternalServiceConfigured?externalServiceId=<id>`.
    - Response undocumented — if it doesn't return the new id, get it from step 2.
 
-2. `GET /api/Monitor/GetMonitorList?projectKey=<X_BLOCKS_KEY>&pageNumber=1&pageSize=20` — list
+2. `GET /Monitor/GetMonitorList?projectKey=<X_BLOCKS_KEY>&pageNumber=1&pageSize=20` — list
    monitors (optionally add `monitorSourcetype=<source-type>`). Find your monitor and keep its id
    — this is the `monitorId`/`itemId` every other call needs.
 
-   Related: `GET /api/Monitor/GetMonitorListByRepoId?projectKey=<X_BLOCKS_KEY>&repoId=<id>` when
+   Related: `GET /Monitor/GetMonitorListByRepoId?projectKey=<X_BLOCKS_KEY>&repoId=<id>` when
    you linked the monitor to a repo.
 
 3. Inspect status and history (all camelCase query params; all responses undocumented):
-   - `GET /api/Monitor/GetMonitorById?monitorId=<id>` — the stored configuration.
-   - `GET /api/Monitor/GetMonitorDetails?monitorId=<id>` — current status / incident details.
-   - `GET /api/Monitor/GetIncidentList?monitorId=<id>&pageNumber=1&pageSize=20` — paginated
+   - `GET /Monitor/GetMonitorById?monitorId=<id>` — the stored configuration.
+   - `GET /Monitor/GetMonitorDetails?monitorId=<id>` — current status / incident details.
+   - `GET /Monitor/GetIncidentList?monitorId=<id>&pageNumber=1&pageSize=20` — paginated
      outage incidents.
-   - `GET /api/Monitor/GetMonitorResponseTime?monitorId=<id>&startDate=<iso>&endDate=<iso>` —
+   - `GET /Monitor/GetMonitorResponseTime?monitorId=<id>&startDate=<iso>&endDate=<iso>` —
      response-time log for a date range (dates optional).
-   - `GET /api/Monitor/GetMonitorDownTime?monitorId=<id>&startDate=<iso>&endDate=<iso>` —
+   - `GET /Monitor/GetMonitorDownTime?monitorId=<id>&startDate=<iso>&endDate=<iso>` —
      downtime windows for a date range.
 
-4. `POST /api/Monitor/UpdateMonitor` — same body as SaveMonitor **plus `itemId`** (the monitor id
+4. `POST /Monitor/UpdateMonitor` — same body as SaveMonitor **plus `itemId`** (the monitor id
    from step 2). Send the full configuration, not a patch — partial-update behavior is not
    documented, so include every field you care about. Set `isActive: false` to pause probing
    without deleting.
 
-5. `DELETE /api/Monitor/DeleteMonitor?itemId=<id>` — remove the monitor and stop probing.
+5. `DELETE /Monitor/DeleteMonitor?itemId=<id>` — remove the monitor and stop probing.
 
 Error paths: `401` → refresh per blocks-setup. Monitor never produces data → confirm `isActive` is
 true (step 3, GetMonitorById), the URL is publicly reachable, and `successHttpResponseCodes`

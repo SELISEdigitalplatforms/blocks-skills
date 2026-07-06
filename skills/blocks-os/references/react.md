@@ -90,14 +90,14 @@ const projectKey = import.meta.env.VITE_X_BLOCKS_KEY; // projectKey = your Block
 export function useCreateCaptcha() {
   return useMutation({
     mutationFn: (configurationName: string) =>
-      osPost<CreateCaptchaRequestResponse>("/api/Captcha/Create", { configurationName }),
+      osPost<CreateCaptchaRequestResponse>("/Captcha/Create", { configurationName }),
   });
 }
 
 export function useSubmitCaptcha() {
   return useMutation({
     mutationFn: (req: SubmitCaptchaRequest) =>
-      osPost<SubmitCaptchaRequestResponse>("/api/Captcha/Submit", req),
+      osPost<SubmitCaptchaRequestResponse>("/Captcha/Submit", req),
   });
 }
 
@@ -106,14 +106,14 @@ export function useSubmitCaptcha() {
 export function useGenerateOtp() {
   return useMutation({
     mutationFn: (req: OtpGenerationRequest) =>
-      osPost<OtpGenerationResponse>("/api/Mfa/GenerateOTP", { projectKey, ...req }),
+      osPost<OtpGenerationResponse>("/Mfa/GenerateOTP", { projectKey, ...req }),
   });
 }
 
 export function useVerifyOtp() {
   return useMutation({
     mutationFn: (req: VerifyOtpRequest) =>
-      osPost<OtpVerificationResponse>("/api/Mfa/VerifyOTP", { projectKey, ...req }),
+      osPost<OtpVerificationResponse>("/Mfa/VerifyOTP", { projectKey, ...req }),
   });
 }
 
@@ -123,7 +123,7 @@ export function useTotpSetup(userId: string | undefined) {
     enabled: !!userId,
     queryFn: () =>
       osGet<SetUpUserTotpResponse>(
-        `/api/Mfa/SetUpTotp?ProjectKey=${encodeURIComponent(projectKey)}&UserId=${encodeURIComponent(userId!)}`,
+        `/Mfa/SetUpTotp?ProjectKey=${encodeURIComponent(projectKey)}&UserId=${encodeURIComponent(userId!)}`,
       ),
   });
 }
@@ -135,7 +135,7 @@ export function useNotificationConfigs(page = 0, pageSize = 20) {
     queryKey: ["os", "notification-configs", page, pageSize],
     queryFn: () =>
       osGet<GetNotificationConfigurationsResponse>(
-        `/api/Notification/Gets?ProjectKey=${encodeURIComponent(projectKey)}&Page=${page}&PageSize=${pageSize}`,
+        `/Notification/Gets?ProjectKey=${encodeURIComponent(projectKey)}&Page=${page}&PageSize=${pageSize}`,
       ),
   });
 }
@@ -145,7 +145,7 @@ export function useSubscriptions() {
     queryKey: ["os", "subscriptions"],
     queryFn: () =>
       osGet<GetSubscriptionsResponse>(
-        `/api/Subscription/Gets?ProjectKey=${encodeURIComponent(projectKey)}`,
+        `/Subscription/Gets?ProjectKey=${encodeURIComponent(projectKey)}`,
       ),
   });
 }
@@ -221,6 +221,6 @@ export function CaptchaGate({
 
 ## Error and refresh handling
 
-- `BlocksApiError` with status 401 → run the refresh routine from **blocks-setup** (`POST /iam/v4/api/auth/refresh` via your auth store), then retry the query (`queryClient.invalidateQueries`) — or wire the retry into a fetch interceptor once, centrally.
+- `BlocksApiError` with status 401 → run the refresh routine from **blocks-setup** (`POST /iam/v4/auth/refresh` via your auth store), then retry the query (`queryClient.invalidateQueries`) — or wire the retry into a fetch interceptor once, centrally.
 - `BlocksApiError` with `errors` populated → the platform rejected the operation despite HTTP 200 (`isSuccess: false`); surface `Object.values(errors)` to the user.
 - Captcha/OTP failures are not exceptions: `Submit` returns an empty `verificationCode`, `VerifyOTP` returns `isValid: false`. Branch on those fields, not on catch blocks.

@@ -5,6 +5,8 @@
 
 **Base URL:** `https://api.seliseblocks.com/monitor/v4`
 
+**URL pattern:** every endpoint is `{base}/{endpoint}` — do **not** prefix with `/api/`. e.g. `GET {base}/Log/Live`, `POST {base}/Trace/GetServiceAnalytics`. The `/api/` from the swagger `basePath` is not part of the URL served by the gateway.
+
 **Authentication** (see `blocks-setup` skill for obtaining tokens):
 - `x-blocks-key: <X_BLOCKS_KEY>` header — required on every request
 - `Authorization: Bearer <access_token>` — required for authenticated operations
@@ -24,7 +26,7 @@
 
 ## Authentication
 
-### `GET /api/Authentication/Authorize`
+### `GET /Authentication/Authorize`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -37,7 +39,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Authentication/DeleteClientCredential`
+### `POST /Authentication/DeleteClientCredential`
 
 **Request body** (`application/json`):
 
@@ -57,7 +59,7 @@
 }
 ```
 
-### `POST /api/Authentication/DeleteOIDCClient`
+### `POST /Authentication/DeleteOIDCClient`
 
 **Request body** (`application/json`):
 
@@ -77,7 +79,7 @@
 }
 ```
 
-### `POST /api/Authentication/DeleteSsoCredential`
+### `POST /Authentication/DeleteSsoCredential`
 
 **Request body** (`application/json`):
 
@@ -97,7 +99,7 @@
 }
 ```
 
-### `POST /api/Authentication/GenerateUserCode`
+### `POST /Authentication/GenerateUserCode`
 
 **Request body** (`application/json`):
 
@@ -118,7 +120,7 @@
 }
 ```
 
-### `GET /api/Authentication/Get`
+### `GET /Authentication/Get`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -126,7 +128,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Authentication/GetClientCredentials`
+### `GET /Authentication/GetClientCredentials`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -152,11 +154,11 @@
 }[]
 ```
 
-### `GET /api/Authentication/GetLoginOptions`
+### `GET /Authentication/GetLoginOptions`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Authentication/GetOIDCClient`
+### `GET /Authentication/GetOIDCClient`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -190,7 +192,7 @@
 }
 ```
 
-### `GET /api/Authentication/GetOIDCClients`
+### `GET /Authentication/GetOIDCClients`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -223,7 +225,7 @@
 }
 ```
 
-### `POST /api/Authentication/GetSocialLogInEndPoint`
+### `POST /Authentication/GetSocialLogInEndPoint`
 
 **Request body** (`application/json`):
 
@@ -238,7 +240,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Authentication/GetSsoCredential`
+### `GET /Authentication/GetSsoCredential`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -286,7 +288,7 @@
 }
 ```
 
-### `GET /api/Authentication/GetSsoCredentials`
+### `GET /Authentication/GetSsoCredentials`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -327,7 +329,7 @@
 }[]
 ```
 
-### `GET /api/Authentication/GetUserCodes`
+### `GET /Authentication/GetUserCodes`
 
 **Response 200:**
 
@@ -344,11 +346,11 @@
 }[]
 ```
 
-### `GET /api/Authentication/GetUserInfo`
+### `GET /Authentication/GetUserInfo`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Authentication/Login`
+### `POST /Authentication/Login`
 
 **Request body** (`application/json`):
 
@@ -366,7 +368,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Authentication/Logout`
+### `POST /Authentication/Logout`
 
 **Request body** (`application/json`):
 
@@ -378,11 +380,11 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Authentication/LogoutAll`
+### `POST /Authentication/LogoutAll`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Authentication/SaveClientCredential`
+### `POST /Authentication/SaveClientCredential`
 
 **Request body** (`application/json`):
 
@@ -403,7 +405,7 @@
 }
 ```
 
-### `POST /api/Authentication/SaveOIDCClient`
+### `POST /Authentication/SaveOIDCClient`
 
 **Request body** (`application/json`):
 
@@ -431,7 +433,7 @@
 }
 ```
 
-### `POST /api/Authentication/SaveSsoCredential`
+### `POST /Authentication/SaveSsoCredential`
 
 **Request body** (`application/json`):
 
@@ -465,11 +467,11 @@
 }
 ```
 
-### `POST /api/Authentication/Token`
+### `POST /Authentication/Token`
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Authentication/Update`
+### `POST /Authentication/Update`
 
 **Request body** (`application/json`):
 
@@ -495,7 +497,7 @@
 }
 ```
 
-### `POST /api/Authentication/UpdateStatus`
+### `POST /Authentication/UpdateStatus`
 
 **Request body** (`application/json`):
 
@@ -516,7 +518,7 @@
 }
 ```
 
-### `POST /api/Authentication/UserAcknowledgement`
+### `POST /Authentication/UserAcknowledgement`
 
 **Request body** (`application/json`):
 
@@ -536,7 +538,7 @@
 
 ## Domain
 
-### `POST /api/Domain/Configure`
+### `POST /Domain/Configure`
 
 **Request body** (`application/json`):
 
@@ -558,7 +560,7 @@
 
 ## Health
 
-### `DELETE /api/Health/DeleteHealth`
+### `DELETE /Health/DeleteHealth`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -566,7 +568,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Health/Ping/{itemId}`
+### `GET /Health/Ping/{itemId}`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -574,7 +576,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Health/SaveHealth`
+### `POST /Health/SaveHealth`
 
 **Request body** (`application/json`):
 
@@ -595,7 +597,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Health/UpdateHealth`
+### `POST /Health/UpdateHealth`
 
 Updates an existing health configuration.
 
@@ -621,7 +623,7 @@ Updates an existing health configuration.
 
 ## Iam
 
-### `POST /api/Iam/Activate`
+### `POST /Iam/Activate`
 
 **Request body** (`application/json`):
 
@@ -640,7 +642,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/ChangePassword`
+### `POST /Iam/ChangePassword`
 
 **Request body** (`application/json`):
 
@@ -654,7 +656,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/Create`
+### `POST /Iam/Create`
 
 **Request body** (`application/json`):
 
@@ -691,7 +693,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/CreatePermission`
+### `POST /Iam/CreatePermission`
 
 **Request body** (`application/json`):
 
@@ -712,7 +714,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/CreateRole`
+### `POST /Iam/CreateRole`
 
 **Request body** (`application/json`):
 
@@ -727,7 +729,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/Deactivate`
+### `POST /Iam/Deactivate`
 
 **Request body** (`application/json`):
 
@@ -740,7 +742,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Iam/Get`
+### `GET /Iam/Get`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -767,7 +769,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetAccount`
+### `GET /Iam/GetAccount`
 
 **Response 200:**
 
@@ -813,7 +815,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetAccountPermissions`
+### `GET /Iam/GetAccountPermissions`
 
 **Response 200:**
 
@@ -831,7 +833,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetAccountRoles`
+### `GET /Iam/GetAccountRoles`
 
 **Response 200:**
 
@@ -849,7 +851,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `POST /api/Iam/GetAccounts`
+### `POST /Iam/GetAccounts`
 
 **Request body** (`application/json`):
 
@@ -915,7 +917,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetHistories`
+### `GET /Iam/GetHistories`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -936,7 +938,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetOrganization`
+### `GET /Iam/GetOrganization`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -964,7 +966,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetOrganizationConfig`
+### `GET /Iam/GetOrganizationConfig`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -989,7 +991,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetOrganizations`
+### `GET /Iam/GetOrganizations`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1031,7 +1033,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetPermission`
+### `GET /Iam/GetPermission`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1066,7 +1068,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `POST /api/Iam/GetPermissions`
+### `POST /Iam/GetPermissions`
 
 **Request body** (`application/json`):
 
@@ -1122,7 +1124,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetPermissionsGroupBySeverity`
+### `GET /Iam/GetPermissionsGroupBySeverity`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1137,7 +1139,7 @@ Updates an existing health configuration.
 }[]
 ```
 
-### `GET /api/Iam/GetResourceGroups`
+### `GET /Iam/GetResourceGroups`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1152,7 +1154,7 @@ Updates an existing health configuration.
 }[]
 ```
 
-### `GET /api/Iam/GetRole`
+### `GET /Iam/GetRole`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1181,7 +1183,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `POST /api/Iam/GetRoles`
+### `POST /Iam/GetRoles`
 
 **Request body** (`application/json`):
 
@@ -1224,7 +1226,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetSessions`
+### `GET /Iam/GetSessions`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1245,7 +1247,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetSignUpSetting`
+### `GET /Iam/GetSignUpSetting`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1269,7 +1271,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetUser`
+### `GET /Iam/GetUser`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1313,7 +1315,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetUserPermissions`
+### `GET /Iam/GetUserPermissions`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1336,7 +1338,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetUserRoles`
+### `GET /Iam/GetUserRoles`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1359,7 +1361,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/GetUserTimelines`
+### `GET /Iam/GetUserTimelines`
 
 **Request body** (`application/json`):
 
@@ -1437,7 +1439,7 @@ Updates an existing health configuration.
 }[]
 ```
 
-### `POST /api/Iam/GetUsers`
+### `POST /Iam/GetUsers`
 
 **Request body** (`application/json`):
 
@@ -1507,7 +1509,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Iam/IsEmailAvaiable`
+### `GET /Iam/IsEmailAvaiable`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1516,7 +1518,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/Recover`
+### `POST /Iam/Recover`
 
 **Request body** (`application/json`):
 
@@ -1531,7 +1533,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/ResendActivation`
+### `POST /Iam/ResendActivation`
 
 **Request body** (`application/json`):
 
@@ -1545,7 +1547,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/ResetPassword`
+### `POST /Iam/ResetPassword`
 
 **Request body** (`application/json`):
 
@@ -1561,7 +1563,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/Save`
+### `POST /Iam/Save`
 
 **Request body** (`application/json`):
 
@@ -1580,7 +1582,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/SaveOrganization`
+### `POST /Iam/SaveOrganization`
 
 **Request body** (`application/json`):
 
@@ -1602,7 +1604,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `POST /api/Iam/SaveOrganizationConfig`
+### `POST /Iam/SaveOrganizationConfig`
 
 **Request body** (`application/json`):
 
@@ -1626,7 +1628,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `POST /api/Iam/SaveRolesAndPermissions`
+### `POST /Iam/SaveRolesAndPermissions`
 
 **Request body** (`application/json`):
 
@@ -1644,7 +1646,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/SaveSignUpSetting`
+### `POST /Iam/SaveSignUpSetting`
 
 **Request body** (`application/json`):
 
@@ -1667,7 +1669,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `POST /api/Iam/SetRoles`
+### `POST /Iam/SetRoles`
 
 **Request body** (`application/json`):
 
@@ -1682,7 +1684,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/Update`
+### `POST /Iam/Update`
 
 **Request body** (`application/json`):
 
@@ -1711,7 +1713,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/UpdateAccount`
+### `POST /Iam/UpdateAccount`
 
 **Request body** (`application/json`):
 
@@ -1740,7 +1742,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/UpdatePermission`
+### `POST /Iam/UpdatePermission`
 
 **Request body** (`application/json`):
 
@@ -1763,7 +1765,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/UpdateRole`
+### `POST /Iam/UpdateRole`
 
 **Request body** (`application/json`):
 
@@ -1778,7 +1780,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Iam/ValidateActivationCode`
+### `POST /Iam/ValidateActivationCode`
 
 **Request body** (`application/json`):
 
@@ -1793,7 +1795,7 @@ Updates an existing health configuration.
 
 ## Log
 
-### `POST /api/Log/GetLogs`
+### `POST /Log/GetLogs`
 
 **Request body** (`application/json`):
 
@@ -1820,7 +1822,7 @@ Updates an existing health configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Log/GetLogsByDate`
+### `POST /Log/GetLogsByDate`
 
 **Request body** (`application/json`):
 
@@ -1855,7 +1857,7 @@ Updates an existing health configuration.
 }
 ```
 
-### `GET /api/Log/Live`
+### `GET /Log/Live`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1867,7 +1869,7 @@ Updates an existing health configuration.
 
 ## Monitor
 
-### `DELETE /api/Monitor/DeleteMonitor`
+### `DELETE /Monitor/DeleteMonitor`
 
 Deletes a monitor configuration by its ID.
 
@@ -1877,7 +1879,7 @@ Deletes a monitor configuration by its ID.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Monitor/GetIncidentList`
+### `GET /Monitor/GetIncidentList`
 
 Retrieves a paginated list of incidents for a specific monitor.
 
@@ -1889,7 +1891,7 @@ Retrieves a paginated list of incidents for a specific monitor.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Monitor/GetMonitorById`
+### `GET /Monitor/GetMonitorById`
 
 Retrieves a list of monitor configurations for a given project.
 
@@ -1899,7 +1901,7 @@ Retrieves a list of monitor configurations for a given project.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Monitor/GetMonitorDetails`
+### `GET /Monitor/GetMonitorDetails`
 
 Retrieves details of incidents for a specific monitor.
 
@@ -1909,7 +1911,7 @@ Retrieves details of incidents for a specific monitor.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Monitor/GetMonitorDownTime`
+### `GET /Monitor/GetMonitorDownTime`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1919,7 +1921,7 @@ Retrieves details of incidents for a specific monitor.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Monitor/GetMonitorList`
+### `GET /Monitor/GetMonitorList`
 
 Retrieves a list of monitor configurations for a given project.
 
@@ -1932,7 +1934,7 @@ Retrieves a list of monitor configurations for a given project.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Monitor/GetMonitorListByRepoId`
+### `GET /Monitor/GetMonitorListByRepoId`
 
 Retrieves a list of monitor configurations for a given project.
 
@@ -1943,7 +1945,7 @@ Retrieves a list of monitor configurations for a given project.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Monitor/GetMonitorResponseTime`
+### `GET /Monitor/GetMonitorResponseTime`
 
 Retrieves the response time logs for a monitor within a specified date range.
 
@@ -1955,7 +1957,7 @@ Retrieves the response time logs for a monitor within a specified date range.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Monitor/IsExternalServiceConfigured`
+### `GET /Monitor/IsExternalServiceConfigured`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1963,7 +1965,7 @@ Retrieves the response time logs for a monitor within a specified date range.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Monitor/SaveMonitor`
+### `POST /Monitor/SaveMonitor`
 
 Saves a new monitor configuration.
 
@@ -1997,7 +1999,7 @@ Saves a new monitor configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Monitor/UpdateMonitor`
+### `POST /Monitor/UpdateMonitor`
 
 Updates an existing monitor configuration.
 
@@ -2034,7 +2036,7 @@ Updates an existing monitor configuration.
 
 ## Trace
 
-### `POST /api/Trace/GetOperationalAnalytics`
+### `POST /Trace/GetOperationalAnalytics`
 
 **Request body** (`application/json`):
 
@@ -2050,7 +2052,7 @@ Updates an existing monitor configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Trace/GetServiceAnalytics`
+### `POST /Trace/GetServiceAnalytics`
 
 **Request body** (`application/json`):
 
@@ -2065,7 +2067,7 @@ Updates an existing monitor configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Trace/GetTrace`
+### `GET /Trace/GetTrace`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -2074,7 +2076,7 @@ Updates an existing monitor configuration.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Trace/GetTraces`
+### `POST /Trace/GetTraces`
 
 **Request body** (`application/json`):
 
@@ -2110,11 +2112,11 @@ call them on this base URL only if you specifically need this service's instance
 
 | Method | Path | Summary |
 |---|---|---|
-| DELETE | `/api/Mail/Delete` |  |
-| POST | `/api/Mail/Duplicate` |  |
-| GET | `/api/Mail/Get` |  |
-| GET | `/api/Mail/Gets` |  |
-| POST | `/api/Mail/Save` |  |
+| DELETE | `/Mail/Delete` |  |
+| POST | `/Mail/Duplicate` |  |
+| GET | `/Mail/Get` |  |
+| GET | `/Mail/Gets` |  |
+| POST | `/Mail/Save` |  |
 
 ### Documented in `blocks-os`
 
@@ -2122,55 +2124,55 @@ call them on this base URL only if you specifically need this service's instance
 |---|---|---|
 | GET | `/api/.well-known/jwks.json` |  |
 | GET | `/api/.well-known/openid-configuration` |  |
-| POST | `/api/ApiEndpointConfig/BulkUpdate` |  |
-| POST | `/api/ApiEndpointConfig/GetList` |  |
-| POST | `/api/ApiEndpointConfig/Update` |  |
-| POST | `/api/Captcha/Create` |  |
-| GET | `/api/Captcha/Get` |  |
-| GET | `/api/Captcha/Gets` |  |
-| POST | `/api/Captcha/Save` |  |
-| POST | `/api/Captcha/Submit` |  |
-| POST | `/api/Captcha/UpdateStatus` |  |
-| GET | `/api/Captcha/Verify` |  |
-| POST | `/api/Mfa/DisableUserMfa` |  |
-| POST | `/api/Mfa/GenerateOTP` |  |
-| GET | `/api/Mfa/Get` |  |
-| POST | `/api/Mfa/ResendOtp` |  |
-| POST | `/api/Mfa/Save` |  |
-| GET | `/api/Mfa/SetUpTotp` |  |
-| POST | `/api/Mfa/VerifyOTP` |  |
-| POST | `/api/Migration/DataCleanup` |  |
-| GET | `/api/Migration/GetMigrationStatus` | Gets the migration status for projects with incomplete services. |
-| POST | `/api/Migration/Migrate` |  |
-| POST | `/api/Migration/Verify` | Verifies the OTP code for the migration process. |
-| DELETE | `/api/Notification/Delete` |  |
-| GET | `/api/Notification/Get` |  |
-| GET | `/api/Notification/Gets` |  |
-| POST | `/api/Notification/Save` |  |
-| POST | `/api/People/ConfirmInvitation` |  |
-| POST | `/api/People/Gets` |  |
-| POST | `/api/People/Invite` |  |
-| POST | `/api/People/RemoveAccess` |  |
-| POST | `/api/People/ResendInvitation` |  |
-| POST | `/api/People/Signup` |  |
-| POST | `/api/People/TransferOwnerShip` |  |
-| POST | `/api/Project/AddAsset` |  |
-| POST | `/api/Project/Create` |  |
-| POST | `/api/Project/Disable` |  |
-| GET | `/api/Project/Get` |  |
-| GET | `/api/Project/GetAsset` |  |
-| GET | `/api/Project/GetThirdPartyJWTClaims` |  |
-| GET | `/api/Project/GetTokenValidationParameters` |  |
-| GET | `/api/Project/Gets` |  |
-| POST | `/api/Project/Restore` |  |
-| POST | `/api/Project/SaveThirdPartyJWTClaims` |  |
-| POST | `/api/Project/UpdateProject` |  |
-| POST | `/api/Project/UpdateTenantGroup` |  |
-| POST | `/api/Project/UpdateTokenValidationParameters` |  |
-| POST | `/api/Service/GetAll` |  |
-| POST | `/api/Service/Register` |  |
-| POST | `/api/Storage/Delete` |  |
-| GET | `/api/Storage/Get` |  |
-| GET | `/api/Storage/Gets` |  |
-| POST | `/api/Storage/Save` |  |
-| GET | `/api/Subscription/Gets` |  |
+| POST | `/ApiEndpointConfig/BulkUpdate` |  |
+| POST | `/ApiEndpointConfig/GetList` |  |
+| POST | `/ApiEndpointConfig/Update` |  |
+| POST | `/Captcha/Create` |  |
+| GET | `/Captcha/Get` |  |
+| GET | `/Captcha/Gets` |  |
+| POST | `/Captcha/Save` |  |
+| POST | `/Captcha/Submit` |  |
+| POST | `/Captcha/UpdateStatus` |  |
+| GET | `/Captcha/Verify` |  |
+| POST | `/Mfa/DisableUserMfa` |  |
+| POST | `/Mfa/GenerateOTP` |  |
+| GET | `/Mfa/Get` |  |
+| POST | `/Mfa/ResendOtp` |  |
+| POST | `/Mfa/Save` |  |
+| GET | `/Mfa/SetUpTotp` |  |
+| POST | `/Mfa/VerifyOTP` |  |
+| POST | `/Migration/DataCleanup` |  |
+| GET | `/Migration/GetMigrationStatus` | Gets the migration status for projects with incomplete services. |
+| POST | `/Migration/Migrate` |  |
+| POST | `/Migration/Verify` | Verifies the OTP code for the migration process. |
+| DELETE | `/Notification/Delete` |  |
+| GET | `/Notification/Get` |  |
+| GET | `/Notification/Gets` |  |
+| POST | `/Notification/Save` |  |
+| POST | `/People/ConfirmInvitation` |  |
+| POST | `/People/Gets` |  |
+| POST | `/People/Invite` |  |
+| POST | `/People/RemoveAccess` |  |
+| POST | `/People/ResendInvitation` |  |
+| POST | `/People/Signup` |  |
+| POST | `/People/TransferOwnerShip` |  |
+| POST | `/Project/AddAsset` |  |
+| POST | `/Project/Create` |  |
+| POST | `/Project/Disable` |  |
+| GET | `/Project/Get` |  |
+| GET | `/Project/GetAsset` |  |
+| GET | `/Project/GetThirdPartyJWTClaims` |  |
+| GET | `/Project/GetTokenValidationParameters` |  |
+| GET | `/Project/Gets` |  |
+| POST | `/Project/Restore` |  |
+| POST | `/Project/SaveThirdPartyJWTClaims` |  |
+| POST | `/Project/UpdateProject` |  |
+| POST | `/Project/UpdateTenantGroup` |  |
+| POST | `/Project/UpdateTokenValidationParameters` |  |
+| POST | `/Service/GetAll` |  |
+| POST | `/Service/Register` |  |
+| POST | `/Storage/Delete` |  |
+| GET | `/Storage/Get` |  |
+| GET | `/Storage/Gets` |  |
+| POST | `/Storage/Save` |  |
+| GET | `/Subscription/Gets` |  |

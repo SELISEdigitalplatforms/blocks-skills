@@ -4,16 +4,15 @@ Use when creating a new data model (collection) for a project, or when adding/ch
 
 ## Steps
 
-1. `GET /api/configurations` — confirm a data source exists for the current tenant and capture identifiers.
+1. `GET /configurations` — confirm a data source exists for the current tenant and capture identifiers.
    Keep `data.projectKey`, `data.projectShortKey`, `data.collectionNamePattern`, `data.isCollectionNameEditable` ([endpoints.md#configuration](../endpoints.md#configuration)).
-   - If `data` is null/empty, no data source is configured yet → `POST /api/configurations` with `{ connectionString, databaseName, projectKey }` (ask the user: their own MongoDB connection string, or the Blocks-provided default set up in OS portal). Update later with `PUT /api/configurations`.
-   - The `/api/data-sources/*` routes you may see in swagger are **deprecated** — don't use them.
+   - If `data` is null/empty, no data source is configured yet → `POST /configurations` with `{ connectionString, databaseName, projectKey }` (ask the user: their own MongoDB connection string, or the Blocks-provided default set up in OS portal). Update later with `PUT /configurations`.
 
-2. `GET /api/schemas?ProjectKey=$X_BLOCKS_KEY&SchemaName=<name>` — check whether the schema already exists ([endpoints.md#schema](../endpoints.md#schema)).
+2. `GET /schemas?ProjectKey=$X_BLOCKS_KEY&SchemaName=<name>` — check whether the schema already exists ([endpoints.md#schema](../endpoints.md#schema)).
    - Exists → skip to step 4 to modify fields. Keep `data.items[0].id` (the schema id).
    - Not found → step 3.
 
-3. `POST /api/schemas/define` — create the schema.
+3. `POST /schemas/define` — create the schema.
    ```json
    {
      "schemaName": "Product",
@@ -32,9 +31,9 @@ Use when creating a new data model (collection) for a project, or when adding/ch
    - `field.type` is a **string**. Legacy scalar values were `"String"`, `"Int"`, `"Long"`, `"Float"`, `"Boolean"`, `"DateTime"`, and a child schema's name for nesting — unverified in v4; if a type is rejected, check the OS portal schema editor for the accepted list.
    - Respect `collectionNamePattern` from step 1 when choosing `collectionName` (if `isCollectionNameEditable` is false, don't fight it — let the platform derive the name).
    - Evaluate `isPIIData` for every field (names, emails, addresses → true). Ask the user when unsure.
-   - Lightweight alternative: `POST /api/schemas/info` creates a schema from `{ collectionName, schemaName, projectKey, schemaType }` only (no fields); `PUT /api/schemas/info` renames/retypes it.
+   - Lightweight alternative: `POST /schemas/info` creates a schema from `{ collectionName, schemaName, projectKey, schemaType }` only (no fields); `PUT /schemas/info` renames/retypes it.
 
-4. `POST /api/schemas/fields` — add or update fields on an existing schema.
+4. `POST /schemas/fields` — add or update fields on an existing schema.
    ```json
    {
      "schemaDefinitionItemId": "<schema itemId>",
@@ -46,14 +45,14 @@ Use when creating a new data model (collection) for a project, or when adding/ch
      "deletableFieldNames": []
    }
    ```
-   Put field names to remove in `deletableFieldNames`. To rewrite the whole definition instead, use `PUT /api/schemas/define` (same body as create plus `itemId`).
+   Put field names to remove in `deletableFieldNames`. To rewrite the whole definition instead, use `PUT /schemas/define` (same body as create plus `itemId`).
 
-5. `POST /api/schema-configurations/reload` — **mandatory** after any schema or field change. Staged changes are not live until this succeeds (`data: true`). (The older `POST /api/configurations/reload` is deprecated — don't use it.)
+5. `POST /schema-configurations/reload` — **mandatory** after any schema or field change. Staged changes are not live until this succeeds (`data: true`).
 
 Error paths: 401 → refresh token via blocks-setup. 400 returns `ProblemDetails { type, title, status, detail }` — usually a naming-pattern or enum-value problem; read `detail`.
 
 ## Verify
 
-- `GET /api/schemas/get-by-id?id=<schema itemId>&projectKey=$X_BLOCKS_KEY` — full definition with fields, access levels, and policy counts.
-- Or `GET /api/schemas/info-by-name?schemaName=<name>&projectKey=$X_BLOCKS_KEY` for the collection view.
-- `GET /api/schemas/unadapted-change-logs?projectKey=$X_BLOCKS_KEY` — should show nothing pending after a successful reload.
+- `GET /schemas/get-by-id?id=<schema itemId>&projectKey=$X_BLOCKS_KEY` — full definition with fields, access levels, and policy counts.
+- Or `GET /schemas/info-by-name?schemaName=<name>&projectKey=$X_BLOCKS_KEY` for the collection view.
+- `GET /schemas/unadapted-change-logs?projectKey=$X_BLOCKS_KEY` — should show nothing pending after a successful reload.

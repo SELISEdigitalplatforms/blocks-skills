@@ -5,6 +5,8 @@
 
 **Base URL:** `https://api.seliseblocks.com/utilities/v4`
 
+**URL pattern:** every endpoint is `{base}/{endpoint}` — do **not** prefix with `/api/`. e.g. `POST {base}/MagicLink/CreateLink`, `POST {base}/Mail/SendToAny`. The `/api/` from the swagger `basePath` is not part of the URL served by the gateway.
+
 **Authentication** (see `blocks-setup` skill for obtaining tokens):
 - `x-blocks-key: <X_BLOCKS_KEY>` header — required on every request
 - `Authorization: Bearer <access_token>` — required for authenticated operations
@@ -23,7 +25,7 @@
 
 ## Geolocation
 
-### `GET /api/Geolocation/Locate`
+### `GET /Geolocation/Locate`
 
 Locate IP addresses from the current request context.
 
@@ -72,7 +74,7 @@ Parameters:
 }
 ```
 
-### `GET /api/Geolocation/LocateIp`
+### `GET /Geolocation/LocateIp`
 
 Request to get IP addresses location information.
 
@@ -120,7 +122,7 @@ Parameters:
 
 ## MagicLink
 
-### `POST /api/MagicLink/CreateLink`
+### `POST /MagicLink/CreateLink`
 
 Creates a single magic link.
 
@@ -179,7 +181,7 @@ Request parameters:
 }
 ```
 
-### `POST /api/MagicLink/CreateLinks`
+### `POST /MagicLink/CreateLinks`
 
 Creates multiple magic links in bulk.
 
@@ -235,7 +237,7 @@ Request parameters:
 }
 ```
 
-### `GET /api/MagicLink/GetConfig`
+### `GET /MagicLink/GetConfig`
 
 Gets the LinkBasedActionConfig for a project.
 
@@ -267,7 +269,7 @@ Parameters:
 }
 ```
 
-### `GET /api/MagicLink/GetLink`
+### `GET /MagicLink/GetLink`
 
 Get a single magic link by ID.
 
@@ -328,7 +330,7 @@ Parameters:
 }
 ```
 
-### `GET /api/MagicLink/GetLinks`
+### `GET /MagicLink/GetLinks`
 
 Get a paginated list of magic links for a project.
 
@@ -398,7 +400,7 @@ Parameters:
 }
 ```
 
-### `GET /api/MagicLink/Invoke/{linkId}`
+### `GET /MagicLink/Invoke/{linkId}`
 
 Invoke a magic link (public endpoint for direct link access).
 
@@ -431,7 +433,7 @@ The endpoint will return:
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/MagicLink/RemoveLinks`
+### `POST /MagicLink/RemoveLinks`
 
 Removes multiple magic links by their IDs.
 
@@ -462,7 +464,7 @@ Request parameters:
 }
 ```
 
-### `POST /api/MagicLink/SaveConfig`
+### `POST /MagicLink/SaveConfig`
 
 Saves (creates or updates) a LinkBasedActionConfig for a project.
 
@@ -507,7 +509,7 @@ Request parameters:
 
 ## Mail
 
-### `GET /api/Mail/GetMailBoxMail`
+### `GET /Mail/GetMailBoxMail`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -516,7 +518,7 @@ Request parameters:
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Mail/GetMailBoxMails`
+### `GET /Mail/GetMailBoxMails`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -531,7 +533,7 @@ Request parameters:
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Mail/Send`
+### `POST /Mail/Send`
 
 **Request body** (`application/json`):
 
@@ -553,7 +555,7 @@ Request parameters:
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Mail/SendToAny`
+### `POST /Mail/SendToAny`
 
 **Request body** (`application/json`):
 
@@ -578,7 +580,7 @@ Request parameters:
 
 ## Notifier
 
-### `GET /api/Notifier/GetNotifications`
+### `GET /Notifier/GetNotifications`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -618,7 +620,7 @@ Request parameters:
 }
 ```
 
-### `GET /api/Notifier/GetUnreadNotificationsBySubscriptionFilter`
+### `GET /Notifier/GetUnreadNotificationsBySubscriptionFilter`
 
 **Request body** (`application/json`):
 
@@ -659,7 +661,7 @@ Request parameters:
 }[]
 ```
 
-### `POST /api/Notifier/MarkAllNotificationAsRead`
+### `POST /Notifier/MarkAllNotificationAsRead`
 
 **Response 200:**
 
@@ -670,7 +672,7 @@ Request parameters:
 }
 ```
 
-### `POST /api/Notifier/MarkNotificationAsRead`
+### `POST /Notifier/MarkNotificationAsRead`
 
 **Request body** (`application/json`):
 
@@ -689,7 +691,7 @@ Request parameters:
 }
 ```
 
-### `POST /api/Notifier/Notify`
+### `POST /Notifier/Notify`
 
 **Request body** (`application/json`):
 
@@ -723,7 +725,7 @@ Request parameters:
 
 ## PdfGenerator
 
-### `POST /api/PdfGenerator/CreatePdfsFromHtml`
+### `POST /PdfGenerator/CreatePdfsFromHtml`
 
 Export a webpage to PDF
 
@@ -780,7 +782,7 @@ Export a webpage to PDF
 }
 ```
 
-### `POST /api/PdfGenerator/CreatePdfsFromHtmlUsingTemplateEngine`
+### `POST /PdfGenerator/CreatePdfsFromHtmlUsingTemplateEngine`
 
 Export a webpage to PDF using template engine
 
@@ -847,7 +849,7 @@ Export a webpage to PDF using template engine
 }
 ```
 
-### `POST /api/PdfGenerator/CreatePdfsFromHtmlUsingTemplateEngineBulk`
+### `POST /PdfGenerator/CreatePdfsFromHtmlUsingTemplateEngineBulk`
 
 Export multiple webpages to PDF using template engine in bulk
 
@@ -917,7 +919,7 @@ Export multiple webpages to PDF using template engine in bulk
 }
 ```
 
-### `POST /api/PdfGenerator/FixPdfs`
+### `POST /PdfGenerator/FixPdfs`
 
 Fixes existing pdf files
 
@@ -951,7 +953,7 @@ Fixes existing pdf files
 }
 ```
 
-### `POST /api/PdfGenerator/MergePdfs`
+### `POST /PdfGenerator/MergePdfs`
 
 Merge multiple PDFs into single PDF file
 
@@ -996,7 +998,7 @@ Merge multiple PDFs into single PDF file
 }
 ```
 
-### `POST /api/PdfGenerator/StampImageToPdf`
+### `POST /PdfGenerator/StampImageToPdf`
 
 Add an image within PDF file
 
@@ -1048,7 +1050,7 @@ Add an image within PDF file
 }
 ```
 
-### `POST /api/PdfGenerator/StampIntoPdf`
+### `POST /PdfGenerator/StampIntoPdf`
 
 Add both images and text stamps to PDF file
 
@@ -1098,7 +1100,7 @@ Add both images and text stamps to PDF file
 }
 ```
 
-### `POST /api/PdfGenerator/StampTextToPdf`
+### `POST /PdfGenerator/StampTextToPdf`
 
 Add text stamps to PDF file
 
@@ -1148,7 +1150,7 @@ Add text stamps to PDF file
 
 ## Sequence
 
-### `GET /api/Sequence/Next`
+### `GET /Sequence/Next`
 
 Query request to get the next number in sequence.
 
@@ -1172,7 +1174,7 @@ Query request to get the next number in sequence.
 }
 ```
 
-### `GET /api/Sequence/NextHex`
+### `GET /Sequence/NextHex`
 
 Query request to get 63 billion unique sequence of numbers in hexadecimal format
 
@@ -1196,7 +1198,7 @@ Query request to get 63 billion unique sequence of numbers in hexadecimal format
 }
 ```
 
-### `POST /api/Sequence/Reset`
+### `POST /Sequence/Reset`
 
 Reset the sequence. Sequence will begin again from a user-specified number.
 
@@ -1227,7 +1229,7 @@ Reset the sequence. Sequence will begin again from a user-specified number.
 
 ## Template
 
-### `POST /api/Template/Clone`
+### `POST /Template/Clone`
 
 **Request body** (`application/json`):
 
@@ -1244,7 +1246,7 @@ Reset the sequence. Sequence will begin again from a user-specified number.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `DELETE /api/Template/Delete`
+### `DELETE /Template/Delete`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1253,7 +1255,7 @@ Reset the sequence. Sequence will begin again from a user-specified number.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Template/Get`
+### `GET /Template/Get`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1283,7 +1285,7 @@ Reset the sequence. Sequence will begin again from a user-specified number.
 }
 ```
 
-### `GET /api/Template/Gets`
+### `GET /Template/Gets`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1322,7 +1324,7 @@ Reset the sequence. Sequence will begin again from a user-specified number.
 }
 ```
 
-### `POST /api/Template/Save`
+### `POST /Template/Save`
 
 **Request body** (`application/json`):
 

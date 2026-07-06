@@ -14,7 +14,7 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
 
 ## Steps
 
-1. `POST /api/Health/SaveHealth` — create the health configuration. See
+1. `POST /Health/SaveHealth` — create the health configuration. See
    [endpoints.md#health](../endpoints.md#health) (`SaveHealthConfigurationRequest` in
    contracts.md):
 
@@ -40,26 +40,26 @@ Base URL: `https://api.seliseblocks.com/monitor/v4`
      first and read the value back, or verify live.
    - Response undocumented — inspect it for the new `itemId`. If it isn't returned, swagger
      exposes no dedicated Health list endpoint; check whether the config shows up in
-     `GET /api/Monitor/GetMonitorList` (health configs share the `monitorSourceType` field, so
+     `GET /Monitor/GetMonitorList` (health configs share the `monitorSourceType` field, so
      they may be listed there — unverified), or read the id from OS portal.
 
-2. Wire the heartbeat: have the job call `GET /api/Health/Ping/{itemId}` at the end of each
+2. Wire the heartbeat: have the job call `GET /Health/Ping/{itemId}` at the end of each
    successful run (at least once per `intervalInSeconds`). `itemId` is a required **path**
    parameter. Include the `x-blocks-key` header. Example cron step:
 
    ```bash
    curl -fsS -H "x-blocks-key: $X_BLOCKS_KEY" \
-     "https://api.seliseblocks.com/monitor/v4/api/Health/Ping/$HEALTH_ITEM_ID"
+     "https://api.seliseblocks.com/monitor/v4/Health/Ping/$HEALTH_ITEM_ID"
    ```
 
    Ping only after the work succeeds — pinging unconditionally defeats the purpose of a
    dead-man's switch.
 
-3. `POST /api/Health/UpdateHealth` — same body as SaveHealth **plus `itemId`**, to change the
+3. `POST /Health/UpdateHealth` — same body as SaveHealth **plus `itemId`**, to change the
    interval, grace period, alert emails, or to pause with `isActive: false`. Send the full
    configuration; partial-update behavior is undocumented.
 
-4. `DELETE /api/Health/DeleteHealth?itemId=<id>` — remove the check (camelCase query param).
+4. `DELETE /Health/DeleteHealth?itemId=<id>` — remove the check (camelCase query param).
 
 Error paths: `401` → refresh per blocks-setup. Ping returns 404 → wrong `itemId` or the config was
 deleted. No alert after a deliberately missed ping → re-check `isActive`, `emails`, and treat the
@@ -67,7 +67,7 @@ grace-period semantics as unverified (see the note at the top).
 
 ## Verify
 
-- `GET /api/Health/Ping/{itemId}` returns HTTP 200 when called manually with your `x-blocks-key`.
+- `GET /Health/Ping/{itemId}` returns HTTP 200 when called manually with your `x-blocks-key`.
 - Let one full `intervalInSeconds + gracePeriodInSeconds` pass **without** pinging and confirm an
   alert email arrives at the configured addresses — this validates the dead-man's-switch
   interpretation for your project.

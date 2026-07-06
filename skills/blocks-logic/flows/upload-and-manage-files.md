@@ -3,7 +3,7 @@
 Use when a workflow or logic deployment needs file assets: upload via pre-signed URL,
 fetch download URLs/metadata, batch-read, and delete. These are the logic service's file
 APIs ([endpoints.md#storage](../endpoints.md#storage)) — not the platform storage
-*configuration* CRUD (`/api/Storage/Save|Get|Gets|Delete`), which is documented in
+*configuration* CRUD (`/Storage/Save|Get|Gets|Delete`), which is documented in
 `blocks-os`.
 
 Preconditions: token + `x-blocks-key` (`blocks-setup`). If your project uses a custom
@@ -13,7 +13,7 @@ swagger — verify on your project).
 
 ## Steps
 
-1. `POST /api/Storage/GetPreSignedUrlForUpload` — request an upload slot.
+1. `POST /Storage/GetPreSignedUrlForUpload` — request an upload slot.
    Body (all fields optional in schema; send what you know):
    - `name` — the file name (with extension).
    - `projectKey` — your Blocks Key (projectKey = your Blocks Key, the same value as `$X_BLOCKS_KEY`).
@@ -36,15 +36,15 @@ swagger — verify on your project).
    Bearer token. Send the file body with an appropriate `Content-Type`. The URL is
    time-limited — upload promptly and request a fresh one if it expires.
 
-3. `GET /api/Storage/GetFile?FileId=<fileId>&ProjectKey=$X_BLOCKS_KEY` — confirm the upload and
+3. `GET /Storage/GetFile?FileId=<fileId>&ProjectKey=$X_BLOCKS_KEY` — confirm the upload and
    get the download `url`, plus metadata (`name`, `sizeInBytes`, `accessModifier`,
    `tags`, `metaData`, `createDate`, ...). Optional `Version` (int64) fetches a specific
    file version; `ConfigurationName` targets a non-default configuration.
 
-4. Batch reads: `POST /api/Storage/GetFiles` with
+4. Batch reads: `POST /Storage/GetFiles` with
    `{ fileIds: [...], projectKey, configurationName? }` → array of the same file shape.
 
-5. Delete: `POST /api/Storage/DeleteFile` with
+5. Delete: `POST /Storage/DeleteFile` with
    `{ fileId, projectKey, configurationName?, eventQueueName? }` → `BaseResponse`
    (`isSuccess`, `errors`). `eventQueueName` optionally routes a deletion event to a
    queue — semantics beyond the field name are not documented in swagger.
@@ -57,7 +57,7 @@ Error paths:
 
 ## Verify
 
-- `GET /api/Storage/GetFile?FileId=...&ProjectKey=...` returns `isSuccess: true`,
+- `GET /Storage/GetFile?FileId=...&ProjectKey=...` returns `isSuccess: true`,
   the expected `name`/`sizeInBytes`, and a non-null `url`.
 - Fetching that `url` downloads the bytes you uploaded.
 - After `DeleteFile`, `GetFile` for the same id no longer returns the file.

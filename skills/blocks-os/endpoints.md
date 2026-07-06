@@ -5,6 +5,8 @@
 
 **Base URL:** `https://api.seliseblocks.com/os/v4`
 
+**URL pattern:** every endpoint is `{base}/{endpoint}` — do **not** prefix with `/api/`. e.g. `POST {base}/Captcha/Save`, `POST {base}/Mfa/Create`. The `/api/` from the swagger `basePath` is not part of the URL served by the gateway. (Exception: OIDC discovery stays at `GET {base}/.well-known/openid-configuration` etc.)
+
 **Authentication** (see `blocks-setup` skill for obtaining tokens):
 - `x-blocks-key: <X_BLOCKS_KEY>` header — required on every request
 - `Authorization: Bearer <access_token>` — required for authenticated operations
@@ -29,7 +31,7 @@
 
 ## ApiEndpointConfig
 
-### `POST /api/ApiEndpointConfig/BulkUpdate`
+### `POST /ApiEndpointConfig/BulkUpdate`
 
 **Request body** (`application/json`):
 
@@ -44,7 +46,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/ApiEndpointConfig/GetList`
+### `POST /ApiEndpointConfig/GetList`
 
 **Request body** (`application/json`):
 
@@ -66,7 +68,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/ApiEndpointConfig/Update`
+### `POST /ApiEndpointConfig/Update`
 
 **Request body** (`application/json`):
 
@@ -82,7 +84,7 @@
 
 ## Captcha
 
-### `POST /api/Captcha/Create`
+### `POST /Captcha/Create`
 
 **Request body** (`application/json`):
 
@@ -104,7 +106,7 @@
 }
 ```
 
-### `GET /api/Captcha/Get`
+### `GET /Captcha/Get`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -120,7 +122,7 @@
 }
 ```
 
-### `GET /api/Captcha/Gets`
+### `GET /Captcha/Gets`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -148,7 +150,7 @@
 }
 ```
 
-### `POST /api/Captcha/Save`
+### `POST /Captcha/Save`
 
 **Request body** (`application/json`):
 
@@ -173,7 +175,7 @@
 }
 ```
 
-### `POST /api/Captcha/Submit`
+### `POST /Captcha/Submit`
 
 **Request body** (`application/json`):
 
@@ -195,7 +197,7 @@
 }
 ```
 
-### `POST /api/Captcha/UpdateStatus`
+### `POST /Captcha/UpdateStatus`
 
 **Request body** (`application/json`):
 
@@ -217,7 +219,7 @@
 }
 ```
 
-### `GET /api/Captcha/Verify`
+### `GET /Captcha/Verify`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -256,7 +258,7 @@
 
 ## Mfa
 
-### `POST /api/Mfa/DisableUserMfa`
+### `POST /Mfa/DisableUserMfa`
 
 **Request body** (`application/json`):
 
@@ -276,7 +278,7 @@
 }
 ```
 
-### `POST /api/Mfa/GenerateOTP`
+### `POST /Mfa/GenerateOTP`
 
 **Request body** (`application/json`):
 
@@ -299,7 +301,7 @@
 }
 ```
 
-### `GET /api/Mfa/Get`
+### `GET /Mfa/Get`
 
 **Response 200:**
 
@@ -314,7 +316,7 @@
 }
 ```
 
-### `POST /api/Mfa/ResendOtp`
+### `POST /Mfa/ResendOtp`
 
 **Request body** (`application/json`):
 
@@ -335,7 +337,7 @@
 }
 ```
 
-### `POST /api/Mfa/Save`
+### `POST /Mfa/Save`
 
 **Request body** (`application/json`):
 
@@ -360,7 +362,7 @@
 }
 ```
 
-### `GET /api/Mfa/SetUpTotp`
+### `GET /Mfa/SetUpTotp`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -378,7 +380,7 @@
 }
 ```
 
-### `POST /api/Mfa/VerifyOTP`
+### `POST /Mfa/VerifyOTP`
 
 **Request body** (`application/json`):
 
@@ -405,7 +407,7 @@
 
 ## Migration
 
-### `POST /api/Migration/DataCleanup`
+### `POST /Migration/DataCleanup`
 
 **Request body** (`application/json`):
 
@@ -417,7 +419,7 @@
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Migration/GetMigrationStatus`
+### `GET /Migration/GetMigrationStatus`
 
 Gets the migration status for projects with incomplete services.
 
@@ -427,7 +429,7 @@ Gets the migration status for projects with incomplete services.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/Migration/Migrate`
+### `POST /Migration/Migrate`
 
 **Request body** (`application/json`):
 
@@ -453,7 +455,7 @@ Gets the migration status for projects with incomplete services.
 }
 ```
 
-### `POST /api/Migration/Verify`
+### `POST /Migration/Verify`
 
 Verifies the OTP code for the migration process.
 
@@ -478,7 +480,7 @@ Verifies the OTP code for the migration process.
 
 ## Notification
 
-### `DELETE /api/Notification/Delete`
+### `DELETE /Notification/Delete`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -494,7 +496,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `GET /api/Notification/Get`
+### `GET /Notification/Get`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -521,7 +523,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `GET /api/Notification/Gets`
+### `GET /Notification/Gets`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -557,7 +559,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `POST /api/Notification/Save`
+### `POST /Notification/Save`
 
 **Request body** (`application/json`):
 
@@ -584,7 +586,7 @@ Verifies the OTP code for the migration process.
 
 ## People
 
-### `POST /api/People/ConfirmInvitation`
+### `POST /People/ConfirmInvitation`
 
 **Request body** (`application/json`):
 
@@ -596,7 +598,7 @@ Verifies the OTP code for the migration process.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/People/Gets`
+### `POST /People/Gets`
 
 **Request body** (`application/json`):
 
@@ -646,7 +648,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `POST /api/People/Invite`
+### `POST /People/Invite`
 
 **Request body** (`application/json`):
 
@@ -662,7 +664,7 @@ Verifies the OTP code for the migration process.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/People/RemoveAccess`
+### `POST /People/RemoveAccess`
 
 **Request body** (`application/json`):
 
@@ -676,7 +678,7 @@ Verifies the OTP code for the migration process.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/People/ResendInvitation`
+### `POST /People/ResendInvitation`
 
 **Request body** (`application/json`):
 
@@ -689,7 +691,7 @@ Verifies the OTP code for the migration process.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/People/Signup`
+### `POST /People/Signup`
 
 **Request body** (`application/json`):
 
@@ -702,7 +704,7 @@ Verifies the OTP code for the migration process.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `POST /api/People/TransferOwnerShip`
+### `POST /People/TransferOwnerShip`
 
 **Request body** (`application/json`):
 
@@ -717,7 +719,7 @@ Verifies the OTP code for the migration process.
 
 ## Project
 
-### `POST /api/Project/AddAsset`
+### `POST /Project/AddAsset`
 
 **Request body** (`application/json`):
 
@@ -741,7 +743,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `POST /api/Project/Create`
+### `POST /Project/Create`
 
 **Request body** (`application/json`):
 
@@ -775,7 +777,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `POST /api/Project/Disable`
+### `POST /Project/Disable`
 
 **Request body** (`application/json`):
 
@@ -794,7 +796,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `GET /api/Project/Get`
+### `GET /Project/Get`
 
 **Response 200:**
 
@@ -826,7 +828,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `GET /api/Project/GetAsset`
+### `GET /Project/GetAsset`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -864,7 +866,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `GET /api/Project/GetThirdPartyJWTClaims`
+### `GET /Project/GetThirdPartyJWTClaims`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -890,7 +892,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `GET /api/Project/GetTokenValidationParameters`
+### `GET /Project/GetTokenValidationParameters`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -898,7 +900,7 @@ Verifies the OTP code for the migration process.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `GET /api/Project/Gets`
+### `GET /Project/Gets`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -960,7 +962,7 @@ Verifies the OTP code for the migration process.
 }[]
 ```
 
-### `POST /api/Project/Restore`
+### `POST /Project/Restore`
 
 **Request body** (`application/json`):
 
@@ -980,7 +982,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `POST /api/Project/SaveThirdPartyJWTClaims`
+### `POST /Project/SaveThirdPartyJWTClaims`
 
 **Request body** (`application/json`):
 
@@ -1005,7 +1007,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `POST /api/Project/UpdateProject`
+### `POST /Project/UpdateProject`
 
 **Request body** (`application/json`):
 
@@ -1026,7 +1028,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `POST /api/Project/UpdateTenantGroup`
+### `POST /Project/UpdateTenantGroup`
 
 **Request body** (`application/json`):
 
@@ -1046,7 +1048,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `POST /api/Project/UpdateTokenValidationParameters`
+### `POST /Project/UpdateTokenValidationParameters`
 
 **Request body** (`application/json`):
 
@@ -1074,7 +1076,7 @@ Verifies the OTP code for the migration process.
 
 ## Secrets
 
-### `POST /api/Secrets/Delete`
+### `POST /Secrets/Delete`
 
 **Request body** (`application/json`):
 
@@ -1094,7 +1096,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `GET /api/Secrets/Get`
+### `GET /Secrets/Get`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1119,7 +1121,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `GET /api/Secrets/Gets`
+### `GET /Secrets/Gets`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1148,7 +1150,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `POST /api/Secrets/Save`
+### `POST /Secrets/Save`
 
 **Request body** (`application/json`):
 
@@ -1172,7 +1174,7 @@ Verifies the OTP code for the migration process.
 
 ## Service
 
-### `POST /api/Service/GetAll`
+### `POST /Service/GetAll`
 
 **Request body** (`application/json`):
 
@@ -1218,7 +1220,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `POST /api/Service/Register`
+### `POST /Service/Register`
 
 **Request body** (`application/json`):
 
@@ -1237,7 +1239,7 @@ Verifies the OTP code for the migration process.
 
 ## Storage
 
-### `POST /api/Storage/Delete`
+### `POST /Storage/Delete`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1253,7 +1255,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `GET /api/Storage/Get`
+### `GET /Storage/Get`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1287,7 +1289,7 @@ Verifies the OTP code for the migration process.
 }
 ```
 
-### `GET /api/Storage/Gets`
+### `GET /Storage/Gets`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1320,7 +1322,7 @@ Verifies the OTP code for the migration process.
 }[]
 ```
 
-### `POST /api/Storage/Save`
+### `POST /Storage/Save`
 
 **Request body** (`application/json`):
 
@@ -1355,7 +1357,7 @@ Verifies the OTP code for the migration process.
 
 ## Subscription
 
-### `GET /api/Subscription/Gets`
+### `GET /Subscription/Gets`
 
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
@@ -1399,10 +1401,10 @@ call them on this base URL only if you specifically need this service's instance
 
 | Method | Path | Summary |
 |---|---|---|
-| POST | `/api/Log/GetLogs` |  |
-| POST | `/api/Log/GetLogsByDate` |  |
-| GET | `/api/Log/Live` |  |
-| POST | `/api/Trace/GetOperationalAnalytics` |  |
-| POST | `/api/Trace/GetServiceAnalytics` |  |
-| GET | `/api/Trace/GetTrace` |  |
-| POST | `/api/Trace/GetTraces` |  |
+| POST | `/Log/GetLogs` |  |
+| POST | `/Log/GetLogsByDate` |  |
+| GET | `/Log/Live` |  |
+| POST | `/Trace/GetOperationalAnalytics` |  |
+| POST | `/Trace/GetServiceAnalytics` |  |
+| GET | `/Trace/GetTrace` |  |
+| POST | `/Trace/GetTraces` |  |
