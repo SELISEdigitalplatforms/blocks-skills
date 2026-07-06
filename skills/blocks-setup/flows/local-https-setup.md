@@ -39,8 +39,8 @@ openssl req -x509 -newkey rsa:2048 -nodes -sha256 -days 365 \
 
 Whether a named domain is needed — and what it must match — depends on your project's cookie
 domain settings (see [project-impersonation.md](project-impersonation.md) step 2 for reading
-`cookieDomain` / `applicationDomain` from `GET /os/v4/api/Project/Gets`, and the `blocks-monitor`
-skill for `POST /api/Domain/Configure`). **Verify against your project.**
+`cookieDomain` / `applicationDomain` from `GET /os/v4/Project/Gets`, and the `blocks-monitor`
+skill for `POST /Domain/Configure`). **Verify against your project.**
 
 ### 2. Point Vite at the cert
 

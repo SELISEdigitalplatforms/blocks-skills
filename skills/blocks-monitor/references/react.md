@@ -42,7 +42,7 @@ async function monitorFetch<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (res.status === 401) {
-    // refresh via POST /iam/v4/api/auth/refresh, then retry — see blocks-setup
+    // refresh via POST /iam/v4/auth/refresh, then retry — see blocks-setup
     throw new BlocksApiError(401, await res.text());
   }
   if (!res.ok) throw new BlocksApiError(res.status, await res.text());
@@ -88,24 +88,24 @@ const BLOCKS_KEY = import.meta.env.VITE_X_BLOCKS_KEY as string;
 
 // -- Logs -----------------------------------------------------------------
 
-/** POST /api/Log/GetLogsByDate — documented envelope { data, errors, totalCount } */
+/** POST /Log/GetLogsByDate — documented envelope { data, errors, totalCount } */
 export function useServiceLogs(req: Omit<LogsByDateRequest, 'projectKey'>) {
   return useQuery({
     queryKey: ['monitor', 'logs', req],
     queryFn: () =>
-      post<GetLogsResponse>('/api/Log/GetLogsByDate', { ...req, projectKey: BLOCKS_KEY }),
+      post<GetLogsResponse>('/Log/GetLogsByDate', { ...req, projectKey: BLOCKS_KEY }),
     enabled: !!req.serviceName, // serviceName is required by the API
   });
 }
 
-/** GET /api/Log/Live — polling live tail. Response undocumented in swagger: keep `unknown`
+/** GET /Log/Live — polling live tail. Response undocumented in swagger: keep `unknown`
  *  until you have inspected the live payload, then type it locally. */
 export function useLiveLogs(serviceName: string, enabled: boolean) {
   const cursor = useRef<string>(new Date().toISOString());
   return useQuery({
     queryKey: ['monitor', 'live-logs', serviceName],
     queryFn: async () => {
-      const data = await get<unknown>('/api/Log/Live', {
+      const data = await get<unknown>('/Log/Live', {
         Name: serviceName,           // PascalCase — required
         LastDate: cursor.current,    // advance after inspecting the live shape
         ProjectKey: BLOCKS_KEY,
@@ -121,42 +121,42 @@ export function useLiveLogs(serviceName: string, enabled: boolean) {
 
 // -- Traces ---------------------------------------------------------------
 
-/** POST /api/Trace/GetTraces — response undocumented in swagger */
+/** POST /Trace/GetTraces — response undocumented in swagger */
 export function useTraces(req: Omit<GetTracesRequest, 'projectKey'>) {
   return useQuery({
     queryKey: ['monitor', 'traces', req],
-    queryFn: () => post<unknown>('/api/Trace/GetTraces', { ...req, projectKey: BLOCKS_KEY }),
+    queryFn: () => post<unknown>('/Trace/GetTraces', { ...req, projectKey: BLOCKS_KEY }),
   });
 }
 
-/** GET /api/Trace/GetTrace — response undocumented in swagger */
+/** GET /Trace/GetTrace — response undocumented in swagger */
 export function useTrace(traceId: string | undefined) {
   return useQuery({
     queryKey: ['monitor', 'trace', traceId],
     queryFn: () =>
-      get<unknown>('/api/Trace/GetTrace', { TraceId: traceId!, ProjectKey: BLOCKS_KEY }),
+      get<unknown>('/Trace/GetTrace', { TraceId: traceId!, ProjectKey: BLOCKS_KEY }),
     enabled: !!traceId,
   });
 }
 
-/** POST /api/Trace/GetServiceAnalytics — startTime/endTime required */
+/** POST /Trace/GetServiceAnalytics — startTime/endTime required */
 export function useServiceAnalytics(req: Omit<GetHttpStatusAnalyticsRequest, 'projectKey'>) {
   return useQuery({
     queryKey: ['monitor', 'service-analytics', req],
     queryFn: () =>
-      post<unknown>('/api/Trace/GetServiceAnalytics', { ...req, projectKey: BLOCKS_KEY }),
+      post<unknown>('/Trace/GetServiceAnalytics', { ...req, projectKey: BLOCKS_KEY }),
     enabled: !!req.startTime && !!req.endTime,
   });
 }
 
 // -- Uptime monitors --------------------------------------------------------
 
-/** GET /api/Monitor/GetMonitorList — camelCase query params; response undocumented */
+/** GET /Monitor/GetMonitorList — camelCase query params; response undocumented */
 export function useMonitors(pageNumber = 1, pageSize = 20) {
   return useQuery({
     queryKey: ['monitor', 'monitors', pageNumber, pageSize],
     queryFn: () =>
-      get<unknown>('/api/Monitor/GetMonitorList', {
+      get<unknown>('/Monitor/GetMonitorList', {
         projectKey: BLOCKS_KEY,
         pageNumber,
         pageSize,
@@ -164,23 +164,23 @@ export function useMonitors(pageNumber = 1, pageSize = 20) {
   });
 }
 
-/** GET /api/Monitor/GetIncidentList */
+/** GET /Monitor/GetIncidentList */
 export function useIncidents(monitorId: string | undefined, pageNumber = 1, pageSize = 20) {
   return useQuery({
     queryKey: ['monitor', 'incidents', monitorId, pageNumber],
     queryFn: () =>
-      get<unknown>('/api/Monitor/GetIncidentList', { monitorId: monitorId!, pageNumber, pageSize }),
+      get<unknown>('/Monitor/GetIncidentList', { monitorId: monitorId!, pageNumber, pageSize }),
     enabled: !!monitorId,
   });
 }
 
-/** POST /api/Monitor/SaveMonitor + DELETE /api/Monitor/DeleteMonitor */
+/** POST /Monitor/SaveMonitor + DELETE /Monitor/DeleteMonitor */
 export function useSaveMonitor() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: SaveMonitorConfigurationRequest | UpdateMonitorConfigurationRequest) =>
       post<unknown>(
-        'itemId' in body && body.itemId ? '/api/Monitor/UpdateMonitor' : '/api/Monitor/SaveMonitor',
+        'itemId' in body && body.itemId ? '/Monitor/UpdateMonitor' : '/Monitor/SaveMonitor',
         { ...body, projectKey: BLOCKS_KEY },
       ),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['monitor', 'monitors'] }),
@@ -190,7 +190,7 @@ export function useSaveMonitor() {
 export function useDeleteMonitor() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (itemId: string) => del<unknown>('/api/Monitor/DeleteMonitor', { itemId }),
+    mutationFn: (itemId: string) => del<unknown>('/Monitor/DeleteMonitor', { itemId }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['monitor', 'monitors'] }),
   });
 }
@@ -245,12 +245,12 @@ export function LogsPanel({ serviceName }: { serviceName: string }) {
 
 ## Errors & token refresh
 
-- `401` from any hook → refresh the token (`POST /iam/v4/api/auth/refresh`) and retry; the
+- `401` from any hook → refresh the token (`POST /iam/v4/auth/refresh`) and retry; the
   full refresh/bootstrap procedure is in **blocks-setup**. Wire it into `monitorFetch` once your
   auth store exposes a `refresh()` action.
 - Documented envelopes carry failures in `errors` (`Record<string, string>`) with `isSuccess:
   false` — surface those alongside HTTP errors.
-- Back-office `/api/Iam/*` hooks (e.g. a `useAccounts` hook wrapping `POST /api/Iam/GetUsers` with
+- Back-office `/Iam/*` hooks (e.g. a `useAccounts` hook wrapping `POST /Iam/GetUsers` with
   `GetUsersRequest`/`GetUsersResponse`) follow the same pattern — but they are OS-portal-grade
   admin calls needing an admin token. Never ship them in an end-user app; app auth/profile UI
   belongs to **blocks-iam**.

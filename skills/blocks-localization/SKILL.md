@@ -19,13 +19,13 @@ The localization service (`https://api.seliseblocks.com/localization/v4`) manage
 |---|---|
 | Add/list/delete languages, set the default | [endpoints.md#language](endpoints.md#language), flow: [language-setup](flows/language-setup.md) |
 | Create/update/delete translation keys, single or bulk | [endpoints.md#key](endpoints.md#key), flow: [key-management](flows/key-management.md) |
-| Search keys (by module, text, missing language, partial translation) | `POST /api/Key/Gets` in [endpoints.md#key](endpoints.md#key) |
+| Search keys (by module, text, missing language, partial translation) | `POST /Key/Gets` in [endpoints.md#key](endpoints.md#key) |
 | Machine-translate missing values (one key / many / all) | flow: [ai-translation](flows/ai-translation.md) |
-| Get an AI suggestion for one string, with glossary context | `POST /api/Assistant/GetTranslationSuggestion` in [endpoints.md#assistant](endpoints.md#assistant), flow: [ai-translation](flows/ai-translation.md) |
+| Get an AI suggestion for one string, with glossary context | `POST /Assistant/GetTranslationSuggestion` in [endpoints.md#assistant](endpoints.md#assistant), flow: [ai-translation](flows/ai-translation.md) |
 | Manage glossaries and tag them to modules | [endpoints.md#glossary](endpoints.md#glossary), [endpoints.md#module](endpoints.md#module), flow: [ai-translation](flows/ai-translation.md) |
 | Create/list modules | [endpoints.md#module](endpoints.md#module) |
 | Generate + download language files for the frontend | flow: [language-files-and-webhook](flows/language-files-and-webhook.md) |
-| Export/import translation files (offline/agency workflow) | `POST /api/Key/UilmExport` / `UilmImport` in [endpoints.md#key](endpoints.md#key) |
+| Export/import translation files (offline/agency workflow) | `POST /Key/UilmExport` / `UilmImport` in [endpoints.md#key](endpoints.md#key) |
 | Get notified when translations change (webhook) | [endpoints.md#config](endpoints.md#config), flow: [language-files-and-webhook](flows/language-files-and-webhook.md) |
 | See who changed what, and undo it | flow: [timeline-and-rollback](flows/timeline-and-rollback.md) |
 | Upload the file for UilmImport | **blocks-os** (Storage) |
@@ -54,10 +54,10 @@ The localization service (`https://api.seliseblocks.com/localization/v4`) manage
 
 ## Conventions & gotchas
 
-- **Casing split:** JSON bodies use camelCase (`projectKey`, `keyName`); query params on GET/DELETE use PascalCase (`ProjectKey`, `ItemId`, `PageSize`). Exception: `GET /api/Glossary/Get` uses lowercase `itemId` / `projectKey` query params — match endpoints.md exactly per endpoint.
+- **Casing split:** JSON bodies use camelCase (`projectKey`, `keyName`); query params on GET/DELETE use PascalCase (`ProjectKey`, `ItemId`, `PageSize`). Exception: `GET /Glossary/Get` uses lowercase `itemId` / `projectKey` query params — match endpoints.md exactly per endpoint.
 - **Save responses don't return the new item's id.** `Language/Save`, `Key/Save`, `SaveKeys`, `Glossary/Save`, `Module/Save`, `Config/SaveWebHook` all return the `ApiResponse` envelope `{ success, errorMessage, validationErrors }` — **no `itemId`**. To get ids after a create, re-query the matching list endpoint (`Language/Gets`, `Key/GetsByKeyNames`, `Glossary/Gets`, `Module/Gets`). Only `Module/TagGlossary` returns the `BaseMutationResponse` shape (`{ isSuccess, errors, itemId }`) — note the different success flag names (`success` vs `isSuccess`).
-- **Upserts, not PUTs.** All writes are `POST …/Save` endpoints: omit `itemId` to create, include it to update. Deletes are query-param `DELETE`s — except `DELETE /api/Key/DeleteKeys`, which takes a **JSON body** (some HTTP clients need explicit support for DELETE-with-body).
-- **Languages are deleted by name**, not id: `DELETE /api/Language/Delete?LanguageName=…&ProjectKey=…`.
+- **Upserts, not PUTs.** All writes are `POST …/Save` endpoints: omit `itemId` to create, include it to update. Deletes are query-param `DELETE`s — except `DELETE /Key/DeleteKeys`, which takes a **JSON body** (some HTTP clients need explicit support for DELETE-with-body).
+- **Languages are deleted by name**, not id: `DELETE /Language/Delete?LanguageName=…&ProjectKey=…`.
 - **Machine translation is asynchronous.** `TranslateKey` / `TranslateKeys` / `TranslateAll` enqueue work and return immediately; all four request fields (`keyId(s)`, `messageCoRelationId`, `projectKey`, `defaultLanguage`) are required — generate a GUID for `messageCoRelationId`. Verify completion by re-querying keys or the timeline, not from the (undocumented) response.
 - **`GenerateUilmFile` before `GetUilmFile`** — the swagger says so explicitly; fetching without generating returns stale or missing content.
 - **Many responses are undocumented in swagger** (all Translate* endpoints, `GetUilmFile`, `GetLanguageFileGenerationHistory`, `GetUilmExportedFiles`, `RollBack`, `Language/SetDefault`, `Language/Delete`, key deletes, `Glossary/Get`, `Assistant/GetTranslationSuggestion`). Inspect the live response before coding against it — do not assume shapes.

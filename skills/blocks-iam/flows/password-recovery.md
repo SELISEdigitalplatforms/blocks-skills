@@ -9,7 +9,7 @@ All bodies are **camelCase**. Endpoints: endpoints.md → [Authentication](../en
 
 ## Path A — Forgot password (recovery + reset)
 
-1. `POST /api/auth/recover` — unauthenticated; `x-blocks-key` only:
+1. `POST /auth/recover` — unauthenticated; `x-blocks-key` only:
 
    ```json
    { "email": "user@example.com", "captchaCode": "<if tenant requires captcha — blocks-os>" }
@@ -21,10 +21,10 @@ All bodies are **camelCase**. Endpoints: endpoints.md → [Authentication](../en
    existence in your UI).
 
 2. The email links to your app's recovery page (tenant setting `recoverAccountPath` /
-   `accountActionBaseUrl` in `POST /api/auth/config`; link validity =
+   `accountActionBaseUrl` in `POST /auth/config`; link validity =
    `recoverAccountUrlLifetimeInMinutes`). The link carries a recovery `code`.
 
-3. `POST /api/auth/reset-password` — from your recovery page:
+3. `POST /auth/reset-password` — from your recovery page:
 
    ```json
    {
@@ -40,12 +40,12 @@ All bodies are **camelCase**. Endpoints: endpoints.md → [Authentication](../en
    `passwordStrengthCheckerRegex`. Response undocumented — inspect live; expect 4xx
    for an invalid/expired code.
 
-4. Log in with the new password (`POST /api/auth/login` — see
+4. Log in with the new password (`POST /auth/login` — see
    [embedded-login.md](embedded-login.md)).
 
 ## Path B — Authenticated password change
 
-1. `POST /api/auth/change-password` — Bearer token required:
+1. `POST /auth/change-password` — Bearer token required:
 
    ```json
    { "oldPassword": "<current>", "newPassword": "<new>" }
@@ -56,9 +56,9 @@ All bodies are **camelCase**. Endpoints: endpoints.md → [Authentication](../en
 
 2. If the tenant's auth config has `logoutOnPasswordChange: true`, expect the
    session to be invalidated — send the user back through login (or refresh and
-   verify). Check the setting via `GET /api/auth/config` (admin).
+   verify). Check the setting via `GET /auth/config` (admin).
 
-## Related admin knobs (`POST /api/auth/config`)
+## Related admin knobs (`POST /auth/config`)
 
 `recoverAccountPath`, `accountActionBaseUrl`, `recoverAccountUrlLifetimeInMinutes`,
 `passwordStrengthCheckerRegex`, `logoutOnPasswordChange`,
@@ -66,8 +66,8 @@ All bodies are **camelCase**. Endpoints: endpoints.md → [Authentication](../en
 
 ## Verify
 
-- `POST /api/auth/login` succeeds with the new password and fails with the old one.
+- `POST /auth/login` succeeds with the new password and fails with the old one.
 - If `logoutFromAllDevices` was set: the pre-reset refresh token is rejected by
-  `POST /api/auth/refresh`.
-- Admin: the event appears in `GET /api/iam/history?Filter.UserId=<id>`, and the
-  user record's `passwordChangedAtUtc` updates (visible via `GET /api/iam/users/{id}`).
+  `POST /auth/refresh`.
+- Admin: the event appears in `GET /iam/history?Filter.UserId=<id>`, and the
+  user record's `passwordChangedAtUtc` updates (visible via `GET /iam/users/{id}`).

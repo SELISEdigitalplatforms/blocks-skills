@@ -114,7 +114,7 @@ export const dataApi = {
   // Schema — note the PascalCase query params on list endpoints
   listSchemas: (opts: { keyword?: string; pageNo?: number; pageSize?: number } = {}) =>
     dataFetch<ApiEnvelope<{ totalCount?: number; items?: SchemaDefinitionResponse[] }>>(
-      `/api/schemas${qs({
+      `/schemas${qs({
         ProjectKey: X_BLOCKS_KEY,
         Keyword: opts.keyword,
         PageNo: opts.pageNo ?? 1,
@@ -124,48 +124,48 @@ export const dataApi = {
 
   getSchemaById: (id: string) =>
     dataFetch<ApiEnvelope<SchemaDefinitionResponse>>(
-      `/api/schemas/get-by-id${qs({ id, projectKey: X_BLOCKS_KEY })}`,
+      `/schemas/get-by-id${qs({ id, projectKey: X_BLOCKS_KEY })}`,
     ),
 
   defineSchema: (body: CreateSchemaDefinitionRequest) =>
-    dataFetch<ApiEnvelope<ActionResponse>>(`/api/schemas/define`, {
+    dataFetch<ApiEnvelope<ActionResponse>>(`/schemas/define`, {
       method: "POST",
       body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 
   saveFields: (body: SaveFieldDefinitionRequest) =>
-    dataFetch<ApiEnvelope<ActionResponse>>(`/api/schemas/fields`, {
+    dataFetch<ApiEnvelope<ActionResponse>>(`/schemas/fields`, {
       method: "POST",
       body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 
   reloadConfigurations: () =>
-    dataFetch<ApiEnvelope<boolean>>(`/api/schema-configurations/reload`, { method: "POST" }),
+    dataFetch<ApiEnvelope<boolean>>(`/schema-configurations/reload`, { method: "POST" }),
 
   // Validations
   validationsBySchema: (schemaId: string) =>
     dataFetch<ApiEnvelope<DataValidationResponse[]>>(
-      `/api/data-validations/by-schema-id${qs({ schemaId, projectKey: X_BLOCKS_KEY })}`,
+      `/data-validations/by-schema-id${qs({ schemaId, projectKey: X_BLOCKS_KEY })}`,
     ),
 
   createValidation: (body: CreateDataValidationRequest) =>
-    dataFetch<ApiEnvelope<ActionResponse>>(`/api/data-validations`, {
+    dataFetch<ApiEnvelope<ActionResponse>>(`/data-validations`, {
       method: "POST",
       body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 
   // Files / DMS — flat responses, NOT the ApiEnvelope
   getPresignedUploadUrl: (body: GetPreSignedUrlForUploadRequest) =>
-    dataFetch<GetPreSignedUrlForUploadResponse>(`/api/Files/GetPreSignedUrlForUpload`, {
+    dataFetch<GetPreSignedUrlForUploadResponse>(`/Files/GetPreSignedUrlForUpload`, {
       method: "POST",
       body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
 
   getFile: (fileId: string) =>
-    dataFetch<FileResponse>(`/api/Files/GetFile${qs({ FileId: fileId, ProjectKey: X_BLOCKS_KEY })}`),
+    dataFetch<FileResponse>(`/Files/GetFile${qs({ FileId: fileId, ProjectKey: X_BLOCKS_KEY })}`),
 
   getFilesInfo: (body: Omit<GetFilesInfoRequest, "projectKey">) =>
-    dataFetch<GetFilesInfoResponse>(`/api/Files/GetFilesInfo`, {
+    dataFetch<GetFilesInfoResponse>(`/Files/GetFilesInfo`, {
       method: "POST",
       body: JSON.stringify({ ...body, projectKey: X_BLOCKS_KEY }),
     }),
@@ -329,5 +329,5 @@ export function SchemaPanel() {
 ## Error and session handling
 
 - `DataApiError.body` for data endpoints is either the standard envelope (`errors: ValidationFailure[]`) or a `ProblemDetails` on 400/404 — branch on the presence of `errors` vs `detail`. Files/DMS endpoints return `errors` as a `Record<string, string>` instead.
-- 401 handling above delegates to the auth store's refresh flow — implement it once per the **blocks-setup** skill (login `POST /iam/v4/api/auth/login`, refresh `POST /iam/v4/api/auth/refresh`) rather than per service.
+- 401 handling above delegates to the auth store's refresh flow — implement it once per the **blocks-setup** skill (login `POST /iam/v4/auth/login`, refresh `POST /iam/v4/auth/refresh`) rather than per service.
 - After any mutation that touches schemas, fields, validations, or policies, surface a "reload required" affordance (or auto-run `useReloadConfigurations`) — the runtime does not see staged changes until the reload succeeds.

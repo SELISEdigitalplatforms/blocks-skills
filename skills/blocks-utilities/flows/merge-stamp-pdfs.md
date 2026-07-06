@@ -8,7 +8,7 @@ Endpoint reference: [endpoints.md#pdfgenerator](../endpoints.md#pdfgenerator).
 
 ## Merge PDFs
 
-`POST /api/PdfGenerator/MergePdfs`
+`POST /PdfGenerator/MergePdfs`
 
 1. Build `pdfFilesToBeMerged[]`: `{ order, pdfFileId }` per source — `order` controls page sequence in the output.
 2. Set `outputPdfFileId` (new GUID) + `outputPdfFileName`, `projectKey` (projectKey = your Blocks Key, the same value as `X_BLOCKS_KEY`), `engine: 2`, optional `messageCoRelationId`.
@@ -19,9 +19,9 @@ Endpoint reference: [endpoints.md#pdfgenerator](../endpoints.md#pdfgenerator).
 
 Three variants, same coordinate model — each stamp carries `coordinates[]` of `{ x, y, width, height, pageNumber }`, so one stamp can be applied to several pages/positions:
 
-- `POST /api/PdfGenerator/StampImageToPdf` — image stamps only: `stamps[].imageFileId` (an image already in Storage) + `coordinates`.
-- `POST /api/PdfGenerator/StampTextToPdf` — text stamps only: `stamps[].text`, `stamps[].fontName` + `coordinates`.
-- `POST /api/PdfGenerator/StampIntoPdf` — mixed batch: each stamp has `type` (`0` = Image, `1` = Text, documented in the endpoint description) plus `imageFileId` or `text`/`fontName`.
+- `POST /PdfGenerator/StampImageToPdf` — image stamps only: `stamps[].imageFileId` (an image already in Storage) + `coordinates`.
+- `POST /PdfGenerator/StampTextToPdf` — text stamps only: `stamps[].text`, `stamps[].fontName` + `coordinates`.
+- `POST /PdfGenerator/StampIntoPdf` — mixed batch: each stamp has `type` (`0` = Image, `1` = Text, documented in the endpoint description) plus `imageFileId` or `text`/`fontName`.
 
 Common fields: `pdfFileId` (source), `outputPdfFileId` (new GUID for the stamped copy), `outputPdfFileName`, `projectKey`, `engine: 2` (or `3`), optional `messageCoRelationId`, `eventReferenceData`, `openInBrowser`.
 
@@ -31,7 +31,7 @@ Coordinate origin and units are not documented in swagger — stamp a test page 
 
 ## Fix corrupted PDFs
 
-`POST /api/PdfGenerator/FixPdfs`
+`POST /PdfGenerator/FixPdfs`
 
 - `pdfInfos[]`: `{ originalPdfId, outputPdfId }` pairs — repaired copies are written to the `outputPdfId`s (new GUIDs), originals untouched.
 - Note this request uses `messageCorrelationId` (no "Co" capitalization split) — spelled differently from the other PdfGenerator endpoints; copy it verbatim from [endpoints.md](../endpoints.md#post-apipdfgeneratorfixpdfs).

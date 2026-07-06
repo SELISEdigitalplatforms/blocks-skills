@@ -25,19 +25,19 @@ Omit `engine` or send `1` unless you have a reason not to.
 
 3. Pick the endpoint:
 
-   **A. Raw HTML → PDF:** `POST /api/PdfGenerator/CreatePdfsFromHtml`
+   **A. Raw HTML → PDF:** `POST /PdfGenerator/CreatePdfsFromHtml`
    - `createFromHtmlCommands[]`, one entry per PDF: `htmlFileId`, `outputPdfFileId`, `outputPdfFileName`, optional `directoryId` (target Storage directory).
    - Header/footer: set `hasHeader`/`hasFooter` with `headerHtmlFileId`/`footerHtmlFileId` and `headerHeight`/`footerHeight`; first-page variants via `hasFirstPageHeader`/`hasFirstPageFooter` + `firstPageHeaderFileId`/`firstPageFooterFileId`.
    - Page numbers: `isPageNumberEnabled`, `isTotalPageCountEnabled`, `pageNumberText`.
    - `openInBrowser: true` makes the eventual download URL render inline instead of downloading.
    - Top-level: `projectKey` (projectKey = your Blocks Key, the same value as `X_BLOCKS_KEY`), `messageCoRelationId` (supply your own GUID to correlate), optional `eventReferenceData` key/values echoed on completion events, `engine`.
 
-   **B. Template + data → PDF:** `POST /api/PdfGenerator/CreatePdfsFromHtmlUsingTemplateEngine`
+   **B. Template + data → PDF:** `POST /PdfGenerator/CreatePdfsFromHtmlUsingTemplateEngine`
    - Same command shape plus: `templateFileId` (the HTML template in Storage), `filteredSqlQueryDatas[]` (`entityName`, `filterQuery`, `filterParameters` — pulls entity data into the template context), and `metaDataList[]` (`key`/`value` pairs available to the template).
    - Template placeholder syntax is not documented in swagger — check an existing project template or SELISE docs for the expected syntax.
 
-   **C. Bulk:** `POST /api/PdfGenerator/CreatePdfsFromHtmlUsingTemplateEngineBulk`
-   - Template-engine command shape plus per-command `fileNameExtension`, and top-level `raiseEventOnProcessEnding` / `notifyOnProcessEnding` booleans. Set `notifyOnProcessEnding: true` to get a completion notification you can pick up via Notifier (`GET /api/Notifier/GetNotifications`, [endpoints.md#notifier](../endpoints.md#notifier)).
+   **C. Bulk:** `POST /PdfGenerator/CreatePdfsFromHtmlUsingTemplateEngineBulk`
+   - Template-engine command shape plus per-command `fileNameExtension`, and top-level `raiseEventOnProcessEnding` / `notifyOnProcessEnding` booleans. Set `notifyOnProcessEnding: true` to get a completion notification you can pick up via Notifier (`GET /Notifier/GetNotifications`, [endpoints.md#notifier](../endpoints.md#notifier)).
    - Use one command per output PDF; each carries its own `outputPdfFileId`.
 
 4. Read the response: `isSuccess` confirms the job was **accepted**, not finished. Keep `messageCoRelationId` for correlation; `message` is human-readable status. `errors` populated on rejection.
@@ -48,5 +48,5 @@ Omit `engine` or send `1` unless you have a reason not to.
 
 - Response has `isSuccess: true` and your `messageCoRelationId` echoed back.
 - The file appears in Storage under `outputPdfFileId` (blocks-os) and downloads as a valid PDF.
-- Bulk with `notifyOnProcessEnding: true`: `GET /api/Notifier/GetNotifications` shows a completion notification.
-- If a downloaded PDF is corrupted, run it through `POST /api/PdfGenerator/FixPdfs` — see [merge-stamp-pdfs.md](merge-stamp-pdfs.md).
+- Bulk with `notifyOnProcessEnding: true`: `GET /Notifier/GetNotifications` shows a completion notification.
+- If a downloaded PDF is corrupted, run it through `POST /PdfGenerator/FixPdfs` — see [merge-stamp-pdfs.md](merge-stamp-pdfs.md).
