@@ -10,6 +10,14 @@ then move on. Never print secret values back to the user; refer to vars by name 
 
 Preconditions: a SELISE Blocks OS portal account. No token needed — this flow produces the first one.
 
+> **If you are an automated agent (Claude/CI) that doesn't yet know which project to work
+> against**, do **not** start at step 1. The first login for an agent is the agent-only
+> `POST https://api.seliseblocks.com/iam/v4/auth-login` endpoint (PascalCase body, no
+> `x-blocks-key`), used to enumerate the projects/tenants the operator account can access. Full
+> details in [SKILL.md → Agent-only login](../SKILL.md#agent-only-login--enumerating-projects)
+> and [project-impersonation.md](project-impersonation.md). The steps below are for end-user /
+> application flows and use the standard OIDC/SSO login from `blocks-iam`.
+
 ## Steps
 
 ### 1. OS portal prerequisites (no API — portal UI, user does this)

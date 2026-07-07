@@ -57,6 +57,7 @@ confusing failures that cost far more time than the check.
 | Create a project / environment / first user | [flows/bootstrap-project.md](flows/bootstrap-project.md) |
 | Serve local dev over HTTPS (openssl + Vite) | [flows/local-https-setup.md](flows/local-https-setup.md) |
 | Work inside a project (login → tenant impersonation) | [flows/project-impersonation.md](flows/project-impersonation.md) |
+| **Agent (Claude/CI) signing into the OS portal to enumerate projects/tenants** | [Agent-only login](#agent-only-login--enumerating-projects) below |
 | Activate an account that 401s on login (unactivated user) | [flows/activate-first-user.md](flows/activate-first-user.md) |
 | Log in, refresh, store, and revoke tokens | [flows/token-lifecycle.md](flows/token-lifecycle.md) |
 | Set the cookie domain for a **deployed** custom domain | `blocks-monitor` (`POST /Domain/Configure`) + `blocks-release` custom-domains flow |
@@ -88,6 +89,87 @@ confusing failures that cost far more time than the check.
   ([flows/local-https-setup.md](flows/local-https-setup.md)); deployed custom domains may need
   `POST /monitor/v4/Domain/Configure` (see `blocks-monitor`), and a few tweaks are commonly
   needed there — verify against your project.
+
+## Agent-only login — enumerating projects
+
+> **STOP — read this before writing any login code.**
+>
+> This section describes the **agent-only** sign-in endpoint. It exists so an automated agent
+> (Claude, CI, a CLI script) can sign in to the OS portal with **its own operator credentials**,
+> enumerate every project/tenant that account can access, and then drive the normal
+> tenant-impersonation flow against any of them. It is **not** an application auth flow.
+>
+> **Application code MUST NOT call this endpoint.** End-user auth for a Blocks app goes through
+> the standard `POST /iam/v4/auth/login` + OIDC/SSO flow documented in `blocks-iam` (see
+> [flows/bootstrap-project.md](flows/bootstrap-project.md) and the `blocks-iam` Authentication
+> controller). The agent-only endpoint bypasses tenant context and accepts credentials in a
+> non-standard format; wiring it into a user-facing app breaks SSO, MFA, and the security model.
+
+### When to use it
+
+Use the agent-only login when **the agent itself** needs to:
+
+- discover which projects/tenants the operator's account can access (no Blocks Key is known up
+  front — the agent doesn't yet have a project context), and then
+- for each project, call `GET /os/v4/Project/Gets` to get its `tenantId`, `organizationId`,
+  `applicationDomain`, `cookieDomain`, etc., and proceed with `POST /auth/impersonate` per
+  [flows/project-impersonation.md](flows/project-impersonation.md).
+
+Typical callers: a `kilo` (or similar) agent bootstrapping a workspace, a CI job that releases
+across many projects, a one-off admin script.
+
+### Endpoint
+
+```
+POST https://api.seliseblocks.com/iam/v4/auth-login
+Content-Type: application/json
+```
+
+> The URL follows the standard `{base}/{service}/v4/{path}` pattern, with the normal
+> `/api/` segment stripped (see the URL pattern note at the top of this file). At this stage
+> there is no project context yet — that is the point — so the request typically does **not**
+> carry the `x-blocks-key` header. Verify against the live response.
+
+Body — note the **PascalCase** keys (this is the one place in Blocks that breaks the snake_case
+auth-payload rule):
+
+```json
+{
+  "Username": "<operator account email>",
+  "Password": "<operator account password>"
+}
+```
+
+Example:
+
+```bash
+curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth-login" \
+  -H "Content-Type: application/json" \
+  -d '{ "Username": "'"$BLOCKS_USERNAME"'", "Password": "'"$BLOCKS_PASSWORD"'" }'
+```
+
+Response shape is not in the Blocks swagger — inspect the live payload. It returns the
+enumerated projects/tenants the user can access (plus a session token for the next steps). Use
+the returned project list (or a follow-up call) to obtain each project's `tenantId`, then
+continue with `POST /iam/v4/auth/impersonate` per
+[flows/project-impersonation.md](flows/project-impersonation.md).
+
+### Hard rules
+
+1. **Agent only.** Never call this from browser/React code, never from a server-rendered user
+   app, never as a substitute for OIDC/SSO login. Applications use `POST /iam/v4/auth/login`
+   (and OIDC for SSO) — see `blocks-iam`.
+2. **Operator credentials only.** Use a dedicated agent/operator account in the OS portal; do
+   not reuse an end-user's password.
+3. **No `x-blocks-key` header.** The endpoint is pre-project-context — that is the whole reason
+   the agent uses it before knowing which project to work in. The standard
+   `Authorization: Bearer …` is also not sent on this call.
+4. **The credentials never leave the agent's own runtime.** Treat the response as secret; do not
+   log it; do not put it in `VITE_*` env vars; do not commit it.
+5. After enumerating projects, drop straight into the standard
+   [flows/project-impersonation.md](flows/project-impersonation.md) flow — from this point on,
+   everything is normal Blocks v4 (`api.seliseblocks.com/iam/v4/...`, `x-blocks-key` per
+   project, `POST /auth/impersonate` with `targeted_tenant_id`).
 
 ## Environment variable conventions
 

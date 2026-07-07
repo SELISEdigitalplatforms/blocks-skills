@@ -13,6 +13,23 @@ Endpoint shapes: `../../blocks-iam/endpoints.md#authentication` (impersonate) an
 Preconditions: activated account credentials; `.env` per
 [bootstrap-project](bootstrap-project.md).
 
+## Are you an agent? Start one step earlier
+
+If you (the caller) are an automated agent — Claude, a CI job, a CLI script — and you do **not**
+already know which project to impersonate into, use the **agent-only** sign-in endpoint first to
+enumerate the projects/tenants your operator account has access to:
+
+```
+POST https://api.seliseblocks.com/iam/v4/auth-login
+{ "Username": "...", "Password": "..." }     // PascalCase, no x-blocks-key
+```
+
+This endpoint is **strictly for agents** and is documented in full in SKILL.md →
+[Agent-only login — enumerating projects](../SKILL.md#agent-only-login--enumerating-projects).
+**Do not** wire it into application code; user-facing auth goes through OIDC/SSO per
+`blocks-iam`. Once you have the list of projects and their `tenantId`s, pick one and continue at
+step 1 below with the standard `POST /iam/v4/auth/login`.
+
 ## Steps
 
 ### 1. Login — `POST /iam/v4/auth/login`

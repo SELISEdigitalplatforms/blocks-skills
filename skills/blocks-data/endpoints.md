@@ -5,23 +5,23 @@
 
 **Base URL:** `https://api.seliseblocks.com/data/v4`
 
-**URL pattern:** every endpoint is `{base}/{endpoint}` — do **not** prefix with `/api/`. e.g. `POST {base}/schemas/define`, `GET {base}/configurations`. The `/api/` from the swagger `basePath` is not part of the URL served by the gateway.
+**URL pattern:** every endpoint is `{base}/{endpoint}` — do **not** prefix with `/api/`. e.g. `POST {base}/schemas/define`, `GET {base}/configurations`. The `/api/` from the swagger `basePath` is not part of the URL served by the gateway. (Exception: OIDC discovery stays at `GET {base}/.well-known/openid-configuration` etc.)
 
 **Authentication** (see `blocks-setup` skill for obtaining tokens):
 - `x-blocks-key: <X_BLOCKS_KEY>` header — required on every request
 - `Authorization: Bearer <access_token>` — required for authenticated operations
 
-**53 endpoints** across 9 controllers.
+**44 endpoints** across 9 controllers.
 
 ## Contents
 
 - [Configuration](#configuration) (3)
-- [DataAccess](#dataaccess) (7)
-- [DataValidation](#datavalidation) (11)
+- [DataAccess](#dataaccess) (5)
+- [DataValidation](#datavalidation) (7)
 - [Files](#files) (11)
 - [MockData](#mockdata) (2)
 - [RegexAssistant](#regexassistant) (1)
-- [Schema](#schema) (15)
+- [Schema](#schema) (12)
 - [SchemaConfiguration](#schemaconfiguration) (1)
 - [SchemaExchange](#schemaexchange) (2)
 
@@ -188,7 +188,6 @@ Creates a data access policy for a specific schema.
   schemaName?: string | null
   schemaId?: string | null
   fieldNames?: string[]
-  projectKey?: string | null
   ruleGroup?: {
     logicalOperator?: 0 | 1 (int enum)
     rules?: {
@@ -216,7 +215,6 @@ Deletes a data access policy for a specific item.
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `itemId` | query | string | no |  |
-| `projectKey` | query | string | no |  |
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
@@ -227,7 +225,6 @@ Gets all data access policies for a specific schema.
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `schemaName` | query | string | no |  |
-| `projectKey` | query | string | no |  |
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
@@ -243,7 +240,6 @@ Updates a data access policy for a specific item.
   policyName?: string | null
   policyDescription?: string | null
   fieldNames?: string[]
-  projectKey?: string | null
   ruleGroup?: {
     logicalOperator?: 0 | 1 (int enum)
     rules?: {
@@ -264,28 +260,6 @@ Updates a data access policy for a specific item.
 
 **Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
 
-### `DELETE /data-access/policy/{itemId}/delete`
-
-Cloud use only: Deletes a data access policy for a specific item.
-
-| Param | In | Type | Required | Description |
-|---|---|---|---|---|
-| `itemId` | path | string | yes |  |
-| `projectKey` | query | string | no |  |
-
-**Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
-
-### `GET /data-access/policy/{schemaName}/get`
-
-Cloud use only: Gets all data access policies for a specific schema.
-
-| Param | In | Type | Required | Description |
-|---|---|---|---|---|
-| `schemaName` | path | string | yes |  |
-| `projectKey` | query | string | no |  |
-
-**Response 200:** OK — no schema documented in swagger; verify the live response before relying on its shape.
-
 ### `POST /data-access/security/change`
 
 Configures the security for a specific schema.
@@ -294,7 +268,6 @@ Configures the security for a specific schema.
 
 ```ts
 {
-  projectKey?: string | null
   schemaId?: string | null
   operation?: 0 | 1 | 2 | 3 | 4 (int enum)
   policyType?: 0 | 1 (int enum)
@@ -351,7 +324,6 @@ Deletes a data validation by its unique ID.
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `validationId` | query | string | no | The unique identifier of the data validation to delete. |
-| `projectKey` | query | string | no | The project key for context. |
 
 **Response 200:**
 
@@ -451,7 +423,6 @@ Creates a new data validation. Use this endpoint to define validation rules for 
 
 ```ts
 {
-  projectKey?: string | null
   schemaId?: string | null
   fieldName?: string | null
   validations?: {
@@ -511,7 +482,6 @@ Updates an existing data validation. Use this endpoint to modify validation rule
 
 ```ts
 {
-  projectKey?: string | null
   itemId?: string | null
   schemaId?: string | null
   fieldName?: string | null
@@ -572,7 +542,6 @@ Retrieves validation for a specific field in a schema.
 |---|---|---|---|---|
 | `schemaId` | query | string | no | The schema ID. |
 | `fieldName` | query | string | no | The field name. |
-| `projectKey` | query | string | no | The project key for context. |
 
 **Response 200:**
 
@@ -614,7 +583,6 @@ Retrieves all validations for a specific schema.
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `schemaId` | query | string | no | The schema ID to get validations for. |
-| `projectKey` | query | string | no | The project key for context. |
 
 **Response 200:**
 
@@ -658,194 +626,6 @@ Retrieves the details of a specific data validation by its unique ID.
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `validationId` | query | string | no | The unique identifier of the data validation to retrieve. |
-| `projectKey` | query | string | no | The project key for context. |
-
-**Response 200:**
-
-```ts
-{
-  isSuccess?: boolean
-  message?: string | null
-  httpStatusCode?: number
-  data?: {
-    itemId?: string | null
-    schemaId?: string | null
-    fieldName?: string | null
-    validations?: {
-      type?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 (int enum)
-      value?: unknown | null
-      secondaryValue?: unknown | null
-      errorMessage?: string | null
-      isActive?: boolean
-    }[]
-    createdDate?: string (date-time)
-    lastUpdatedDate?: string (date-time)
-  }
-  errors?: {
-    propertyName?: string | null
-    errorMessage?: string | null
-    attemptedValue?: unknown | null
-    customState?: unknown | null
-    severity?: 0 | 1 | 2 (int enum)
-    errorCode?: string | null
-    formattedMessagePlaceholderValues?: { [key: string]: unknown | null }
-  }[]
-}
-```
-
-**Response 404:**
-
-```ts
-{
-  type?: string | null
-  title?: string | null
-  status?: number | null
-  detail?: string | null
-  instance?: string | null
-}
-```
-
-### `GET /data-validations/schema/{schemaId}`
-
-Cloud use only: Retrieves all validations for a specific schema.
-
-| Param | In | Type | Required | Description |
-|---|---|---|---|---|
-| `schemaId` | path | string | yes | The schema ID to get validations for. |
-| `projectKey` | query | string | no | The project key for context. |
-
-**Response 200:**
-
-```ts
-{
-  isSuccess?: boolean
-  message?: string | null
-  httpStatusCode?: number
-  data?: {
-    itemId?: string | null
-    schemaId?: string | null
-    fieldName?: string | null
-    validations?: {
-      type?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 (int enum)
-      value?: unknown | null
-      secondaryValue?: unknown | null
-      errorMessage?: string | null
-      isActive?: boolean
-    }[]
-    createdDate?: string (date-time)
-    lastUpdatedDate?: string (date-time)
-  }[]
-  errors?: {
-    propertyName?: string | null
-    errorMessage?: string | null
-    attemptedValue?: unknown | null
-    customState?: unknown | null
-    severity?: 0 | 1 | 2 (int enum)
-    errorCode?: string | null
-    formattedMessagePlaceholderValues?: { [key: string]: unknown | null }
-  }[]
-}
-```
-
-**Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
-
-### `GET /data-validations/schema/{schemaId}/field/{fieldName}`
-
-Cloud use only: Retrieves validation for a specific field in a schema.
-
-| Param | In | Type | Required | Description |
-|---|---|---|---|---|
-| `schemaId` | path | string | yes | The schema ID. |
-| `fieldName` | path | string | yes | The field name. |
-| `projectKey` | query | string | no | The project key for context. |
-
-**Response 200:**
-
-```ts
-{
-  isSuccess?: boolean
-  message?: string | null
-  httpStatusCode?: number
-  data?: {
-    itemId?: string | null
-    schemaId?: string | null
-    fieldName?: string | null
-    validations?: {
-      type?: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 (int enum)
-      value?: unknown | null
-      secondaryValue?: unknown | null
-      errorMessage?: string | null
-      isActive?: boolean
-    }[]
-    createdDate?: string (date-time)
-    lastUpdatedDate?: string (date-time)
-  }
-  errors?: {
-    propertyName?: string | null
-    errorMessage?: string | null
-    attemptedValue?: unknown | null
-    customState?: unknown | null
-    severity?: 0 | 1 | 2 (int enum)
-    errorCode?: string | null
-    formattedMessagePlaceholderValues?: { [key: string]: unknown | null }
-  }[]
-}
-```
-
-### `DELETE /data-validations/{id}`
-
-Cloud use only: Deletes a data validation by its unique ID.
-
-| Param | In | Type | Required | Description |
-|---|---|---|---|---|
-| `id` | path | string | yes | The unique identifier of the data validation to delete. |
-| `projectKey` | query | string | no | The project key for context. |
-
-**Response 200:**
-
-```ts
-{
-  isSuccess?: boolean
-  message?: string | null
-  httpStatusCode?: number
-  data?: {
-    acknowledged?: boolean
-    itemId?: string | null
-    totalImpactedData?: number
-    message?: string | null
-  }
-  errors?: {
-    propertyName?: string | null
-    errorMessage?: string | null
-    attemptedValue?: unknown | null
-    customState?: unknown | null
-    severity?: 0 | 1 | 2 (int enum)
-    errorCode?: string | null
-    formattedMessagePlaceholderValues?: { [key: string]: unknown | null }
-  }[]
-}
-```
-
-**Response 400:**
-
-```ts
-{
-  type?: string | null
-  title?: string | null
-  status?: number | null
-  detail?: string | null
-  instance?: string | null
-}
-```
-
-### `GET /data-validations/{id}`
-
-Cloud use only: Retrieves the details of a specific data validation by its unique ID.
-
-| Param | In | Type | Required | Description |
-|---|---|---|---|---|
-| `id` | path | string | yes | The unique identifier of the data validation to retrieve. |
-| `projectKey` | query | string | no | The project key for context. |
 
 **Response 200:**
 
@@ -915,7 +695,6 @@ Cloud use only: Retrieves the details of a specific data validation by its uniqu
     } }
   organizationId?: string | null
   fileStorageId?: string | null
-  projectKey?: string | null
 }
 ```
 
@@ -939,7 +718,6 @@ Deletes a file based on the provided request.
 {
   fileId?: string | null
   configurationName?: string | null
-  projectKey?: string | null
   eventQueueName?: string | null
 }
 ```
@@ -963,7 +741,6 @@ Deletes a folder based on the provided request.
 {
   folderId: string | null
   configurationName?: string | null
-  projectKey?: string | null
 }
 ```
 
@@ -984,7 +761,6 @@ Deletes a folder based on the provided request.
 {
   parentId?: string | null
   configurationName?: string | null
-  projectKey?: string | null
   searchKey?: string | null
   moduleName?: string | null
   skip?: number | null
@@ -1021,7 +797,6 @@ Retrieves a file for download based on the provided request.
 | `FileId` | query | string | no |  |
 | `Version` | query | integer (int64) | no |  |
 | `ConfigurationName` | query | string | no |  |
-| `ProjectKey` | query | string | no |  |
 
 **Response 200:**
 
@@ -1060,7 +835,6 @@ Retrieves multiple files for download based on the provided request.
 {
   fileIds?: string[]
   configurationName?: string | null
-  projectKey?: string | null
 }
 ```
 
@@ -1110,7 +884,6 @@ Retrieves multiple files Information.
     tenantId?: string | null
     additionalProperties?: { [key: string]: string }
   }
-  projectKey?: string | null
 }
 ```
 
@@ -1155,7 +928,6 @@ Generates a pre-signed URL for uploading a file.
   tags?: string | null
   accessModifier?: string | null
   configurationName?: string | null
-  projectKey?: string | null
   moduleName?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 (int enum)
   additionalProperties?: { [key: string]: string }
 }
@@ -1195,7 +967,6 @@ Generates a pre-signed URL for uploading a file.
     organizationId?: string | null
     fileStorageId?: string | null
   }[]
-  projectKey?: string | null
 }
 ```
 
@@ -1232,7 +1003,6 @@ Uploads a file to local storage.
 {
   itemId?: string | null
   additionalProperties?: { [key: string]: string }
-  projectKey?: string | null
 }
 ```
 
@@ -1248,7 +1018,6 @@ Deletes mock data from the database.
 
 ```ts
 {
-  projectKey?: string | null
   schemaNames?: string[]
 }
 ```
@@ -1290,7 +1059,7 @@ Deletes mock data from the database.
 }
 ```
 
-### `GET /mock-data/mock-data`
+### `GET /mock-data`
 
 Gets mock data from the database.
 
@@ -1360,7 +1129,6 @@ Deletes a schema definition by its unique ID. This action cannot be undone.
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `id` | query | string | no | The unique identifier of the schema definition to delete. |
-| `projectKey` | query | string | no | The unique identifier of the project to retrieve. |
 
 **Response 200:**
 
@@ -1674,9 +1442,7 @@ Creates a new schema definition. Use this endpoint to define a new schema, inclu
 {
   collectionName?: string | null
   schemaName?: string | null
-  projectKey?: string | null
   schemaType?: 1 | 2 (int enum)
-  projectShortKey?: string | null
   fields?: {
     name?: string | null
     type?: string | null
@@ -1737,9 +1503,7 @@ Updates an existing schema definition. Use this endpoint to modify the structure
 {
   collectionName?: string | null
   schemaName?: string | null
-  projectKey?: string | null
   schemaType?: 1 | 2 (int enum)
-  projectShortKey?: string | null
   fields?: {
     name?: string | null
     type?: string | null
@@ -1801,7 +1565,6 @@ Saves field definitions for a schema. Use this endpoint to add or update fields 
 {
   schemaDefinitionItemId?: string | null
   deletableFieldNames?: string[]
-  projectShortKey?: string | null
   fields?: {
     name?: string | null
     type?: string | null
@@ -1810,7 +1573,6 @@ Saves field definitions for a schema. Use this endpoint to add or update fields 
     isUniqueData?: boolean
     description?: string | null
   }[]
-  projectKey?: string | null
 }
 ```
 
@@ -1860,7 +1622,6 @@ Retrieves the details of a specific schema definition by its unique ID. Use this
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `id` | query | string | no | The unique identifier of the schema definition to retrieve. |
-| `projectKey` | query | string | no | The unique identifier of the project to retrieve. |
 
 **Response 200:**
 
@@ -2114,7 +1875,6 @@ Saves field definitions for a schema. Use this endpoint to add or update fields 
 {
   collectionName?: string | null
   schemaName?: string | null
-  projectKey?: string | null
   schemaType?: 1 | 2 (int enum)
 }
 ```
@@ -2168,7 +1928,6 @@ Updates an existing schema definition. Use this endpoint to modify the structure
 {
   collectionName?: string | null
   schemaName?: string | null
-  projectKey?: string | null
   schemaType?: 1 | 2 (int enum)
   itemId?: string | null
 }
@@ -2220,71 +1979,6 @@ Retrieves the details of a specific Entity-type schema by its collection name, i
 | Param | In | Type | Required | Description |
 |---|---|---|---|---|
 | `schemaName` | query | string | no |  |
-| `projectKey` | query | string | no |  |
-
-**Response 200:**
-
-```ts
-{
-  isSuccess?: boolean
-  message?: string | null
-  httpStatusCode?: number
-  data?: {
-    name?: string | null
-    collectionName?: string | null
-    description?: string | null
-    type?: string | null
-    fields?: {
-      name?: string | null
-      type?: string | null
-      description?: string | null
-      fields?: CollectionFieldResponse[]
-    }[]
-  }
-  errors?: {
-    propertyName?: string | null
-    errorMessage?: string | null
-    attemptedValue?: unknown | null
-    customState?: unknown | null
-    severity?: 0 | 1 | 2 (int enum)
-    errorCode?: string | null
-    formattedMessagePlaceholderValues?: { [key: string]: unknown | null }
-  }[]
-}
-```
-
-**Response 400:**
-
-```ts
-{
-  type?: string | null
-  title?: string | null
-  status?: number | null
-  detail?: string | null
-  instance?: string | null
-}
-```
-
-**Response 404:**
-
-```ts
-{
-  type?: string | null
-  title?: string | null
-  status?: number | null
-  detail?: string | null
-  instance?: string | null
-}
-```
-
-### `GET /schemas/info/{projectSchemaName}`
-
-Cloud use only: Retrieves the details of a specific Entity-type schema by its collection name, including all fields.
-
-| Param | In | Type | Required | Description |
-|---|---|---|---|---|
-| `projectSchemaName` | path | string | yes |  |
-| `projectKey` | query | string | no |  |
 
 **Response 200:**
 
@@ -2345,10 +2039,6 @@ Cloud use only: Retrieves the details of a specific Entity-type schema by its co
 
 Gets all unadapted schema change logs.
 
-| Param | In | Type | Required | Description |
-|---|---|---|---|---|
-| `projectKey` | query | string | no |  |
-
 **Response 200:**
 
 ```ts
@@ -2387,254 +2077,6 @@ Gets all unadapted schema change logs.
 ```
 
 **Response 500:** Internal Server Error — no schema documented in swagger; verify the live response before relying on its shape.
-
-### `DELETE /schemas/{id}`
-
-Cloud use only: Deletes a schema definition by its unique ID. This action cannot be undone.
-
-| Param | In | Type | Required | Description |
-|---|---|---|---|---|
-| `id` | path | string | yes | The unique identifier of the schema definition to delete. |
-| `projectKey` | query | string | no | The unique identifier of the project to retrieve. |
-
-**Response 200:**
-
-```ts
-{
-  isSuccess?: boolean
-  message?: string | null
-  httpStatusCode?: number
-  data?: {
-    acknowledged?: boolean
-    itemId?: string | null
-    totalImpactedData?: number
-    message?: string | null
-  }
-  errors?: {
-    propertyName?: string | null
-    errorMessage?: string | null
-    attemptedValue?: unknown | null
-    customState?: unknown | null
-    severity?: 0 | 1 | 2 (int enum)
-    errorCode?: string | null
-    formattedMessagePlaceholderValues?: { [key: string]: unknown | null }
-  }[]
-}
-```
-
-**Response 400:**
-
-```ts
-{
-  type?: string | null
-  title?: string | null
-  status?: number | null
-  detail?: string | null
-  instance?: string | null
-}
-```
-
-### `GET /schemas/{id}`
-
-Cloud use only: Retrieves the details of a specific schema definition by its unique ID. Use this endpoint to get the schema definition details, including its fields and type.
-
-| Param | In | Type | Required | Description |
-|---|---|---|---|---|
-| `id` | path | string | yes | The unique identifier of the schema definition to retrieve. |
-| `projectKey` | query | string | no | The unique identifier of the project to retrieve. |
-
-**Response 200:**
-
-```ts
-{
-  isSuccess?: boolean
-  message?: string | null
-  httpStatusCode?: number
-  data?: {
-    id?: string | null
-    collectionName?: string | null
-    fields?: {
-      name?: string | null
-      type?: string | null
-      isArray?: boolean
-      isPIIData?: boolean
-      isUniqueData?: boolean
-      description?: string | null
-      fields?: FieldDefinitionResponse[]
-      readAccessLevel?: 0 | 1 | 2 | 3 (int enum)
-      writeAccessLevel?: 0 | 1 | 2 | 3 (int enum)
-      editAccessLevel?: 0 | 1 | 2 | 3 (int enum)
-      deleteAccessLevel?: 0 | 1 | 2 | 3 (int enum)
-      validationRule?: {
-        itemId?: string | null
-        createdDate?: string (date-time)
-        lastUpdatedDate?: string (date-time)
-        createdBy?: string | null
-        language?: string | null
-        lastUpdatedBy?: string | null
-        organizationId?: string | null
-        tags?: string[]
-        deletedDate?: string (date-time) | null
-        isDeleted?: boolean
-        schemaId?: string | null
-        fieldName?: string | null
-        validations?: ValidationRule[]
-      }
-      totalValidationRules?: number
-      totalReadPolicies?: number
-      totalWritePolicies?: number
-      totalEditPolicies?: number
-      totalDeletePolicies?: number
-    }[]
-    schemaName?: string | null
-    schemaType?: 1 | 2 (int enum)
-    projectKey?: string | null
-    projectShortKey?: string | null
-    projectSchemaName?: string | null
-    querySchema?: string | null
-    mutationSchemas?: string[]
-    readAccessLevel?: 0 | 1 | 2 | 3 (int enum)
-    writeAccessLevel?: 0 | 1 | 2 | 3 (int enum)
-    editAccessLevel?: 0 | 1 | 2 | 3 (int enum)
-    deleteAccessLevel?: 0 | 1 | 2 | 3 (int enum)
-    readPolicies?: {
-      itemId?: string | null
-      createdDate?: string (date-time)
-      lastUpdatedDate?: string (date-time)
-      createdBy?: string | null
-      language?: string | null
-      lastUpdatedBy?: string | null
-      organizationId?: string | null
-      tags?: string[]
-      deletedDate?: string (date-time) | null
-      isDeleted?: boolean
-      referencePolicyId?: string | null
-      policyName?: string | null
-      policyDescription?: string | null
-      policyType?: 0 | 1 (int enum)
-      operation?: 0 | 1 | 2 | 3 | 4 (int enum)
-      schemaName?: string | null
-      schemaId?: string | null
-      fieldNames?: string[]
-      ruleGroup?: {
-        logicalOperator?: PolicyLogicalOperator
-        rules?: PolicyRule[]
-        nestedGroups?: PolicyRuleGroup[]
-      }
-      priority?: number
-      isAllowPolicy?: boolean
-    }[]
-    writePolicies?: {
-      itemId?: string | null
-      createdDate?: string (date-time)
-      lastUpdatedDate?: string (date-time)
-      createdBy?: string | null
-      language?: string | null
-      lastUpdatedBy?: string | null
-      organizationId?: string | null
-      tags?: string[]
-      deletedDate?: string (date-time) | null
-      isDeleted?: boolean
-      referencePolicyId?: string | null
-      policyName?: string | null
-      policyDescription?: string | null
-      policyType?: 0 | 1 (int enum)
-      operation?: 0 | 1 | 2 | 3 | 4 (int enum)
-      schemaName?: string | null
-      schemaId?: string | null
-      fieldNames?: string[]
-      ruleGroup?: {
-        logicalOperator?: PolicyLogicalOperator
-        rules?: PolicyRule[]
-        nestedGroups?: PolicyRuleGroup[]
-      }
-      priority?: number
-      isAllowPolicy?: boolean
-    }[]
-    editPolicies?: {
-      itemId?: string | null
-      createdDate?: string (date-time)
-      lastUpdatedDate?: string (date-time)
-      createdBy?: string | null
-      language?: string | null
-      lastUpdatedBy?: string | null
-      organizationId?: string | null
-      tags?: string[]
-      deletedDate?: string (date-time) | null
-      isDeleted?: boolean
-      referencePolicyId?: string | null
-      policyName?: string | null
-      policyDescription?: string | null
-      policyType?: 0 | 1 (int enum)
-      operation?: 0 | 1 | 2 | 3 | 4 (int enum)
-      schemaName?: string | null
-      schemaId?: string | null
-      fieldNames?: string[]
-      ruleGroup?: {
-        logicalOperator?: PolicyLogicalOperator
-        rules?: PolicyRule[]
-        nestedGroups?: PolicyRuleGroup[]
-      }
-      priority?: number
-      isAllowPolicy?: boolean
-    }[]
-    deletePolicies?: {
-      itemId?: string | null
-      createdDate?: string (date-time)
-      lastUpdatedDate?: string (date-time)
-      createdBy?: string | null
-      language?: string | null
-      lastUpdatedBy?: string | null
-      organizationId?: string | null
-      tags?: string[]
-      deletedDate?: string (date-time) | null
-      isDeleted?: boolean
-      referencePolicyId?: string | null
-      policyName?: string | null
-      policyDescription?: string | null
-      policyType?: 0 | 1 (int enum)
-      operation?: 0 | 1 | 2 | 3 | 4 (int enum)
-      schemaName?: string | null
-      schemaId?: string | null
-      fieldNames?: string[]
-      ruleGroup?: {
-        logicalOperator?: PolicyLogicalOperator
-        rules?: PolicyRule[]
-        nestedGroups?: PolicyRuleGroup[]
-      }
-      priority?: number
-      isAllowPolicy?: boolean
-    }[]
-    schemaReferences?: string[]
-    totalSchemaReferences?: number
-    totalReadPolicies?: number
-    totalWritePolicies?: number
-    totalEditPolicies?: number
-    totalDeletePolicies?: number
-  }
-  errors?: {
-    propertyName?: string | null
-    errorMessage?: string | null
-    attemptedValue?: unknown | null
-    customState?: unknown | null
-    severity?: 0 | 1 | 2 (int enum)
-    errorCode?: string | null
-    formattedMessagePlaceholderValues?: { [key: string]: unknown | null }
-  }[]
-}
-```
-
-**Response 404:**
-
-```ts
-{
-  type?: string | null
-  title?: string | null
-  status?: number | null
-  detail?: string | null
-  instance?: string | null
-}
-```
 
 ## SchemaConfiguration
 
@@ -2677,7 +2119,6 @@ Returns immediately with the fileId. The exported JSON file is delivered via not
 
 ```ts
 {
-  projectKey: string | null
   messageCoRelationId?: string | null
   exportOption?: 0 | 1 | 2 | 3 (int enum)
 }
@@ -2732,7 +2173,6 @@ Returns immediately with acknowledgement. Import result is delivered via notific
 
 ```ts
 {
-  projectKey: string | null
   fileId: string | null
   messageCoRelationId?: string | null
 }
