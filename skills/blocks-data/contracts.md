@@ -12,7 +12,7 @@ export interface 0ServiceResponseOfPaginationResponse {
   isSuccess?: boolean;
   message?: string | null;
   httpStatusCode?: number;
-  data?: PaginationResponseOfDataValidationResponse;
+  data?: PaginationResponseOfSchemaDefinitionResponse;
   errors?: ValidationFailure[];
 }
 
@@ -20,7 +20,7 @@ export interface 0ServiceResponseOfPaginationResponse {
   isSuccess?: boolean;
   message?: string | null;
   httpStatusCode?: number;
-  data?: PaginationResponseOfSchemaDefinitionResponse;
+  data?: PaginationResponseOfDataValidationResponse;
   errors?: ValidationFailure[];
 }
 
@@ -78,7 +78,6 @@ export interface CollectionsDataCount {
 export type ConditionSource = 0 | 1 | 2;  // int enum — member names not published in swagger
 
 export interface ConfigureSchemaSecurityRequest {
-  projectKey?: string | null;
   schemaId?: string | null;
   operation?: PolicyOperation;
   policyType?: PolicyType;
@@ -94,7 +93,6 @@ export interface CreateDataAccessPolicyRequest {
   schemaName?: string | null;
   schemaId?: string | null;
   fieldNames?: string[];
-  projectKey?: string | null;
   ruleGroup?: PolicyRuleGroup;
   priority?: number;
   isAllowPolicy?: boolean;
@@ -108,7 +106,6 @@ export interface CreateDataGatewayConfigurationRequest {
 }
 
 export interface CreateDataValidationRequest {
-  projectKey?: string | null;
   schemaId?: string | null;
   fieldName?: string | null;
   validations?: ValidationRuleRequest[];
@@ -127,22 +124,18 @@ export interface CreateFolderRequest {
   metaData?: Record<string, MetaValuePair>;
   organizationId?: string | null;
   fileStorageId?: string | null;
-  projectKey?: string | null;
 }
 
 export interface CreateSchemaDefinitionRequest {
   collectionName?: string | null;
   schemaName?: string | null;
-  projectKey?: string | null;
   schemaType?: SchemaType;
-  projectShortKey?: string | null;
   fields?: FieldDefinitionRequest[];
 }
 
 export interface CreateSchemaRequest {
   collectionName?: string | null;
   schemaName?: string | null;
-  projectKey?: string | null;
   schemaType?: SchemaType;
 }
 
@@ -208,18 +201,15 @@ export interface DataValidationResponse {
 export interface DeleteFileRequest {
   fileId?: string | null;
   configurationName?: string | null;
-  projectKey?: string | null;
   eventQueueName?: string | null;
 }
 
 export interface DeleteFolderRequest {
   folderId: string | null;
   configurationName?: string | null;
-  projectKey?: string | null;
 }
 
 export interface DeleteMockDataRequest {
-  projectKey?: string | null;
   schemaNames?: string[];
 }
 
@@ -243,7 +233,6 @@ export interface DmsResponse {
 }
 
 export interface ExportSchemaRequest {
-  projectKey: string | null;
   messageCoRelationId?: string | null;
   exportOption?: SchemaExportOption;
 }
@@ -305,7 +294,6 @@ export interface FileResponse {
 export interface GetDmsFileAndFolderRequest {
   parentId?: string | null;
   configurationName?: string | null;
-  projectKey?: string | null;
   searchKey?: string | null;
   moduleName?: string | null;
   skip?: number | null;
@@ -343,7 +331,6 @@ export interface GetFilesInfoRequest {
   pageSize?: number;
   sort?: BaseSortRequest;
   filter?: GetFilesInfoFilter;
-  projectKey?: string | null;
 }
 
 export interface GetFilesInfoResponse {
@@ -355,7 +342,6 @@ export interface GetFilesInfoResponse {
 export interface GetFilesRequest {
   fileIds?: string[];
   configurationName?: string | null;
-  projectKey?: string | null;
 }
 
 export interface GetPreSignedUrlForUploadRequest {
@@ -366,7 +352,6 @@ export interface GetPreSignedUrlForUploadRequest {
   tags?: string | null;
   accessModifier?: string | null;
   configurationName?: string | null;
-  projectKey?: string | null;
   moduleName?: ModuleName;
   additionalProperties?: Record<string, string>;
 }
@@ -381,7 +366,6 @@ export interface GetPreSignedUrlForUploadResponse {
 export type HttpStatusCode = 100 | 101 | 102 | 103 | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 226 | 300 | 301 | 302 | 303 | 304 | 305 | 306 | 307 | 308 | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 410 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 421 | 422 | 423 | 424 | 426 | 428 | 429 | 431 | 451 | 500 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 510 | 511;  // int enum — member names not published in swagger
 
 export interface ImportSchemaRequest {
-  projectKey: string | null;
   fileId: string | null;
   messageCoRelationId?: string | null;
 }
@@ -461,9 +445,7 @@ export interface RegexAssistantRequest {
 export interface SaveFieldDefinitionRequest {
   schemaDefinitionItemId?: string | null;
   deletableFieldNames?: string[];
-  projectShortKey?: string | null;
   fields?: FieldDefinitionRequest[];
-  projectKey?: string | null;
 }
 
 export type SchemaAccessLevel = 0 | 1 | 2 | 3;  // int enum — member names not published in swagger
@@ -609,7 +591,6 @@ export interface UpdateDataAccessPolicyRequest {
   policyName?: string | null;
   policyDescription?: string | null;
   fieldNames?: string[];
-  projectKey?: string | null;
   ruleGroup?: PolicyRuleGroup;
   priority?: number | null;
   isAllowPolicy?: boolean | null;
@@ -625,7 +606,6 @@ export interface UpdateDataGatewayConfigurationRequest {
 }
 
 export interface UpdateDataValidationRequest {
-  projectKey?: string | null;
   itemId?: string | null;
   schemaId?: string | null;
   fieldName?: string | null;
@@ -635,15 +615,12 @@ export interface UpdateDataValidationRequest {
 export interface UpdateFileRequest {
   itemId?: string | null;
   additionalProperties?: Record<string, string>;
-  projectKey?: string | null;
 }
 
 export interface UpdateSchemaDefinitionRequest {
   collectionName?: string | null;
   schemaName?: string | null;
-  projectKey?: string | null;
   schemaType?: SchemaType;
-  projectShortKey?: string | null;
   fields?: FieldDefinitionRequest[];
   itemId?: string | null;
 }
@@ -651,7 +628,6 @@ export interface UpdateSchemaDefinitionRequest {
 export interface UpdateSchemaRequest {
   collectionName?: string | null;
   schemaName?: string | null;
-  projectKey?: string | null;
   schemaType?: SchemaType;
   itemId?: string | null;
 }
@@ -673,7 +649,6 @@ export interface UploadFileRequest {
 
 export interface UploadFilesRequest {
   upload?: UploadFileRequest[];
-  projectKey?: string | null;
 }
 
 export interface ValidationFailure {

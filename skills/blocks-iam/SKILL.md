@@ -36,7 +36,7 @@ app MFA is the lowercase `/mfa/*` here.
 
 | I need to… | Go to |
 |---|---|
-| **App auth with a single Login button** (Blocks-hosted OIDC, cookie session, no password form) | [flows/oidc-login.md](flows/oidc-login.md) |
+| **App auth with a single Login button** (Blocks-hosted OIDC, cookie session, no password form) | [flows/oidc-login.md](flows/oidc-login.md) — start with [step 0](flows/oidc-login.md#0-decide--check-first--do-you-already-have-an-oidc-client--identity-provider): ask the user for `clientId` + `redirectUri`, or fetch existing config via `GET /oidc-clients` and `GET /auth/identity-providers` before creating anything |
 | Build a login page (password, captcha, MFA challenge) | [flows/embedded-login.md](flows/embedded-login.md) |
 | Sign up a user, activate the account, first login | [flows/signup-activation.md](flows/signup-activation.md) |
 | Forgot / reset / change password | [flows/password-recovery.md](flows/password-recovery.md) |
@@ -98,7 +98,7 @@ app MFA is the lowercase `/mfa/*` here.
 
 | Flow | Use when |
 |---|---|
-| [oidc-login.md](flows/oidc-login.md) | Single Login button → SPA `fetch`es `/idp/initiate` → navigates to returned redirect URL → Blocks-hosted OIDC authorization-code flow → `/idp/callback` sets a cookie session. Setup (OIDC client + `blocks-oidc` identity provider) and frontend (`startLogin()` + cookie-based sessionFetch). No password/signup UI in your app |
+| [oidc-login.md](flows/oidc-login.md) | Single Login button → SPA `fetch`es `/idp/initiate` → navigates to returned redirect URL → Blocks-hosted OIDC authorization-code flow → `/idp/callback` sets a cookie session. Setup (OIDC client + `blocks-oidc` identity provider) and frontend (`startLogin()` + cookie-based sessionFetch). No password/signup UI in your app. **Start at step 0** — ask for `clientId` + `redirectUri`, or fetch existing config, before creating |
 | [embedded-login.md](flows/embedded-login.md) | Password login end-to-end: captcha branch, MFA branch, refresh, `/auth/me`, logout; plus TOTP enrollment |
 | [signup-activation.md](flows/signup-activation.md) | Self-service signup → activation email → set password → first login (and admin-created users) |
 | [password-recovery.md](flows/password-recovery.md) | Forgot-password recovery + reset, and authenticated password change |

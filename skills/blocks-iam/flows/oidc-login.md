@@ -15,6 +15,9 @@ routes and a self-referential `blocks-oidc` identity provider. For the lower-lev
 Preconditions:
 
 - Setup (Part 1) needs an **admin Bearer token** + `x-blocks-key` (see `blocks-setup`).
+  For an agent, sign in via the agent-only endpoint first if you don't yet know which
+  project to work in — see `blocks-setup` SKILL → *Agent-only login — enumerating
+  projects*.
 - Runtime (Part 2) is browser-only and **must run over HTTPS even in local dev** — the
   session is a `Secure` cookie, so plain `http://localhost` silently drops it
   (`blocks-setup` → local-https-setup). The cookie is bound to the project's
@@ -27,7 +30,67 @@ Preconditions:
 
 ## Part 1 — One-time setup (admin)
 
+The order is **decide → check → create only if missing**. Don't blindly POST; an
+existing config from a prior run is cheap to reuse and expensive to duplicate (each
+`POST /oidc-clients` upsert may rotate the secret; each `POST /auth/identity-providers`
+for the same `provider` name overwrites it).
+
+### 0. Decide & check first — do you already have an OIDC client + identity provider?
+
+You need three values in hand to implement the runtime flow:
+
+1. **`clientId`** — the OIDC client id of your app (registered under
+   `GET /oidc-clients`).
+2. **`redirectUri`** — the app URL Blocks returns the browser to after authentication
+   (must be registered in the client's `redirectUris`).
+3. The **`provider`** name of a `blocks-oidc` identity provider pointing at that
+   client (registered under `GET /auth/identity-providers`).
+
+**Ask the user first.** Before touching the API, ask the user:
+
+- *"Do you already have an OIDC client registered in this project for this app? If so,
+  give me the `clientId` and the redirect URI it was registered with. If not, I'll
+  register one and tell you what to put in your frontend."*
+
+If the user supplies the `clientId` and `redirectUri`, jump to step 4 (`GET
+/auth/identity-providers`) to confirm a `blocks-oidc` provider for that client exists;
+create one (step 3) only if not. Skip step 1 — the client is already registered.
+
+**If the user does not know — fetch and discover.** With the admin Bearer token +
+`x-blocks-key`:
+
+```bash
+# List existing OIDC clients (secret NOT included in the response)
+curl -s "$BLOCKS_API_URL/iam/v4/oidc-clients" \
+  -H "x-blocks-key: $X_BLOCKS_KEY" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+
+# List existing identity providers (secret NOT included in the response)
+curl -s "$BLOCKS_API_URL/iam/v4/auth/identity-providers" \
+  -H "x-blocks-key: $X_BLOCKS_KEY" \
+  -H "Authorization: Bearer $ACCESS_TOKEN"
+```
+
+Both responses are **not documented in swagger** — inspect the live payload before
+relying on field names. The standard pattern is an array of clients/providers; pick
+the one whose `redirectUris` / `clientDisplayName` matches the app you are wiring up.
+
+- **Match found** → keep its `clientId` and `redirectUris[0]`, jump to Part 2. If a
+  matching `blocks-oidc` provider is already in the list with the same `clientId`,
+  you are done with Part 1 entirely.
+- **No match** → fall through to step 1 (register the OIDC client) and step 3
+  (register the identity provider). Do **not** create a duplicate client when one
+  exists; pick the existing one and add only what is missing.
+
+> **Why ask before fetching?** Many projects already have a client registered from a
+> previous build or by another team member. Calling `POST /oidc-clients` to "create"
+> is an **upsert** — re-running it can rotate the `clientSecret` and break apps
+> already in production using the old one. The check-first pattern avoids that.
+
 ### 1. Register your app as an OIDC client — `POST /oidc-clients`
+
+> **Run this step only if step 0 found no matching client.** Otherwise skip to
+> step 3 (or straight to Part 2 if the identity provider is also already in place).
 
 Upsert the client. Fields below are all in the swagger request schema
 ([OidcClients](../endpoints.md#oidcclients)):
@@ -54,7 +117,9 @@ Upsert the client. Fields below are all in the swagger request schema
   session cookie instead of returning tokens to the browser) — keep it `true` for this
   flow.
 - `redirectUris` must list every origin the platform may return to (your app URL +
-  the `/auth/callback` path the SPA lands on).
+  the `/auth/callback` path the SPA lands on). **The redirect URI you use in the
+  frontend must be one of these strings exactly** — including scheme, host, port, and
+  trailing path.
 - Response schema is **not documented in swagger** — inspect the live response. Capture
   the returned `clientId` and `clientSecret` for the next step. Later single-client GETs
   exclude the secret.
@@ -68,6 +133,9 @@ is server-side only.
 
 ### 3. Register a self-referential identity provider — `POST /auth/identity-providers`
 
+> **Run this step only if step 0 found no `blocks-oidc` provider for the chosen
+> client.** Otherwise skip to Part 2.
+
 This tells `/idp/initiate` to delegate to Blocks' own OIDC endpoints. Required
 schema fields: `provider`, `providerType`, `clientId`, `clientSecret`,
 `tokenEndpointAuthMethod`.
@@ -77,7 +145,7 @@ schema fields: `provider`, `providerType`, `clientId`, `clientSecret`,
   "provider": "sample-idp",
   "providerType": "blocks-oidc",
   "displayName": "Sign in",
-  "clientId": "<clientId from step 1>",
+  "clientId": "<clientId from step 1 or step 0>",
   "clientSecret": "<clientSecret from step 1>",
   "wellKnownUrl": "https://iam.seliseblocks.com/<X_BLOCKS_KEY>/.well-known/openid-configuration",
   "tokenEndpointAuthMethod": "client_secret_basic",
@@ -98,17 +166,27 @@ schema fields: `provider`, `providerType`, `clientId`, `clientSecret`,
   ([Discovery](../endpoints.md#discovery)).
 - `initialRoles`/`initialPermissions` are granted to users provisioned just-in-time on
   first login.
+- `POST` is **upsert by `provider` name** — re-posting the same `provider` overwrites
+  the existing record rather than creating a duplicate. Pick a stable `provider` name
+  per app.
 - Response is undocumented — inspect live.
 
 ### 4. Confirm the provider — `GET /auth/identity-providers`
 
 The provider should list back with resolved `authorizationUrl`, `tokenUrl`,
 `userInfoUrl`, and `jwksUri` (response undocumented — inspect live). Keep the
-`provider` name and the `clientId` — they drive the initiate call.
+`provider` name and the `clientId` — they drive the initiate call in Part 2.
 
 ---
 
 ## Part 2 — Frontend implementation (the Login button)
+
+> **Before writing any frontend code, confirm the three values from Part 1 are
+> finalized:** `clientId` (the OIDC client id), `redirectUri` (the exact URL registered
+> in the client's `redirectUris` array, e.g. `https://app.example.com/auth/callback`),
+> and the `provider` name (the `blocks-oidc` identity provider). The frontend reads
+> them from a config (env, runtime config endpoint, or a constant). Without these,
+> the runtime call below will not resolve.
 
 ### 5. Start the flow — HTTP API call to `GET /idp/initiate`
 
