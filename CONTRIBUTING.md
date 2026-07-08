@@ -1,79 +1,71 @@
 # Contributing
 
-This repo is a set of Claude Code skills for the SELISE Blocks v4 API. The bar for every contribution is the same: **everything Claude might act on must be grounded in the generated swagger docs.**
+This repo is a set of Claude Code skills for the SELISE Blocks v4 API. The bar for every contribution is the same: **everything Claude might act on must be grounded in real, verified API behavior** — not assumed from a swagger read.
 
 ## Repo structure
 
 ```
-skills/blocks-<svc>/
-├── SKILL.md            ← hand-authored: routing table, key concepts, flow index, gotchas
-├── endpoints.md        ← GENERATED — every endpoint with exact params and shapes
-├── contracts.md        ← GENERATED — TypeScript types for all schemas
-├── flows/*.md          ← hand-authored: multi-endpoint procedures (3–6 per skill)
-└── references/react.md ← hand-authored: typed client + TanStack Query hooks
-tools/generate-api-docs.py   ← the generator
-.swagger-cache/              ← cached swagger.json per service (gitignored)
+skills/blocks-<name>/
+├── SKILL.md            ← routing: auth model, endpoint map, key concepts, gotchas
+├── flows/*.md          ← step-by-step procedures
+│   └── get-into-project.md   ← the shared "initial steps" (configuration skills only)
+├── endpoints.md        ← exact request/response contracts (where a skill warrants one)
+└── references/react.md ← typed client + TanStack Query hooks (React 19 stack)
+tools/generate-api-docs.py   ← optional bootstrap from swagger
 ```
 
-This consolidated layout replaced the old per-endpoint `actions/` files, per-skill `README.md`, and `meta.json`. Do not add those back. `blocks-setup` is the one skill without generated files (it has no service swagger; it points to `blocks-iam`).
+Skills are **focused** — one clear job each (e.g. "GraphQL CRUD", "SSO configuration", "organizations"). Not every skill needs `endpoints.md` or `flows/`; include what the job needs. `skill-creator` is meta-tooling, not a product skill.
+
+## Configuration vs. implementation (know which you're writing)
+
+Every skill is one of two modes, and it changes the auth model and whether the initial steps apply:
+
+- **Configuration** — admin action *on* a project (define schemas, wire SSO, seed roles, edit org settings). It happens inside a tenant, so it **requires the initial steps**: log in → `GET /os/v4/Project/Gets` → impersonate (`POST https://iam.seliseblocks.com/api/auth/impersonate` with `{ targeted_tenant_id, refresh_token }`). Calls use `x-blocks-key: <root-tenant-id>` + the impersonated token + `projectKey: <project-tenant-id>`. Configuration skills embed `flows/get-into-project.md` and every flow starts from it.
+- **Implementation** — the frontend acting *as the signed-in user* (CRUD, uploads, SSO login, `/iam/me`). **No initial steps.** Uses the public **project key** (`x-blocks-key` = the project tenant id) + the user's session token.
+
+Do not add the initial-steps flow to an implementation skill, and do not omit it from a configuration one. A management skill (users/roles/permissions/orgs) that serves both modes documents the two token sources explicitly rather than assuming one.
 
 ## The grounding rule (non-negotiable)
 
-**Never hand-write or hand-edit endpoint documentation.** `endpoints.md` and `contracts.md` are generated from the live v4 swagger and are ground truth. If they are wrong or stale, regenerate them:
+**Verify against the live API before you document it.** Drive the real endpoint with real credentials (a throwaway/dev project), and write down what actually happens:
 
-```bash
-python3 tools/generate-api-docs.py              # all services
-python3 tools/generate-api-docs.py iam data     # specific services
-```
+- The **served path** — the swagger `basePath` `/api` is often *not* served (`/data/v4/...`, `/iam/v4/iam/...`). Confirm the real URL.
+- The **real request and response shapes** — swagger frequently types responses as a bare `object` or omits them entirely. Capture the live shape; if you genuinely can't, write "response shape not documented — inspect the live response" and type it `unknown`. Never fabricate JSON.
+- **Quirks, verbatim** — mutating GETs (a GET that needs a body → note it and how to call it from a browser), non-standard envelopes (`{isSuccess, organization}` vs `{data}`), casing splits (`refreshToken` vs `refresh_token`), list endpoints that are POST-with-body vs GET-with-query.
+- **Integer enums have no member names** in swagger. Reference the numeric union and mark any interpreted meaning **unverified — confirm in the portal**.
+- **Endpoints missing from swagger** (e.g. the GraphQL gateway) are discovered by introspection/probing and labeled as verified-live, with the method noted.
 
-The generator reads `.swagger-cache/<svc>.json`, downloading from `https://api.seliseblocks.com/<svc>/v4/swagger/v1/swagger.json` on a cache miss. Delete a cached file to force a re-download.
-
-**Deprecated routes are excluded, not documented.** Routes the platform team has obsoleted (they carry `deprecated: true` in swagger) are listed in `DEPRECATED_ROUTES` in the generator and skipped entirely — they never appear in `endpoints.md`. So a route being present in swagger but absent from the generated docs is intentional, not a bug. When a route is deprecated, add it to `DEPRECATED_ROUTES` (with its replacement as a reference comment), regenerate, and remove any hand-authored mentions from that skill's SKILL.md/flows.
-
-For hand-authored files (SKILL.md, flows, references):
-
-- Every endpoint path, HTTP method, request field, response field, header, and type name must exist **verbatim** in that skill's `endpoints.md` / `contracts.md`. Cross-references to another service's routes must name the owning skill.
-- Never use old v1 routes (`/idp/v1/`, `/uds/v1/`, `/uilm/v1/`, `/lmt/`, `/deployment/v1/` are all dead). Old names may appear only as recognition aliases in SKILL.md descriptions.
-- Many endpoints have **no response schema in swagger**. Say so explicitly ("response shape not documented in swagger — inspect the live response") and type them `unknown` in react.md. Do not fabricate response JSON.
-- Integer enums have no member names in swagger. Reference the numeric union from contracts.md and flag any interpretation as unverified.
-- If a logical step has no v4 endpoint, say so honestly ("not exposed in v4 — do this in OS portal instead"). Do not invent routes.
+For hand-authored files, every path/method/field/header you write must match what you verified. Old v1 routes (`/idp/v1/`, `/uds/v1/`, …) are dead — use them only as recognition aliases in a `description`.
 
 ## Adding or improving a flow
 
-1. Pick a real multi-step sequence developers actually need; keep each skill at 3–6 high-value flows.
-2. Create `skills/blocks-<svc>/flows/<kebab-name>.md`:
-   - When to use + preconditions (token? role? existing resources?).
-   - Numbered steps: `METHOD /path` — why, the request fields the step turns on, what to keep from the response. Link `endpoints.md` anchors instead of duplicating shapes.
-   - Branches and error paths (401 → refresh via `blocks-setup`; captcha/MFA branches; etc.).
-   - A **Verify** section: which GET to call and what to look for.
-3. Add a row to the skill's `## Flows` table in SKILL.md.
+1. Pick a real multi-step sequence a developer actually needs.
+2. Create `skills/blocks-<name>/flows/<kebab-name>.md`:
+   - **When to use + preconditions.** For configuration flows, the first precondition is running `get-into-project.md` (it exports `$ROOT`, `$PTENANT`, `$PTOK`/`hdr`). For implementation flows, state the project key + user token.
+   - **Numbered steps:** `METHOD /path` — why, the fields the step turns on, what to keep from the response. Real, runnable curl where it helps.
+   - **Branches and error paths** (401 / `session_expired` → re-login/impersonate; validation branches).
+   - A **Verify** section: which call confirms success and what to look for.
+3. Add it to the SKILL.md routing table.
 
 ## Adding or improving a reference
 
-`references/react.md` targets React 19 + TypeScript + Vite + Tailwind + shadcn/ui + TanStack Query + Zustand. Content: a typed API client slice for the service (fetch wrapper adding `x-blocks-key` + Bearer token, base URL from env), hooks for the 4–8 most useful endpoints importing types from contracts.md by name, one realistic component sketch, and a pointer to `blocks-setup` for auth/refresh handling. Keep it roughly 150–300 lines.
+`references/react.md` targets React 19 + TypeScript + Vite + Tailwind + shadcn/ui + TanStack Query + Zustand. Include: a typed client slice (fetch wrapper adding `x-blocks-key` + Bearer, base URL from `VITE_` env, 401-refresh-retry), hooks for the highest-value endpoints, and one realistic component. Client-safe values only in `VITE_` vars — the project key is public; tokens come from the auth store at runtime. Keep it ~150–300 lines.
 
-## Adding a new service skill
+## Adding a new skill
 
-When a service's v4 swagger is published (e.g. `studio`, `agent`):
-
-1. **Register the service** in `tools/generate-api-docs.py`: add its key to `SERVICES`. If the service embeds shared platform controllers (or introduces controllers that other services will also serve), map each shared route tag to its canonical service in `SHARED_TAG_CANONICAL` — a shared route is documented in full only in its canonical skill; everywhere else it becomes a pointer-table line.
-2. **Run the generator** for all services, not just the new one — adding a service can change pointer tables in existing skills:
-   ```bash
-   python3 tools/generate-api-docs.py
-   ```
-   This creates `skills/blocks-<svc>/endpoints.md` and `contracts.md`.
-3. **Author the hand-written layers** following any existing skill as the pattern:
-   - `SKILL.md` — frontmatter `name` + trigger-rich third-person `description` (≤ ~900 chars, include old v1 aliases as recognition words only), then Prerequisites (point to `blocks-setup`), "What's where" table, key concepts, flow index, conventions & gotchas, files list.
-   - `flows/` — 3–6 flows per the template above.
-   - `references/react.md`.
-4. Read the generated `endpoints.md` **before** writing anything; note per-endpoint "no response schema" markers and carry them into flows and react.md.
+1. **Decide the mode** (configuration vs implementation) and the one job it owns. Keep it focused — split rather than sprawl.
+2. **Verify the endpoints live** (see the grounding rule). Optionally seed `endpoints.md` with `python3 tools/generate-api-docs.py <svc>`, then correct it against live behavior — the generator is a starting point, not ground truth.
+3. **Write `SKILL.md`:** frontmatter `name` + a trigger-rich, third-person `description` (say what it does *and* the phrases/contexts that should invoke it; be a little "pushy" to avoid under-triggering); then the auth model, an endpoint map, key concepts (marked "verified live"), and gotchas.
+4. **Configuration skill?** Copy `flows/get-into-project.md` from an existing configuration skill and point flows at it.
+5. **Cross-link** related skills by name (config ↔ implementation, "store a fileId here, set it there"). Keep relative links valid.
 
 ## PR expectations
 
-- **No hand edits to generated files.** If a PR touches `endpoints.md`/`contracts.md`, it must be the output of a generator run (say so in the description, with the date the swagger was fetched) or a change to the generator itself.
-- **Grounding check:** every route/field added in hand-authored files must be traceable to the skill's generated docs. Reviewers will spot-check; a quick grep of new paths against `endpoints.md` before pushing saves a round trip.
-- **Honesty over completeness:** unverified semantics, undocumented responses, and swagger quirks (typos, mixed casing, mutating GETs) are documented as such, never smoothed over.
+- **Live-verified, or labeled.** State that you drove the endpoints (and the date). Anything you couldn't verify is marked unverified in the text, not smoothed over.
+- **Grounding check:** every route/field in a hand-authored file traces to something you verified or to that skill's `endpoints.md`.
+- **Honesty over completeness:** undocumented responses, unnamed enums, and platform quirks are documented as such.
+- **Right mode:** initial steps present iff the skill is configuration; correct token source described.
 - Style: imperative, concrete, American spelling, tables over prose walls, no marketing language.
-- Scope: one skill (or the generator) per PR where practical.
+- Scope: one skill per PR where practical; keep cross-links resolving.
 
 By contributing you agree your contributions are licensed under the MIT License.
