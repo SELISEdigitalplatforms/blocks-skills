@@ -41,6 +41,18 @@ SHARED_TAG_CANONICAL = {
 METHODS = ("get", "post", "put", "delete", "patch")
 MAX_DEPTH = 4
 
+
+def display_path(path):
+    """Strip the platform /api/ prefix from a swagger path. The Blocks gateway does not serve the
+    /api/ segment (it lives in swagger as a basePath artifact), so docs should show the real URL
+    the platform actually responds on. Exception: OIDC discovery endpoints under /api/.well-known/
+    must keep the /api/ segment — the gateway serves them there, not at the root."""
+    if path.startswith("/api/.well-known/"):
+        return path
+    if path.startswith("/api/"):
+        return "/" + path[len("/api/"):]
+    return path
+
 # Routes the platform team has obsoleted even though they still appear in swagger.
 # (svc, METHOD, path) -> replacement text. These routes are EXCLUDED from the generated
 # docs entirely (skipped at population); the replacement text is kept for reference only.
@@ -293,6 +305,10 @@ def gen_service(svc, spec, route_owner, out_dir):
     out.append("")
     out.append(f"**Base URL:** `{base_url}`")
     out.append("")
+    out.append("**URL pattern:** every endpoint is `{base}/{endpoint}` — do **not** prefix with `/api/`. "
+               "e.g. `POST {base}/schemas/define`, `GET {base}/configurations`. The `/api/` from the swagger `basePath` is not part of the URL served by the gateway. "
+               "(Exception: OIDC discovery stays at `GET {base}/.well-known/openid-configuration` etc.)")
+    out.append("")
     out.append("**Authentication** (see `blocks-setup` skill for obtaining tokens):")
     out.append("- `x-blocks-key: <X_BLOCKS_KEY>` header — required on every request")
     out.append("- `Authorization: Bearer <access_token>` — required for authenticated operations")
@@ -312,7 +328,7 @@ def gen_service(svc, spec, route_owner, out_dir):
         out.append(f"## {tag}")
         out.append("")
         for m, path, op in sorted(own_ops[tag], key=lambda x: (x[1], x[0])):
-            out.append(f"### `{m} {path}`")
+            out.append(f"### `{m} {display_path(path)}`")
             out.append("")
             summary = (op.get("summary") or "").strip()
             if summary:
@@ -368,7 +384,7 @@ def gen_service(svc, spec, route_owner, out_dir):
             out.append("| Method | Path | Summary |")
             out.append("|---|---|---|")
             for m, path, summary in sorted(foreign_ops[owner], key=lambda x: (x[1], x[0])):
-                out.append(f"| {m} | `{path}` | {summary[:100]} |")
+                out.append(f"| {m} | `{display_path(path)}` | {summary[:100]} |")
             out.append("")
 
     os.makedirs(os.path.join(out_dir, skill), exist_ok=True)

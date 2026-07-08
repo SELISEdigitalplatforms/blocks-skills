@@ -1,5 +1,11 @@
+# Local credentials — never commit
+.env
+.env.*
+!.env.example
+
 # Evaluation workspaces
 workspace-*/
+skills/*-workspace/
 
 # Local eval outputs
 eval-viewer.html
