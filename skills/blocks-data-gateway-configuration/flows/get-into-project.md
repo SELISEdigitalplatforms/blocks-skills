@@ -3,9 +3,9 @@
 **Run this first, before any configuration call.** Configuring a Blocks service (data, IAM, …) happens *inside a project/tenant*, so you must obtain an **impersonated, project-scoped token**. This flow is shared by all Blocks configuration skills — the steps are identical whether you're configuring the data gateway or IAM SSO.
 
 It produces three things the config flows use:
-- `ROOT` — the **root tenant id**, from the login token's `tenant_id` claim. Sent as the **`x-blocks-key` header** on config calls.
-- `PTENANT` — the **target project's tenant id** (from Project/Gets, or given by the user). Sent as **`projectKey`** in request bodies. *In a single-project account `ROOT` and `PTENANT` are the same value.*
-- `PTOK` — the **impersonated access token**. Sent as `Authorization: Bearer`.
+- `ROOT` — the **root/account tenant id**, from the login token's `tenant_id` claim. Used as the `x-blocks-key` header **only** for the two account-level calls below (`Project/Gets` and `impersonate`).
+- `PTENANT` — the **target project's tenant id** (from Project/Gets, or given by the user). This is the key that matters for the work: sent as the **`x-blocks-key` header** *and* as **`projectKey`** on every in-project service call. A service call keyed with `$ROOT` returns 401/403 unless root happens to be the project that owns that service (verified live).
+- `PTOK` — an access token valid for the project. The impersonated token always works; the plain login token also works for projects your account can already reach.
 
 All verified live against `https://api.seliseblocks.com`.
 
@@ -66,12 +66,12 @@ Response is `{ "impersonation_mode": true, "access_token": "...", ... }`. Send j
 ## The header/key convention for every config call
 
 ```bash
-hdr=(-H "x-blocks-key: $ROOT" -H "Authorization: Bearer $PTOK")
-# ...and put projectKey: $PTENANT in request bodies (NOT the root tenant id)
+hdr=(-H "x-blocks-key: $PTENANT" -H "Authorization: Bearer $PTOK")
+# ...and put projectKey: $PTENANT in request bodies too
 ```
 
-- **`x-blocks-key` header = `ROOT`** (root tenant id).
-- **`Authorization` = the impersonated token `PTOK`.**
+- **`x-blocks-key` header = `PTENANT`** — the project tenant id. **Not** `ROOT`: an in-project call keyed with the root tenant 401/403s (verified). `ROOT` is only the key for `Project/Gets` and `impersonate` in steps 2–3.
+- **`Authorization` = `PTOK`** (the impersonated token; the plain login token also works if your account already has access to the project).
 - **`projectKey` in bodies = `PTENANT`** (the target project's tenant id).
 
 Now continue with the service you're configuring — [configure-schema.md](configure-schema.md) for the data gateway, or the IAM SSO config skill.

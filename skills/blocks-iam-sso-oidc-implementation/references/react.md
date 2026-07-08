@@ -48,7 +48,7 @@ export async function finishLogin(search: string) {
 
   const res = await fetch(
     `${API}/iam/v4/idp/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`,
-    { credentials: "include" }, // let the cookie be set on your domain
+    { credentials: "include", headers: { "x-blocks-key": PROJECT_KEY } }, // cookie set on your domain; x-blocks-key required on every Blocks call
   );
   if (!res.ok) throw new Error(`callback failed: ${res.status}`);
 }

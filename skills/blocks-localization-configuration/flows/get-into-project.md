@@ -74,4 +74,4 @@ hdr=(-H "x-blocks-key: $PTENANT" -H "Authorization: Bearer $PTOK")
 - **`Authorization` = `PTOK`** (the impersonated token; the plain login token also works if your account already has access to the project).
 - **`projectKey` in bodies = `PTENANT`** (the target project's tenant id).
 
-Now continue with the service you're configuring — [configure-oidc.md](configure-oidc.md) for IAM SSO, or the data gateway configuration skill's schema flow.
+Now continue with the service you're configuring — [languages-and-modules.md](languages-and-modules.md) then [translate-and-generate.md](translate-and-generate.md) for localization.

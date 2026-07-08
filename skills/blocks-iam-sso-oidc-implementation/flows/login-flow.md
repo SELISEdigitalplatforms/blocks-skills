@@ -33,9 +33,10 @@ Your app needs a route mounted at that path to receive it.
 
 ## Step 4 — Exchange the code via the callback endpoint (sets the cookie)
 
-From the callback route, call:
+From the callback route, call (with the `x-blocks-key` header — required on every Blocks call):
 ```
 GET https://api.seliseblocks.com/iam/v4/idp/callback?code=<code>&state=<state>
+Header: x-blocks-key: <PROJECT_KEY>
 ```
 This **sets the session cookie**. Once it succeeds, the user is authenticated — subsequent requests carry the cookie automatically. Send this request with the browser's credentials (so the cookie is set on your domain), then route the user to the post-login landing page.
 

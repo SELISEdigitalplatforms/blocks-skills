@@ -70,9 +70,12 @@ export const files = {
 import { useMutation } from "@tanstack/react-query";
 import { files } from "./api";
 
-// Azure Blob rejects a PUT without this header; detect Azure from the upload URL host.
+const KEY = import.meta.env.VITE_BLOCKS_PROJECT_KEY as string;
+
+// x-blocks-key rides on every request (platform rule); Azure ignores non-x-ms headers, so it's safe on the SAS PUT.
+// Azure Blob also requires x-ms-blob-type — detect Azure from the upload URL host.
 function providerHeaders(uploadUrl: string, contentType: string): Record<string, string> {
-  const h: Record<string, string> = { "Content-Type": contentType || "application/octet-stream" };
+  const h: Record<string, string> = { "Content-Type": contentType || "application/octet-stream", "x-blocks-key": KEY };
   if (/\.blob\.core\.windows\.net/i.test(uploadUrl)) h["x-ms-blob-type"] = "BlockBlob";
   return h;
 }
@@ -83,8 +86,8 @@ export function useUploadFile() {
       const { uploadUrl, fileId } = await files.presign(file.name);
       if (!uploadUrl || !fileId) throw new Error("Presign failed");
 
-      // Raw bytes straight to the storage provider — NO Blocks headers, URL is pre-authorized & expires.
-      // Add x-ms-blob-type: BlockBlob for Azure.
+      // Raw bytes straight to the storage provider. The URL is pre-authorized (no Bearer token),
+      // but still send x-blocks-key; add x-ms-blob-type: BlockBlob for Azure.
       const put = await fetch(uploadUrl, {
         method: "PUT",
         headers: providerHeaders(uploadUrl, file.type),
