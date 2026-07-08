@@ -1,88 +1,113 @@
 # SELISE Blocks Skills
 
-Claude Code skills for building full-stack applications on the **SELISE Blocks v4 platform** (`https://api.seliseblocks.com/<service>/v4`). Each skill teaches Claude one Blocks service: what the endpoints are (generated verbatim from the live swagger), how to chain them into working flows, and how to integrate them in a React frontend.
+Claude Code skills for building on the **SELISE Blocks v4 platform** (`https://api.seliseblocks.com`). Each skill teaches Claude one focused job on a Blocks service — the exact endpoints, how to chain them into a working flow, and how to wire them into a React frontend.
 
-Describe what you want to build; Claude picks the skill, follows a flow, and writes code grounded in the real API contracts — no invented routes, no invented fields.
+Every skill is **verified against the live API** (driven with real credentials), not just read off the swagger. Where the platform is quirky — mutating GETs, non-standard envelopes, unnamed integer enums, endpoints missing from swagger — the skills say so plainly instead of guessing.
 
-> v4 renamed every service. Old v1 names map as: **idp → iam**, **uds → data**, **uilm → localization**, **lmt → monitor**, **deployment → release**, **workflow → logic**. All `/…/v1/` routes are dead.
+Describe what you want to do; Claude picks the skill, follows its flow, and writes code grounded in the real API contracts — no invented routes, no invented fields.
+
+> v4 renamed the v1 services. Old names appear only as recognition aliases: **idp → iam**, **uds/data-gateway → data**, **uilm → localization**. All `/…/v1/` routes are dead.
+
+## The core split: configuration vs. implementation
+
+Blocks work divides into two modes, and the skills are organized around the difference:
+
+- **Configuration** — acting *on* a project as an admin: defining schemas, wiring SSO, seeding roles, editing org settings. This happens **inside a project/tenant**, so it requires the shared **initial steps** first: log in → list projects (`/os/v4/Project/Gets`) → **impersonate** into the target tenant to get a project-scoped token. Configuration calls then use `x-blocks-key: <root-tenant-id>` + the impersonated token + `projectKey: <project-tenant-id>`.
+- **Implementation** — the frontend app acting *as the signed-in user*: running GraphQL CRUD, uploading files, logging in via SSO, reading `/iam/me`. This needs **no initial steps** — the app uses the public **project key** (the project's tenant id, `x-blocks-key`) plus the end user's own session token.
+
+The initial steps are documented once, as `flows/get-into-project.md`, inside each **configuration** skill. Implementation skills never reference them.
 
 ## Skills
 
-| Skill | Covers | Flows |
-|-------|--------|-------|
-| `blocks-setup` | Bootstrap: OS portal prerequisites, `.env` conventions, local HTTPS for dev (openssl + Vite — required for Secure auth cookies), obtaining/refreshing tokens (login, refresh, me, logout), entering a project context via tenant impersonation, troubleshooting, and the canonical React auth foundation (fetch wrapper + Zustand store + 401-refresh-retry) all other skills build on. | bootstrap-project, local-https-setup, project-impersonation, activate-first-user, token-lifecycle |
-| `blocks-iam` | Application identity & access (`iam/v4`): embedded login, signup/activation, password lifecycle, MFA, users/roles/permissions/organizations, impersonation, external-IdP SSO, OIDC provider & client management, machine-to-machine credentials. | embedded-login, signup-activation, password-recovery, org-switch-impersonation, sso-identity-providers, machine-to-machine |
-| `blocks-data` | Data platform (`data/v4`): schema definitions and fields, data access policies and security levels, field validations with AI regex assistant, data sources, configuration reload, Files/DMS uploads, schema exchange between projects, mock-data cleanup. | define-schema, configure-access, add-validations, upload-files, schema-exchange, manage-mock-data |
-| `blocks-localization` | Languages, translation keys, glossaries, AI/machine translation, UILM language-file generation and import/export, change timeline with rollback, webhook config (`localization/v4`). | language-setup, key-management, ai-translation, language-files-and-webhook, timeline-and-rollback |
-| `blocks-logic` | Workflows (create/version/publish/execute via webhooks and StepExecute, execution history), GitHub deployment authorization, logic file storage via pre-signed URLs, mail (SMTP) configuration CRUD (`logic/v4`). | create-and-run-workflow, version-publish-restore, authorize-github-deployment, upload-and-manage-files, manage-mail-configurations |
-| `blocks-monitor` | Observability (logs + live tail, traces/analytics, uptime monitors, heartbeat health checks) and platform back-office admin (PascalCase `/api/Authentication` + `/api/Iam`, domain config) on `monitor/v4`. Back-office ≠ app auth — app auth lives in `blocks-iam`. | query-logs-and-live-tail, inspect-traces, uptime-monitor, heartbeat-health-check, backoffice-account-org-admin |
-| `blocks-os` | Platform OS service (`os/v4`) — canonical home of the shared platform controllers: captcha, platform MFA OTP/TOTP, notification/storage/secrets config, projects/people/team access, subscriptions, service registry, migration, ApiEndpointConfig enforcement, OIDC discovery. | captcha-lifecycle, platform-mfa-otp, notification-config, storage-config, secrets-management, project-team-management |
-| `blocks-release` | CI/CD (`release/v4`): GitHub authorization and webhooks, per-repo hosting settings, build triggering/monitoring/reports, custom deployment domains, SonarQube/DependencyTrack analytics. | connect-github, configure-and-run-build, build-reports-and-analytics, custom-domains |
-| `blocks-utilities` | Utilities service (`utilities/v4`): magic links, PDF generation/merge/stamp, transactional mail sending, email templates, sequence numbers, IP geolocation, notifications. | magic-links, generate-pdfs, merge-stamp-pdfs, send-templated-mail, sequence-numbers |
+### Data (`data/v4`)
 
-**Pending:** `blocks-agent` and `blocks-studio` — their v4 swagger specs are not published yet. They will be added the same way (see `CONTRIBUTING.md`).
+| Skill | Mode | Covers |
+|-------|------|--------|
+| `blocks-data-gateway-configuration` | Configuration | Create/edit schemas & fields, field validation (incl. AI regex), access policies, **reload**; plus mock-data cleanup and schema-exchange between projects. Embeds the initial-steps flow. |
+| `blocks-data-gateway-crud` | Implementation | GraphQL CRUD against the runtime gateway (`POST /data/v4/gateway`): `get<Collection>` queries, `insert/update/delete<Schema>` mutations, and typed React hooks. |
+| `blocks-data-storage` | Implementation | Files / DMS: pre-signed-URL upload pipeline, download, folders, tags/versions, delete. |
+
+### IAM — SSO / OIDC (`iam/v4`)
+
+| Skill | Mode | Covers |
+|-------|------|--------|
+| `blocks-iam-sso-oidc-configuration` | Configuration | Ensure a `blocks-oidc` identity provider exists — create the OIDC client and identity provider. Embeds the initial-steps flow. |
+| `blocks-iam-sso-oidc-implementation` | Implementation | The hosted authorization-code login flow in the frontend: `/idp/initiate` → redirect → `/idp/callback` (sets the session cookie). |
+
+### IAM — management (`iam/v4`) — usable for configuration **and** implementation
+
+| Skill | Covers |
+|-------|--------|
+| `blocks-iam-account` | Account/session actions: activate a new user (`/auth/activate`) and logout (`/auth/logout`). |
+| `blocks-iam-access-control` | RBAC: create/update/list/get permissions and roles; add/remove permissions on a role. |
+| `blocks-iam-users` | Users CRUD, current user (`/iam/me`), activity timeline, and assigning roles/permissions to a user. |
+| `blocks-iam-organizations` | Organizations CRUD, "my organizations", and the project org-creation / multi-org config. |
+
+These four run as **configuration** (admin tooling, with an impersonated project token via the initial steps) or as **implementation** (a frontend admin screen, with the signed-in user's token) — same endpoints, different token source.
+
+### Local development
+
+| Skill | Mode | Covers |
+|-------|------|--------|
+| `blocks-frontend-local-https` | Implementation (dev tooling) | Run a React app locally over HTTPS on its real project domain (openssl cert + hosts entry + Vite/CRA/Next config) — required for SSO session cookies to be set. |
+
+### Meta
+
+| Skill | Covers |
+|-------|--------|
+| `skill-creator` | Tooling for creating, editing, evaluating, and optimizing skills in this repo. |
 
 ## Skill layout
 
-Every skill follows the same consolidated structure:
+Skills are focused and hand-authored; not every skill needs every file.
 
 ```
-skills/blocks-<svc>/
-├── SKILL.md            ← routing: what's where, key concepts, flow index, gotchas
-├── endpoints.md        ← every endpoint with exact params and shapes — GENERATED from swagger
-├── contracts.md        ← TypeScript types for all schemas — GENERATED from swagger
-├── flows/              ← step-by-step multi-endpoint procedures (3–6 per skill)
+skills/blocks-<name>/
+├── SKILL.md            ← routing: auth model, endpoint map, key concepts, gotchas
+├── flows/              ← step-by-step procedures
+│   ├── get-into-project.md   ← the shared "initial steps" (configuration skills only)
 │   └── <kebab-name>.md
+├── endpoints.md        ← exact request/response contracts (management skills)
 └── references/
-    └── react.md        ← typed API client + TanStack Query hooks for this service
+    └── react.md        ← typed client + TanStack Query hooks (React 19 stack)
 ```
 
-`endpoints.md` and `contracts.md` are ground truth: generated from the live v4 swagger, never hand-edited. Routes served by several services (shared platform controllers) are documented in full in exactly one canonical skill; other skills carry a pointer table. `blocks-setup` is the exception — it has no swagger of its own and points to `blocks-iam` for auth endpoint shapes.
+`SKILL.md` frontmatter carries the trigger-rich `description` that routes requests to the skill. Configuration skills carry `flows/get-into-project.md`; implementation skills do not.
 
-Where swagger leaves a response schema undocumented, the skills say so ("inspect the live response") instead of fabricating JSON, and integer enums without member names are flagged as unverified.
+## Auth & keys (verified live)
 
-## Regenerating the API docs
+- **Login:** `POST https://api.seliseblocks.com/iam/v4/auth-login` (note the dash) with `{ "username", "password" }` → `access_token` (~5 min) + `refresh_token`. The token's **`tenant_id` claim is the project/root tenant id.**
+- **Configuration** needs a project-scoped token via impersonation: `POST https://iam.seliseblocks.com/api/auth/impersonate` with `{ targeted_tenant_id, refresh_token }`. Then `x-blocks-key: <root-tenant-id>`, `Authorization: Bearer <impersonated token>`, `projectKey: <project-tenant-id>`.
+- **Implementation** needs only the **project key** (the project's tenant id — public, shippable as `x-blocks-key`) and the end user's session token. In a frontend that's `VITE_BLOCKS_PROJECT_KEY = <project tenant id>`.
+- **URL prefix:** the served base is `https://api.seliseblocks.com/<svc>/v4`; the swagger's `/api/...` prefix is **not** part of the served path (`/data/v4/...`, `/iam/v4/iam/...`).
 
-```bash
-python3 tools/generate-api-docs.py              # all services
-python3 tools/generate-api-docs.py iam data     # specific services
-```
-
-Swagger specs are cached in `.swagger-cache/` (gitignored); delete a service's JSON there to force a fresh download from `https://api.seliseblocks.com/<svc>/v4/swagger/v1/swagger.json`.
-
-## Prerequisites
-
-Complete the OS portal setup first — the `blocks-setup` skill walks through it (project, environment, Blocks Key, developer account) and establishes the env var conventions used everywhere:
-
-| Variable | Meaning |
-|----------|---------|
-| `BLOCKS_API_URL` | `https://api.seliseblocks.com` |
-| `X_BLOCKS_KEY` | project Blocks Key — sent as `x-blocks-key` header on every request; also the value for any `projectKey` field an API asks for |
-| `BLOCKS_USERNAME` / `BLOCKS_PASSWORD` | developer account credentials |
-| `PROJECT_TENANT_ID` | project's tenant id from `GET /os/v4/api/Project/Gets` — only needed for tenant impersonation |
-
-Login sends no project identifier — the `x-blocks-key` header carries the project context.
-(Deprecated names from older setups: `PROJECT_SLUG`/`VITE_PROJECT_SLUG`, `VITE_PROJECT_KEY`,
-`BLOCKS_CLOUD_CLIENT_ID` — don't use them in new code.)
-Every request needs `x-blocks-key`; authenticated operations add `Authorization: Bearer <access_token>`.
-Two platform behaviors worth knowing up front: browser apps must run over **HTTPS even in local dev**
-(Secure auth cookies — see blocks-setup's local-https-setup flow), and working inside a project means
-**impersonating into its tenant** (blocks-setup's project-impersonation flow).
+`.env` for admin tooling (never commit): `BLOCKS_API_URL`, `X_BLOCKS_KEY` (account key for login), `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`.
 
 ## Frontend stack
 
-`references/react.md` in each skill targets the [blocks-construct-react](https://github.com/SELISEdigitalplatforms/blocks-construct-react) stack: **React 19 + TypeScript + Vite + Tailwind CSS + shadcn/ui + TanStack Query + Zustand**.
+`references/react.md` in each skill targets the [blocks-construct-react](https://github.com/SELISEdigitalplatforms/blocks-construct-react) stack: **React 19 + TypeScript + Vite + Tailwind CSS + shadcn/ui + TanStack Query + Zustand**. Client-safe values go in `VITE_`-prefixed env vars; tokens come from the auth store at runtime.
 
 ## Example prompts
 
 ```
-Set up my Blocks project env and log in                      → blocks-setup
-Build a login page with email/password and MFA support       → blocks-iam
-Create a schema for blog posts with title, body, and tags    → blocks-data
-Set up English and German as project languages               → blocks-localization
-Trigger a build for my repo and show me the build report     → blocks-release
-Add an uptime monitor for my API and alert on downtime       → blocks-monitor
-Generate a PDF invoice from a template and email it          → blocks-utilities
+Create a Product schema with title/price and reload it              → blocks-data-gateway-configuration
+Wire create/read/update/delete for Product into my React app        → blocks-data-gateway-crud
+Upload a PDF and get a download link                                → blocks-data-storage
+Enable SSO / register an OIDC client for my project                 → blocks-iam-sso-oidc-configuration
+Add a login button and handle the OIDC callback                     → blocks-iam-sso-oidc-implementation
+Run my app locally over HTTPS on its real domain for SSO            → blocks-frontend-local-https
+Create a role and grant it these permissions                        → blocks-iam-access-control
+Invite a user and set their roles                                   → blocks-iam-users
+Enable multi-org and list my organizations                          → blocks-iam-organizations
+Activate a new account with the emailed code                        → blocks-iam-account
+```
+
+## Regenerating endpoint docs (optional)
+
+`tools/generate-api-docs.py` can pull a service's swagger to bootstrap `endpoints.md`. It's a starting point only — the committed skills are hand-authored and **corrected against live API behavior**, which swagger alone doesn't capture (served paths, real response shapes, undocumented endpoints like the GraphQL gateway).
+
+```bash
+python3 tools/generate-api-docs.py iam data
 ```
 
 ## License
