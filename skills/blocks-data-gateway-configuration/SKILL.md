@@ -13,16 +13,16 @@ This is the **configuration** half. Once a schema is live here, the **[blocks-da
 
 Configuration happens **inside a project/tenant**, so you first obtain an impersonated, project-scoped token. This is the shared "initial steps" every Blocks config skill runs — **[flows/get-into-project.md](flows/get-into-project.md)** (login → list projects → impersonate). It gives you three values:
 
-- **`ROOT`** — root tenant id (the login token's `tenant_id` claim) → the **`x-blocks-key` header**.
-- **`PTENANT`** — the target project's tenant id (from `Project/Gets`, or user-provided) → the **`projectKey`** in request bodies. *In a single-project account `ROOT` == `PTENANT`.*
-- **`PTOK`** — the impersonated access token → `Authorization: Bearer`.
+- **`ROOT`** — root/account tenant id (the login token's `tenant_id` claim). Used as `x-blocks-key` **only** for the account-level `Project/Gets` and `impersonate` calls inside get-into-project.
+- **`PTENANT`** — the target project's tenant id (from `Project/Gets`, or user-provided) → the **`x-blocks-key` header** *and* the **`projectKey`** in bodies for every data-service call.
+- **`PTOK`** — an access token valid for the project (impersonated; the plain login token also works if your account already has access) → `Authorization: Bearer`.
 
 Every configuration call therefore carries:
 ```
-x-blocks-key: <ROOT>
+x-blocks-key: <PTENANT>
 Authorization: Bearer <PTOK>
 ```
-…and puts `projectKey: <PTENANT>` in the body. 401 / `session_expired` → the token expired (re-run login) or you sent the wrong `x-blocks-key`.
+…and puts `projectKey: <PTENANT>` in the body. **Use `PTENANT`, not `ROOT`, as `x-blocks-key`** — an in-project call keyed with the root tenant 401/403s (verified live). 401 / `session_expired` → wrong `x-blocks-key` or an expired token (re-run login).
 
 ## URL convention
 

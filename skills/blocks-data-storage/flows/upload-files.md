@@ -26,13 +26,14 @@ Keep **`uploadUrl`** and **`fileId`** from the response.
 - **`parentDirectoryId`** — **must not be `null`**. Use `""` for the root, or a folder id to place the file inside a folder. Sending `null` is rejected — send an empty string instead.
 
 ### Step 2 — PUT the file bytes to `uploadUrl`
-Upload the raw file **binary** with a `PUT` to the returned `uploadUrl`. This goes to the storage provider (blob storage), **not** the Blocks API — send **no** `x-blocks-key`/Bearer headers; the URL is pre-authorized and expires, so upload promptly.
+Upload the raw file **binary** with a `PUT` to the returned `uploadUrl`. The URL is pre-authorized (no Bearer token needed) and expires, so upload promptly. Still include the **`x-blocks-key`** header (it rides on every request; the storage provider ignores unknown headers).
 
 **Azure needs one extra header.** If the storage provider is **Azure**, the PUT must include `x-ms-blob-type: BlockBlob` or Azure rejects it. Detect the provider from the `uploadUrl` host — an Azure Blob URL looks like `https://<account>.blob.core.windows.net/...` — or from the storage config's `storageStrategy` (see below). Other providers (e.g. S3) don't need this header.
 
 ```bash
 # Azure example
 curl -s -X PUT "<uploadUrl>" \
+  -H "x-blocks-key: <project tenant id>" \
   -H "x-ms-blob-type: BlockBlob" \
   -H "Content-Type: application/pdf" \
   --data-binary @invoice-2026-07.pdf

@@ -13,11 +13,11 @@ Admin base: `https://api.seliseblocks.com/iam/v4`.
 
 Configuration happens **inside a project/tenant**, so you first obtain an impersonated, project-scoped token via the shared initial steps — **[flows/get-into-project.md](flows/get-into-project.md)** (login → list projects → impersonate). It yields:
 
-- **`ROOT`** — root tenant id (login token's `tenant_id` claim) → the **`x-blocks-key` header**.
-- **`PTENANT`** — the target project's tenant id → the **`projectKey`** in bodies (the OIDC client is created against the project, **not** root). *Single-project account → `ROOT` == `PTENANT`.*
-- **`PTOK`** — the impersonated access token → `Authorization: Bearer`.
+- **`ROOT`** — root/account tenant id (login token's `tenant_id` claim). Used as `x-blocks-key` **only** for the account-level `Project/Gets` and `impersonate` calls in get-into-project.
+- **`PTENANT`** — the target project's tenant id → the **`x-blocks-key` header** *and* the **`projectKey`** in bodies (the OIDC client is created against the project).
+- **`PTOK`** — an access token valid for the project (impersonated; the plain login token also works if your account already has access) → `Authorization: Bearer`.
 
-Every call here carries `x-blocks-key: <ROOT>` + `Authorization: Bearer <PTOK>`.
+Every call here carries `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK>`. **Use `PTENANT`, not `ROOT`, as `x-blocks-key`** — an in-project call keyed with the root tenant 401/403s (verified live).
 
 ## Flow
 

@@ -40,7 +40,6 @@ DMS is the document management system embedded in the data service: pre-signed u
 
 - **No `/Files/UploadFile`.** Uploading is presign → binary PUT. Don't add a metadata-commit step.
 - **Azure blob type** — an Azure PUT without `x-ms-blob-type: BlockBlob` fails; add it when the `uploadUrl` is an Azure Blob URL.
-- **Don't send Blocks headers on the pre-signed PUT.** That call goes to the storage provider, not the Blocks API; the URL is pre-authorized and expires.
-- **`x-blocks-key` = project key** on every `/Files/*` call except the raw storage PUT.
+- **`x-blocks-key` on every request** (project key). The pre-signed PUT is pre-authorized so it needs **no Bearer token**, but still include `x-blocks-key` — the storage provider ignores unknown headers. (`auth-login` is the only Blocks call that omits `x-blocks-key`.)
 - **`GetFile` confirms the upload** — a successful `GetFile` (with `FileId` + `ConfigurationName`) returning your file means it's stored.
 - Flat responses — don't expect `{ isSuccess, data, errors[] }`; read the file fields directly and handle `errors` as a string map.

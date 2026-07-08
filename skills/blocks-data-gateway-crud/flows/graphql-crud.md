@@ -1,13 +1,13 @@
 # GraphQL CRUD against the runtime gateway
 
-Once a schema is created **and reloaded** (via **[blocks-data-gateway-configuration](../../blocks-data-gateway-configuration/flows/configure-schema.md)**), the gateway auto-generates its CRUD. This flow is how to discover and call those operations. Same auth as everywhere: `x-blocks-key: <tenant_id>` + `Authorization: Bearer <token>`. For the login+extract snippet that sets `$BLOCKS_API_URL`, `$PKEY` (=tenant_id) and the `hdr` array, see that skill's configure-schema flow, step 0.
+Once a schema is created **and reloaded** (via **[blocks-data-gateway-configuration](../../blocks-data-gateway-configuration/flows/configure-schema.md)**), the gateway auto-generates its CRUD. This flow is how to discover and call those operations. Same auth as everywhere: **`x-blocks-key: <project tenant id>`** on every request + `Authorization: Bearer <token>`. For the login+extract snippet that sets `$BLOCKS_API_URL`, `$PTENANT` (the project tenant id) and the `hdr` array, see the configuration skill's [get-into-project.md](../../blocks-data-gateway-configuration/flows/get-into-project.md).
 
 **Gateway:** `POST https://api.seliseblocks.com/data/v4/gateway` — one endpoint, standard GraphQL body `{ "query": "...", "variables": { ... } }`.
 
 ## Step 1 — Get the exact operation names (don't hand-derive)
 
 ```bash
-curl -s "$BLOCKS_API_URL/data/v4/schemas?ProjectKey=$PKEY&SchemaName=Product&PageNo=1&PageSize=1" "${hdr[@]}"
+curl -s "$BLOCKS_API_URL/data/v4/schemas?ProjectKey=$PTENANT&SchemaName=Product&PageNo=1&PageSize=1" "${hdr[@]}"
 ```
 Read from the returned item:
 - `querySchema` (e.g. `"Products"`) → the read query field is **`get` + querySchema** → `getProducts`.

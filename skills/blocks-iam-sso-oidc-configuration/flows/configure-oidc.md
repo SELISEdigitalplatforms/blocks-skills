@@ -54,7 +54,7 @@ curl -s -X POST "$BLOCKS_API_URL/iam/v4/oidc-clients" "${hdr[@]}" -H "Content-Ty
 
 Build `wellKnownUrl` from the project tenant id: `https://iam.seliseblocks.com/T<tenantHex>/.well-known/openid-configuration` (tenantHex = the 32-hex tenant, dropping any leading env letter). Confirm it resolves first:
 ```bash
-curl -s "https://iam.seliseblocks.com/T<tenantHex>/.well-known/openid-configuration" | head -c 120  # expect OIDC discovery JSON
+curl -s "https://iam.seliseblocks.com/T<tenantHex>/.well-known/openid-configuration" -H "x-blocks-key: $PTENANT" | head -c 120  # expect OIDC discovery JSON
 ```
 
 Then create the provider:

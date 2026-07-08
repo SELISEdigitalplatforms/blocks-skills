@@ -12,7 +12,7 @@ Describe what you want to do; Claude picks the skill, follows its flow, and writ
 
 Blocks work divides into two modes, and the skills are organized around the difference:
 
-- **Configuration** — acting *on* a project as an admin: defining schemas, wiring SSO, seeding roles, editing org settings. This happens **inside a project/tenant**, so it requires the shared **initial steps** first: log in → list projects (`/os/v4/Project/Gets`) → **impersonate** into the target tenant to get a project-scoped token. Configuration calls then use `x-blocks-key: <root-tenant-id>` + the impersonated token + `projectKey: <project-tenant-id>`.
+- **Configuration** — acting *on* a project as an admin: defining schemas, wiring SSO, seeding roles, editing org settings. This happens **inside a project/tenant**, so it requires the shared **initial steps** first: log in → list projects (`/os/v4/Project/Gets`) → **impersonate** into the target tenant to get a project-scoped token. Configuration calls then use **`x-blocks-key: <project-tenant-id>`** + the impersonated (or login) token + `projectKey: <project-tenant-id>`. (Root tenant is the `x-blocks-key` only for `Project/Gets` and `impersonate`; an in-project call keyed with root 401/403s.)
 - **Implementation** — the frontend app acting *as the signed-in user*: running GraphQL CRUD, uploading files, logging in via SSO, reading `/iam/me`. This needs **no initial steps** — the app uses the public **project key** (the project's tenant id, `x-blocks-key`) plus the end user's own session token.
 
 The initial steps are documented once, as `flows/get-into-project.md`, inside each **configuration** skill. Implementation skills never reference them.
@@ -33,6 +33,13 @@ The initial steps are documented once, as `flows/get-into-project.md`, inside ea
 |-------|------|--------|
 | `blocks-iam-sso-oidc-configuration` | Configuration | Ensure a `blocks-oidc` identity provider exists — create the OIDC client and identity provider. Embeds the initial-steps flow. |
 | `blocks-iam-sso-oidc-implementation` | Implementation | The hosted authorization-code login flow in the frontend: `/idp/initiate` → redirect → `/idp/callback` (sets the session cookie). |
+
+### Localization (`localization/v4`)
+
+| Skill | Mode | Covers |
+|-------|------|--------|
+| `blocks-localization-configuration` | Configuration | Author translations: manage languages, feature modules, and translation keys (per-language values), then **generate** the runtime language files. Embeds the initial-steps flow. |
+| `blocks-localization-implementation` | Implementation | Frontend i18n: load languages/modules, fetch generated translation files (`/Key/GetUilmFile`), render by key, and a live language switcher. |
 
 ### IAM — management (`iam/v4`) — usable for configuration **and** implementation
 
@@ -76,8 +83,9 @@ skills/blocks-<name>/
 
 ## Auth & keys (verified live)
 
+- **`x-blocks-key` on every request.** Every Blocks API call carries the `x-blocks-key` header — **`auth-login` is the only exception** (it takes just username/password). Even pre-authorized calls (the storage pre-signed PUT) include it. The value is the tenant id of the project that owns the service (see below).
 - **Login:** `POST https://api.seliseblocks.com/iam/v4/auth-login` (note the dash) with `{ "username", "password" }` → `access_token` (~5 min) + `refresh_token`. The token's **`tenant_id` claim is the project/root tenant id.**
-- **Configuration** needs a project-scoped token via impersonation: `POST https://iam.seliseblocks.com/api/auth/impersonate` with `{ targeted_tenant_id, refresh_token }`. Then `x-blocks-key: <root-tenant-id>`, `Authorization: Bearer <impersonated token>`, `projectKey: <project-tenant-id>`.
+- **Configuration** needs a project-scoped token via impersonation: `POST https://iam.seliseblocks.com/api/auth/impersonate` with `{ targeted_tenant_id, refresh_token }`. Then **`x-blocks-key: <project-tenant-id>`**, `Authorization: Bearer <impersonated (or login) token>`, `projectKey: <project-tenant-id>`. Root tenant is the `x-blocks-key` only for `Project/Gets` + `impersonate`; each service call must use the tenant that owns that service (verified: data/IAM and localization can live in different project tenants).
 - **Implementation** needs only the **project key** (the project's tenant id — public, shippable as `x-blocks-key`) and the end user's session token. In a frontend that's `VITE_BLOCKS_PROJECT_KEY = <project tenant id>`.
 - **URL prefix:** the served base is `https://api.seliseblocks.com/<svc>/v4`; the swagger's `/api/...` prefix is **not** part of the served path (`/data/v4/...`, `/iam/v4/iam/...`).
 
@@ -100,6 +108,8 @@ Create a role and grant it these permissions                        → blocks-i
 Invite a user and set their roles                                   → blocks-iam-users
 Enable multi-org and list my organizations                          → blocks-iam-organizations
 Activate a new account with the emailed code                        → blocks-iam-account
+Add German + Bengali translations for my login screen               → blocks-localization-configuration
+Add a language switcher and translate the UI                        → blocks-localization-implementation
 ```
 
 ## Regenerating endpoint docs (optional)
