@@ -18,6 +18,8 @@ Localization authoring is project configuration, so it runs **inside a project/t
 
 **Use `PTENANT`, not `ROOT`, as `x-blocks-key`** — localization lives in the project tenant; keying with the root tenant returns 403 `SERVICE_ACCESS_DENIED` (verified live).
 
+> ⚠️ **Never configure against the root tenant.** Authoring languages/modules/keys and generating files happens **after impersonation** and is **project-specific** — `x-blocks-key` and `projectKey`/`ProjectKey` are always `PTENANT`. The root/account tenant id (in this account, `d7e5554c758541db8a18694b64ef423d`) is used **only** for `Project/Gets` and `impersonate`; never send it as the key on a `/Language`, `/Module`, or `/Key` call. Not impersonated yet? Run get-into-project first.
+
 ## The pipeline
 
 | Step | Do | Flow |

@@ -19,6 +19,8 @@ Configuration happens **inside a project/tenant**, so you first obtain an impers
 
 Every call here carries `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK>`. **Use `PTENANT`, not `ROOT`, as `x-blocks-key`** — an in-project call keyed with the root tenant 401/403s (verified live).
 
+> ⚠️ **Never configure against the root tenant.** SSO/OIDC setup happens **after impersonation** and is **project-specific** — `x-blocks-key` and the OIDC client's `projectKey` are always `PTENANT`. The root/account tenant id (in this account, `d7e5554c758541db8a18694b64ef423d`) is used **only** for `Project/Gets` and `impersonate`; never send it as `x-blocks-key`/`projectKey` on an identity-provider or oidc-client call. Not impersonated yet? Run get-into-project first.
+
 ## Flow
 
 | Step | Endpoint | Go to |

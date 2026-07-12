@@ -70,7 +70,7 @@ hdr=(-H "x-blocks-key: $PTENANT" -H "Authorization: Bearer $PTOK")
 # ...and put projectKey: $PTENANT in request bodies too
 ```
 
-- **`x-blocks-key` header = `PTENANT`** — the project tenant id. **Not** `ROOT`: an in-project call keyed with the root tenant 401/403s (verified). `ROOT` is only the key for `Project/Gets` and `impersonate` in steps 2–3.
+- **`x-blocks-key` header = `PTENANT`, NEVER the root tenant.** Configuration must run **after impersonation** and be **project-specific**: send the target project's tenant id (`PTENANT`). `ROOT` is the key **only** for `Project/Gets` and `impersonate` (steps 2–3) — an in-project/config call keyed with the root tenant 401/403s (verified). ⚠️ In this account the root tenant id is `d7e5554c758541db8a18694b64ef423d`; if that value is about to go out as `x-blocks-key` (or `projectKey`) on a configuration call, stop — you skipped impersonation or grabbed the wrong variable. Configuration is never done against the root tenant.
 - **`Authorization` = `PTOK`** (the impersonated token; the plain login token also works if your account already has access to the project).
 - **`projectKey` in bodies = `PTENANT`** (the target project's tenant id).
 

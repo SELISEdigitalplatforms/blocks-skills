@@ -24,6 +24,8 @@ Authorization: Bearer <PTOK>
 ```
 …and puts `projectKey: <PTENANT>` in the body. **Use `PTENANT`, not `ROOT`, as `x-blocks-key`** — an in-project call keyed with the root tenant 401/403s (verified live). 401 / `session_expired` → wrong `x-blocks-key` or an expired token (re-run login).
 
+> ⚠️ **Never configure against the root tenant.** All configuration happens **after impersonation** and is **project-specific** — `x-blocks-key` and `projectKey` are always `PTENANT`. The root/account tenant id (in this account, `d7e5554c758541db8a18694b64ef423d`) is used **only** for `Project/Gets` and `impersonate` in get-into-project; it must never be sent as `x-blocks-key`/`projectKey` on a schema/field/access/reload call. If you haven't impersonated yet, do get-into-project first.
+
 ## URL convention
 
 REST base: `https://api.seliseblocks.com/data/v4` — **no `/api/` prefix.** The swagger advertises `/api/...` but that path serves the portal SPA, not the API. Use `/data/v4/schemas/define`, not `/data/v4/api/schemas/define`.
