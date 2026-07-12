@@ -95,6 +95,8 @@ skills/blocks-<name>/
 
 `references/react.md` in each skill targets the [blocks-construct-react](https://github.com/SELISEdigitalplatforms/blocks-construct-react) stack: **React 19 + TypeScript + Vite + Tailwind CSS + shadcn/ui + TanStack Query + Zustand**. Client-safe values go in `VITE_`-prefixed env vars; tokens come from the auth store at runtime.
 
+**Frontend API base URL must be same-site with the app domain.** Blocks SSO stores the session in a Secure, domain-scoped cookie, and the browser only keeps/sends it when API calls go to a host under the **same registrable domain** as the app. So `VITE_BLOCKS_API_URL=https://api.seliseblocks.com` (the default) is correct **only** for apps served on `*.seliseblocks.com`. For an app on a custom domain, use **`https://blocksapi.<registrable-domain>`** — e.g. `abc.slsblx.com` → `https://blocksapi.slsblx.com`, `xyz.blx10.com` → `https://blocksapi.blx10.com` — otherwise the cookie is never stored and cookie-based calls (`/iam/me`, `/organizations/my`, logout) fail. When scaffolding a frontend on a custom domain, ask the user which base URL to use (they may keep the default).
+
 ## Example prompts
 
 ```

@@ -5,6 +5,11 @@
 ## Env
 
 ```bash
+# Logout (and any cookie-based call) needs the API host to be SAME-SITE with your app domain, or the
+# browser won't send the session cookies to it and the call can't clear them. Keep this default only if
+# the app runs on *.seliseblocks.com; otherwise use https://blocksapi.<your-registrable-domain>:
+#   app abc.slsblx.com → https://blocksapi.slsblx.com ; app xyz.blx10.com → https://blocksapi.blx10.com
+# On a custom domain, ASK THE USER which base URL to use (they may keep the default).
 VITE_BLOCKS_API_URL=https://api.seliseblocks.com
 VITE_BLOCKS_PROJECT_KEY=<project tenant id>   # x-blocks-key (public)
 ```

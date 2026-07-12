@@ -140,6 +140,7 @@ export function OrgSwitcher() {
 ## Notes
 
 - **`/organizations/my` = the logged-in user's orgs.** It reads the caller's identity from the SSO session cookie, so send `credentials: "include"` and call it only once the user is authenticated (after login / after the SSO callback — check auth with `GET /iam/me`, see **blocks-iam-users**). A 401 means the session isn't there yet; route to login rather than showing an empty list.
+- **`VITE_BLOCKS_API_URL` must be same-site with your app domain** or that cookie is never sent. On `*.seliseblocks.com` keep `https://api.seliseblocks.com`; on a custom domain use `https://blocksapi.<your-registrable-domain>` (app `xyz.blx10.com` → `https://blocksapi.blx10.com`). Ask the user which to use. See **[blocks-iam-sso-oidc-implementation](../../blocks-iam-sso-oidc-implementation/SKILL.md)**.
 - **Persist the active org and preselect a valid one.** `useMyOrgsWithActive` defaults to the first org and self-heals if the stored id disappears; skip the dropdown entirely when the user has a single org.
 - **Read the right key:** `organizations` (list/my), `organization` (get-by-id), `itemId` (create) — not `data`. `/my` items are lightweight (`itemId`, `name`, `createdDate`); fetch the full org with `orgs.get(id)` when you need branding/addresses/etc.
 - **List is GET + query params** (`Page`, `PageSize`, `Sort.*`, `Filter.*`); config GET returns a **flat** object with no envelope.
