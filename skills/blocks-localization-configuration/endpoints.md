@@ -1,6 +1,8 @@
 # Localization — endpoint contracts
 
-From the live localization swagger. Base `https://api.seliseblocks.com/localization/v4` (PascalCase controllers, no `/api`). Headers: `x-blocks-key: <ROOT>` + `Authorization: Bearer <PTOK>`. `projectKey` in bodies / `ProjectKey` in query = `<PTENANT>`. Save responses are `{ success, errorMessage, validationErrors[] }`.
+From the live localization swagger. Base `https://api.seliseblocks.com/localization/v4` (PascalCase controllers, no `/api`). Headers: `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK>`. `projectKey` in bodies / `ProjectKey` in query = `<PTENANT>`. Save responses are `{ success, errorMessage, validationErrors[] }`.
+
+> **Impersonation guard:** these endpoint contracts are project-scoped. Never send `<ACCOUNT_TENANT>` as `x-blocks-key` or `projectKey` to `/Language`, `/Module`, or `/Key`; `ACCOUNT_TENANT` is only for `Project/Gets`, impersonation status, and `impersonate`.
 
 ## Languages
 

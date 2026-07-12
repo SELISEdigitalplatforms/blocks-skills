@@ -1,6 +1,6 @@
 # Frontend integration — users & me (React 19 / TanStack Query)
 
-`GET /iam/me` is the one every app uses (render the profile, gate on `roles`/`permissions`); the rest are admin-screen operations. Auth: `x-blocks-key: <project key>` + `Authorization: Bearer <token>`.
+`GET /iam/me` is the one every app uses (render the profile, gate on `roles`/`permissions`); the rest are admin-screen operations. Browser auth is `x-blocks-key: <PTENANT>` + `credentials: "include"` so Blocks uses the hosted SSO cookie. Do not put `PTOK` in frontend code.
 
 ## Client
 
@@ -19,13 +19,11 @@ export interface Me {
 export interface Paged<T> { totalCount: number; data: T[] }
 
 async function iam<T>(path: string, init: RequestInit = {}, _retried = false): Promise<T> {
-  const token = useAuthStore.getState().accessToken;
   const res = await fetch(`${IAM}${path}`, {
     ...init,
     credentials: "include", // send the Blocks session cookie (set by the SSO callback)
     headers: {
       "x-blocks-key": KEY,
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init.body ? { "Content-Type": "application/json" } : {}),
       ...init.headers,
     },

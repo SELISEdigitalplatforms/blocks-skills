@@ -10,8 +10,9 @@ The cert and the dev server must use the domain the SSO cookie is scoped to, so 
 
    ```bash
    # pull applicationDomain for the chosen project (replace the [0] filter with the user's project)
+   bootstrap_hdr=(-H "x-blocks-key: $ACCOUNT_TENANT" -H "Authorization: Bearer $TOK")
    DOMAIN=$(curl -s "$BLOCKS_API_URL/os/v4/Project/Gets?page=0&pageSize=100" \
-     -H "x-blocks-key: $ROOT" -H "Authorization: Bearer $TOK" \
+     "${bootstrap_hdr[@]}" \
      | python3 -c "import sys,json;g=json.load(sys.stdin);p=[x for grp in g for x in (grp.get('projects') or [])][0];print(p.get('applicationDomain') or p.get('customDomain') or '')")
    echo "$DOMAIN"
    ```

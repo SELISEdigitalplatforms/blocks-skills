@@ -1,6 +1,8 @@
 # Set up languages and modules
 
-Before you can author translations you need the target **languages** and the **module(s)** that group your keys. Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — you have the `hdr` array (`x-blocks-key: $ROOT` + Bearer `$PTOK`) and `$PTENANT`. Base: `https://api.seliseblocks.com/localization/v4`.
+Before you can author translations you need the target **languages** and the **module(s)** that group your keys. Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — you have the `hdr` array (`x-blocks-key: $PTENANT` + Bearer `$PTOK`) and `$PTENANT`. Base: `https://api.seliseblocks.com/localization/v4`.
+
+> **Impersonation guard:** localization authoring is never run against `$ACCOUNT_TENANT`. `ACCOUNT_TENANT` is only for `Project/Gets`, impersonation status, and `impersonate`. If `hdr` does not use `$PTENANT`, stop and re-run `get-into-project`. Run `assert_project_scope` before `/Language`, `/Module`, and `/Key` authoring calls.
 
 ## Languages
 

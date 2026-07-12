@@ -12,10 +12,13 @@ Base: `https://api.seliseblocks.com/iam/v4` — management endpoints under **`/i
 ## Auth
 
 ```
-x-blocks-key: <project key>           # project tenant id
-Authorization: Bearer <access_token>   # admin/impersonated token in tooling, or the signed-in user's token in a frontend
+x-blocks-key: <PTENANT>                 # project tenant id
+Authorization: Bearer <PTOK>            # impersonated token for admin user-management calls
 ```
-`GET /iam/v4/iam/me` returns **the token holder's own** profile — a frontend calls it with the logged-in user's token to render "my account". The create/update/list/assign operations are admin actions gated by the caller's permissions.
+
+Create/update/list/assign operations are admin actions: run `get-into-project` first and use `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK>`. Never key these calls with the bootstrap/account tenant.
+
+`GET /iam/v4/iam/me` is the runtime exception: a frontend calls it with `x-blocks-key: <PTENANT>` and `credentials: "include"` so Blocks uses the signed-in user's hosted SSO cookie/session. It returns the current user's own profile.
 
 ## Endpoints → [endpoints.md](endpoints.md)
 
@@ -36,14 +39,14 @@ Full fields, enums, and examples: [endpoints.md](endpoints.md). Frontend hooks: 
 
 - **`/iam/me`** → `{ data: { itemId, firstName, lastName, email, phoneNumber, roles[], permissions[], active, status, isVerified, mfaEnabled, userMfaType, attributes, logInCount, lastLoggedInTime, … } }`. This is the effective identity of the caller **and the app's "am I logged in?" check** — it returns the profile only when there's a valid session, so call it **on page load, right after login, and after the SSO callback sets the cookie**. A 200 with the profile = logged in; a 401 = logged out (route to login). It works off the **session cookie**, so the frontend sends `credentials: "include"` and needs no JS-held token. Use `roles`/`permissions` to gate UI. `PATCH /iam/me` edits the caller's own profile (same body shape as user update).
 - **List is POST** — `POST /iam/v4/iam/users` with `{ page, pageSize, sort, filter:{ email, name, userIds[], status:{active,inactive}, mfa:{enabled,disabled}, joinedOn, lastLogin, org_id } }` → `{ totalCount, data:[…] }`.
-- **Create is rich** — key fields `{ email, userName, password?, firstName, lastName, phoneNumber, roles[], permissions[], organizationId, userPassType, userCreationType, verifiedType, userMfaType, mfaEnabled, mailPurpose, attributes }`. **`userPassType`** is the credential type — `0` None, `1` Password, `2` Pin; **use `1` (Password)** unless the user explicitly asks otherwise. **`userCreationType`** is the creation source — `0` None, `1` Portal, `2` Api, `3` Service, `4` Social, `5` ThirdParty; **default to `2` (Api)**, or `1` (Portal) for admin-portal-style creation (full member names in endpoints.md). To invite-and-activate, create without a password (keep `userPassType: 1`) and let them run **[blocks-iam-account](../blocks-iam-account/SKILL.md)** activate.
+- **Create is rich** — key fields `{ email, userName, password?, firstName, lastName, phoneNumber, roles[], permissions[], organizationId, userPassType, userCreationType, verifiedType, userMfaType, mfaEnabled, mailPurpose, attributes }`. **`userPassType`** is the credential type — `0` None, `1` Password, `2` Pin; **use `1` (Password)** unless the user explicitly asks otherwise. **`userCreationType`** is the creation source — `0` None, `1` Portal, `2` Api, `3` Service, `4` Social, `5` ThirdParty; **default to `2` (Api)**, or `1` (Portal) for admin-portal-style creation (full member names in endpoints.md). To invite-and-activate, create without a password (keep `userPassType: 1`) and let them run **[blocks-iam-account](../blocks-iam-account/SKILL.md)** activate with `x-blocks-key: PTENANT` and no bearer token.
 - **Update vs assign** — `POST /iam/v4/iam/users/{id}` edits profile fields (and can carry `roles`/`permissions`); `POST /iam/v4/iam/users/roles-and-permissions` (`{ userId, roles[], permissions[] }`) is the dedicated grant call. Prefer the latter for changing access.
 - **Timeline** — `GET /iam/v4/iam/users/timeline` returns audit entries with `currentData` snapshots (profile/roles/permissions state over time), filterable by `event`.
 - **`userPassType` / `userCreationType` member names are known** (from platform source, in endpoints.md): `userPassType` `0` None / `1` Password / `2` Pin (use `1`); `userCreationType` `0` None / `1` Portal / `2` Api / `3` Service / `4` Social / `5` ThirdParty (use `2`, or `1` for portal-style). The remaining enums are still unnamed ints — confirm in the portal before hardcoding: `verifiedType 0–3`, `userMfaType 0–4`, `allowedLogInType 0–3`.
 
 ## Gotchas
 
-- **`x-blocks-key` = project key.** Wrong key → 401.
+- **`x-blocks-key` = `PTENANT`.** Wrong key, especially the bootstrap/account tenant, → 401.
 - **Update/get/deactivate are POST** (except get-by-id and me, which are GET; me-edit is PATCH). No PUT.
 - **Roles/permissions on a user** reference roles by **slug** and permissions by **name** (as defined in blocks-iam-access-control) — not their itemIds.
 - **`organizationId`** matters in multi-org projects — creating/getting a user may need the target org; get-by-id accepts `?organizationId=`.

@@ -3,13 +3,13 @@
 **Run this first, before any configuration call.** Configuring a Blocks service (data, IAM, …) happens *inside a project/tenant*, so you must obtain an **impersonated, project-scoped token**. This flow is shared by all Blocks configuration skills — the steps are identical whether you're configuring the data gateway or IAM SSO.
 
 It produces three things the config flows use:
-- `ROOT` — the **root/account tenant id**, from the login token's `tenant_id` claim. Used as the `x-blocks-key` header **only** for the two account-level calls below (`Project/Gets` and `impersonate`).
-- `PTENANT` — the **target project's tenant id** (from Project/Gets, or given by the user). This is the key that matters for the work: sent as the **`x-blocks-key` header** *and* as **`projectKey`** on every in-project service call. A service call keyed with `$ROOT` returns 401/403 unless root happens to be the project that owns that service (verified live).
-- `PTOK` — an access token valid for the project. The impersonated token always works; the plain login token also works for projects your account can already reach.
+- `ACCOUNT_TENANT` — the **bootstrap/account tenant id**, from the login token's `tenant_id` claim. Used only to enter a project: `Project/Gets`, impersonation status, and `impersonate`.
+- `PTENANT` — the **target project's tenant id** (from Project/Gets, or given by the user). This is the key that matters after impersonation: sent as the **`x-blocks-key` header** *and* as **`projectKey`** on every in-project service call. A service call keyed with `$ACCOUNT_TENANT` is a bug.
+- `PTOK` — the impersonated access token valid for the project. Use this token for all project-scoped admin/config calls. It is short-lived session output; do not treat it as a durable `.env` secret.
 
 All verified live against `https://api.seliseblocks.com`.
 
-## Step 1 — Log in, get the root tenant id
+## Step 1 — Log in, get the bootstrap account tenant id
 
 ```bash
 set -a && . ./.env && set +a   # BLOCKS_API_URL, BLOCKS_USERNAME, BLOCKS_PASSWORD
@@ -20,16 +20,17 @@ LOGIN=$(curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth-login" \
 
 TOK=$(echo "$LOGIN" | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
 RT=$(echo "$LOGIN"  | python3 -c "import sys,json;print(json.load(sys.stdin)['refresh_token'])")
-# root tenant id = the tenant_id claim inside the access token
-ROOT=$(echo "$TOK" | cut -d. -f2 | python3 -c "import sys,base64,json;s=sys.stdin.read().strip();s+='='*(-len(s)%4);print(json.loads(base64.urlsafe_b64decode(s))['tenant_id'])")
+# bootstrap account tenant id = the tenant_id claim inside the access token
+ACCOUNT_TENANT=$(echo "$TOK" | cut -d. -f2 | python3 -c "import sys,base64,json;s=sys.stdin.read().strip();s+='='*(-len(s)%4);print(json.loads(base64.urlsafe_b64decode(s))['tenant_id'])")
+bootstrap_hdr=(-H "x-blocks-key: $ACCOUNT_TENANT" -H "Authorization: Bearer $TOK")
 ```
-Tokens are short-lived (~5 min). If a later call returns `session_expired`/401, re-run step 1.
+Tokens are short-lived (~5 min). If a later call returns `session_expired`/401, re-run step 1 and impersonate again. Persist credentials and tenant ids in `.env`; regenerate `PTOK` per working session instead of relying on an old saved value.
 
 ## Step 2 — List the projects, pick one
 
 ```bash
 curl -s "$BLOCKS_API_URL/os/v4/Project/Gets?page=0&pageSize=100" \
-  -H "x-blocks-key: $ROOT" -H "Authorization: Bearer $TOK"
+  "${bootstrap_hdr[@]}"
 ```
 The response is a **bare JSON array of tenant-groups**, each `{ tenantGroupId, projects[], isShared, nonSharedProject }`. Each `projects[]` entry has `name`, **`tenantId`**, `organizationId`, `applicationDomain`, `environment`, `isProduction`, `itemId`, …
 
@@ -40,7 +41,7 @@ Keep the chosen project's `tenantId` → `PTENANT` and `organizationId` → `POR
 ```bash
 # example: pick the first project (replace the filter with the user's choice)
 PTENANT=$(curl -s "$BLOCKS_API_URL/os/v4/Project/Gets?page=0&pageSize=100" \
-  -H "x-blocks-key: $ROOT" -H "Authorization: Bearer $TOK" \
+  "${bootstrap_hdr[@]}" \
   | python3 -c "import sys,json;g=json.load(sys.stdin);print([x for grp in g for x in (grp.get('projects') or [])][0]['tenantId'])")
 ```
 
@@ -49,7 +50,7 @@ PTENANT=$(curl -s "$BLOCKS_API_URL/os/v4/Project/Gets?page=0&pageSize=100" \
 First check whether you're already impersonated:
 ```bash
 curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/impersonation/status" \
-  -H "x-blocks-key: $ROOT" -H "Authorization: Bearer $TOK"
+  "${bootstrap_hdr[@]}"
 # -> { "impersonated": bool, "originalTenantId": "...", "impersonatedTenantId": "..." }
 ```
 - If `impersonated` is **true** and `impersonatedTenantId` is your target, you're done — use the current token.
@@ -57,7 +58,7 @@ curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/impersonation/status" \
 
 ```bash
 PTOK=$(curl -s -X POST "https://iam.seliseblocks.com/api/auth/impersonate" \
-  -H "x-blocks-key: $ROOT" -H "Authorization: Bearer $TOK" -H "Content-Type: application/json" \
+  "${bootstrap_hdr[@]}" -H "Content-Type: application/json" \
   --data "{\"targeted_tenant_id\":\"$PTENANT\",\"refresh_token\":\"$RT\"}" \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
 ```
@@ -68,10 +69,21 @@ Response is `{ "impersonation_mode": true, "access_token": "...", ... }`. Send j
 ```bash
 hdr=(-H "x-blocks-key: $PTENANT" -H "Authorization: Bearer $PTOK")
 # ...and put projectKey: $PTENANT in request bodies too
+
+assert_project_scope() {
+  : "${ACCOUNT_TENANT:?missing bootstrap tenant; run get-into-project}"
+  : "${PTENANT:?missing project tenant; run get-into-project}"
+  : "${PTOK:?missing impersonated token; run get-into-project}"
+  [ "$PTENANT" = "$ACCOUNT_TENANT" ] && {
+    echo "ABORT: PTENANT equals ACCOUNT_TENANT; not impersonated into a project"
+    return 1
+  }
+}
 ```
 
-- **`x-blocks-key` header = `PTENANT`, NEVER the root tenant.** Configuration must run **after impersonation** and be **project-specific**: send the target project's tenant id (`PTENANT`). `ROOT` is the key **only** for `Project/Gets` and `impersonate` (steps 2–3) — an in-project/config call keyed with the root tenant 401/403s (verified). ⚠️ In this account the root tenant id is `d7e5554c758541db8a18694b64ef423d`; if that value is about to go out as `x-blocks-key` (or `projectKey`) on a configuration call, stop — you skipped impersonation or grabbed the wrong variable. Configuration is never done against the root tenant.
-- **`Authorization` = `PTOK`** (the impersonated token; the plain login token also works if your account already has access to the project).
+- **`x-blocks-key` header = `PTENANT`, never `ACCOUNT_TENANT`.** Configuration must run **after impersonation** and be **project-specific**: send the target project's tenant id (`PTENANT`). `ACCOUNT_TENANT` is a bootstrap-only key for entering the project; it must not appear in `hdr`, `projectKey`, or any project-scoped request.
+- **Guard before every project-scoped call:** run `assert_project_scope` before sending a project admin/config request.
+- **`Authorization` = `PTOK`** (the impersonated token). Do not use the raw login token for project-scoped admin/config calls.
 - **`projectKey` in bodies = `PTENANT`** (the target project's tenant id).
 
 Now continue with the service you're configuring — [configure-schema.md](configure-schema.md) for the data gateway, or the IAM SSO config skill.

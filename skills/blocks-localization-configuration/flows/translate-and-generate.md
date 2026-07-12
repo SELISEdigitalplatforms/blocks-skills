@@ -1,6 +1,6 @@
 # Author keys, translate, and generate the runtime files
 
-Turn a list of static UI strings into translated keys the app can load. Preconditions: languages + module exist ([languages-and-modules.md](languages-and-modules.md)); you have `$PTENANT`, the `hdr` array, the target **`moduleId`**, and the set of language `culture`s from `/Language/Gets`.
+Turn a list of static UI strings into translated keys the app can load. Preconditions: languages + module exist ([languages-and-modules.md](languages-and-modules.md)); you have `$PTENANT`, the `hdr` array, the target **`moduleId`**, and the set of language `culture`s from `/Language/Gets`. Run `assert_project_scope` before saving keys or generating UILM files.
 
 ## Step 1 — Decide the keys
 

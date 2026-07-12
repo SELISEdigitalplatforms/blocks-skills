@@ -59,17 +59,17 @@ export async function finishLogin(search: string) {
   if (!res.ok) throw new Error(`callback failed: ${res.status}`);
 }
 
-// Refresh the short-lived access token using the refresh token. Blocks rotates both
-// tokens and sets them as cookies on success — call this when a request 401s, then retry.
-// NOTE: the body is form-urlencoded (NOT JSON), and you must have the current refresh_token
-// to send. If your session is purely HttpOnly-cookie-based, confirm how your project exposes
-// the refresh token to the client before wiring this in.
-export async function refreshSession(refreshToken: string) {
+// Refresh the short-lived hosted SSO session. Blocks rotates cookies on success,
+// so call this when a request 401s, then retry once.
+// NOTE: the body is form-urlencoded (NOT JSON). In the normal cookie-based flow,
+// JS does not read the refresh token. Only pass refreshToken when your project
+// explicitly exposes one to the client.
+export async function refreshSession(refreshToken?: string) {
   const body = new URLSearchParams({
     grant_type: "refresh_token",
     client_id: CLIENT_ID,
-    refresh_token: refreshToken,
   });
+  if (refreshToken) body.set("refresh_token", refreshToken);
   const res = await fetch(`${API}/iam/v4/oidc/token`, {
     method: "POST",
     credentials: "include", // so the rotated access_token/refresh_token cookies are set on your domain
@@ -80,12 +80,13 @@ export async function refreshSession(refreshToken: string) {
     body,
   });
   if (!res.ok) throw new Error(`token refresh failed: ${res.status}`);
-  // Expected OIDC token shape: { access_token, refresh_token, expires_in, token_type } — verify per project.
-  return (await res.json()) as { access_token: string; refresh_token: string; expires_in?: number; token_type?: string };
+  // Some projects return token JSON; cookie-only projects may only need Set-Cookie.
+  // Verify the exact response shape for your project.
+  return (await res.json().catch(() => ({}))) as { access_token?: string; refresh_token?: string; expires_in?: number; token_type?: string };
 }
 ```
 
-The other Blocks feature clients (e.g. **blocks-iam-users**, **blocks-iam-organizations**) retry once on a 401 by calling `useAuthStore.getState().refreshSession()`. That store method is exactly this call — have your auth store hold the current refresh token, invoke `refreshSession(refreshToken)`, and persist the rotated `refresh_token` it returns so the next refresh uses the newest one.
+The other Blocks feature clients (e.g. **blocks-iam-users**, **blocks-iam-organizations**) retry once on a 401 by calling `useAuthStore.getState().refreshSession()`. In the normal hosted-cookie flow, the auth store holds no secret token; it calls `refreshSession()` and then re-runs `/iam/me`. If your project intentionally exposes a readable refresh token, pass it to `refreshSession(refreshToken)` and replace it only when the response includes a rotated `refresh_token`.
 
 ## Login button (anywhere in the app)
 
@@ -139,6 +140,6 @@ Mount it at the callback path:
 ## Notes
 
 - The session is an HttpOnly cookie set by `/idp/callback`. Runtime API calls to Blocks services should be sent with `credentials: "include"` (or per your gateway setup) so the cookie rides along; you usually won't read the access token in JS.
-- **Refresh** is `POST /iam/v4/oidc/token` with a **form-encoded** body (`grant_type=refresh_token`, `client_id`, `refresh_token`) + `x-blocks-key`; it rotates both tokens and re-sets the cookies. Wire it as the 401-retry path and always persist the newest `refresh_token`.
+- **Refresh** is `POST /iam/v4/oidc/token` with a **form-encoded** body (`grant_type=refresh_token`, `client_id`, optional `refresh_token`) + `x-blocks-key` + `credentials:"include"`; it rotates cookies. Wire it as the 401-retry path. Do not store a refresh token in JS unless the project explicitly exposes one.
 - Keep `VITE_BLOCKS_REDIRECT_URI` exactly equal to a registered `redirectUri` and to your router's callback path.
 - Provider not configured → `startLogin` throws on `initiate`. Set it up via **[blocks-iam-sso-oidc-configuration](../../blocks-iam-sso-oidc-configuration/SKILL.md)**.

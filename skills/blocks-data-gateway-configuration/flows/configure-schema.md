@@ -2,7 +2,9 @@
 
 The admin-side pipeline that the Blocks portal runs. End state: a live schema the gateway exposes as GraphQL CRUD. Do the steps in order; **step 6 (reload) is mandatory** or nothing goes live.
 
-Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — it defines `$BLOCKS_API_URL`, the `hdr` array (`x-blocks-key: $ROOT` + `Authorization: Bearer $PTOK`), and `$PTENANT` (the project tenant id used as `projectKey`). All calls target `https://api.seliseblocks.com/data/v4` (no `/api`).
+Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — it defines `$BLOCKS_API_URL`, the `hdr` array (`x-blocks-key: $PTENANT` + `Authorization: Bearer $PTOK`), and `$PTENANT` (the project tenant id used as `projectKey`). All calls target `https://api.seliseblocks.com/data/v4` (no `/api`).
+
+> **Impersonation guard:** schema configuration is never run against `$ACCOUNT_TENANT`. `ACCOUNT_TENANT` is only for the bootstrap calls in `get-into-project` (`Project/Gets`, impersonation status, and `impersonate`). If `hdr` does not use `$PTENANT`, stop and re-run `get-into-project` until `hdr=(-H "x-blocks-key: $PTENANT" -H "Authorization: Bearer $PTOK")`. Run `assert_project_scope` before sending schema/field/validation/access/reload calls.
 
 ## Step 0 — Get into the project
 

@@ -1,6 +1,6 @@
 # Users — endpoint contracts
 
-Verified against the live IAM swagger + responses. Base `https://api.seliseblocks.com/iam/v4`; paths under `/iam/v4/iam/...`. Headers: `x-blocks-key: <project key>` + `Authorization: Bearer <token>`. Envelope: `{ data, errors, totalCount? }` unless noted.
+Verified against the live IAM swagger + responses. Base `https://api.seliseblocks.com/iam/v4`; paths under `/iam/v4/iam/...`. Admin/script calls use `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK>` from `get-into-project`. Browser/runtime calls use `x-blocks-key: <PTENANT>` + hosted SSO cookies (`credentials: "include"`), especially `/iam/me`. Envelope: `{ data, errors, totalCount? }` unless noted.
 
 **`userPassType`** (member names from platform source) — `0` None (no password credential set), `1` Password (bcrypt-hashed) — **recommended: use `1`** unless the user explicitly asks for another, `2` Pin (short numeric PIN, for kiosk / mobile unlock flows).
 
@@ -38,7 +38,7 @@ Still unnamed int enums (verify names in portal): `verifiedType 0|1|2|3`, `userM
 ```
 - `roles` by **slug**, `permissions` by **name** (as defined in blocks-iam-access-control).
 - **`userPassType: 1` (Password)** and **`userCreationType: 2` (Api)** are the recommended defaults (see the enum note above). Stick with `userPassType: 1` unless the user explicitly wants a PIN; use `userCreationType: 1` (Portal) instead of `2` when modelling an admin-portal creation.
-- **Invite-and-activate:** create with an empty `password` (keep `userPassType: 1`), then have the user complete **blocks-iam-account** activate to set their password. To set a password immediately, provide `password` in this call.
+- **Invite-and-activate:** create with an empty `password` (keep `userPassType: 1`), then have the user complete **blocks-iam-account** activate to set their password. Activation uses `x-blocks-key: <PTENANT>` and no bearer token. To set a password immediately, provide `password` in this call.
 - `mailPurpose` optional (empty ok). `attributes` is a free-form object for custom fields.
 
 ## Update — `POST /iam/users/{id}`
@@ -77,7 +77,7 @@ Id in both path and body (`itemId`). Edits profile + MFA + can carry roles/permi
 → `{ totalCount, data: [ <user> ] }`. All filters optional.
 
 ## Current user — `GET /iam/me`
-→ `{ data: { itemId, language, salutation, firstName, lastName, email, phoneNumber, roles[], permissions[], active, status, isVerified, profileImageUrl, mfaEnabled, isMfaVerified, userMfaType, externalIdentities[], attributes, logInCount, lastLoggedInTime }, errors }`. The token holder's own identity — use `roles`/`permissions` to gate UI.
+→ `{ data: { itemId, language, salutation, firstName, lastName, email, phoneNumber, roles[], permissions[], active, status, isVerified, profileImageUrl, mfaEnabled, isMfaVerified, userMfaType, externalIdentities[], attributes, logInCount, lastLoggedInTime }, errors }`. The current session user's identity — use `roles`/`permissions` to gate UI. In the browser this is cookie-based and needs no JS-held bearer token.
 
 ## Edit self — `PATCH /iam/me`
 Same body as user update (`itemId`, `firstName`, `lastName`, `phoneNumber`, `profileImage*`, `userMfaType`, `mfaEnabled`, `roles`, `permissions`, `tags`). Edits the caller's own profile.

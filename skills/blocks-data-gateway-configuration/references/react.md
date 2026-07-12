@@ -11,10 +11,10 @@ Targets the `blocks-construct-react` stack. For most apps schema configuration i
 # otherwise use https://blocksapi.<your-registrable-domain> (app abc.slsblx.com → https://blocksapi.slsblx.com;
 # app xyz.blx10.com → https://blocksapi.blx10.com). On a custom domain, ASK THE USER (they may keep the default).
 VITE_BLOCKS_API_URL=https://api.seliseblocks.com
-VITE_BLOCKS_PROJECT_KEY=<tenant_id>   # project key = token tenant_id; sent as x-blocks-key
+VITE_BLOCKS_PROJECT_KEY=<PTENANT>     # project tenant id; sent as x-blocks-key
 ```
 
-`VITE_BLOCKS_PROJECT_KEY` is the project's `tenant_id` (what the portal exposes as `BLOCKS_X_BLOCKS_KEY`) — a public project identifier, safe to ship. **Not** the account login key. The access token comes from the auth store at runtime (`blocks-setup` / `blocks-iam`).
+`VITE_BLOCKS_PROJECT_KEY` is the project's tenant id (`PTENANT`, what the portal exposes as `BLOCKS_X_BLOCKS_KEY`) — a public project identifier, safe to ship. **Not** the bootstrap account tenant. This admin surface relies on the signed-in user's hosted SSO cookie (`credentials: "include"`); never put `PTOK` in frontend code.
 
 ## Admin client slice
 
@@ -51,12 +51,11 @@ export interface SchemaSummary {
 }
 
 async function admin<T>(path: string, init: RequestInit = {}, _retried = false): Promise<ApiEnvelope<T>> {
-  const token = useAuthStore.getState().accessToken;
   const res = await fetch(`${BASE}${path}`, {
     ...init,
+    credentials: "include",
     headers: {
-      "x-blocks-key": KEY, // = tenant_id
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      "x-blocks-key": KEY, // = PTENANT
       ...(init.body ? { "Content-Type": "application/json" } : {}),
       ...init.headers,
     },
