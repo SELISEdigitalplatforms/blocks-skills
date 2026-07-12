@@ -22,7 +22,7 @@ If you need the exact input/output fields (e.g. right after creating the schema)
 
 ## Operation shapes (verified live)
 
-**Read** — `get<Collection>(input: DynamicQueryInput, where: <Schema>FilterInput, order: [...], paging: PaginationInput): <Schema>Result`
+**Read** — `get<Collection>(where: <Schema>FilterInput, order: [...], paging: PaginationInput): <Schema>Result` — the old `input: DynamicQueryInput` arg is **deprecated; don't use it**, filter/sort/page with `where`/`order`/`paging`.
 
 ```graphql
 query GetProducts($where: ProductFilterInput, $paging: PaginationInput, $order: [ProductSortInput!]) {
@@ -62,7 +62,7 @@ mutation InsertProduct($input: ProductInsertInput!) {
 ```
 `itemId` in the response is the new record's `ItemId`. Input field names are **PascalCase**, matching the schema fields. Omit system fields — the platform assigns them.
 
-**Update** — `update<Schema>(filter: String, where: <Schema>FilterInput, input: <Schema>UpdateInput): ActionResponse`
+**Update** — `update<Schema>(where: <Schema>FilterInput, input: <Schema>UpdateInput): ActionResponse`
 ```graphql
 mutation UpdateProduct($where: ProductFilterInput, $input: ProductUpdateInput!) {
   updateProduct(where: $where, input: $input) { acknowledged totalImpactedData message }
@@ -71,9 +71,9 @@ mutation UpdateProduct($where: ProductFilterInput, $input: ProductUpdateInput!) 
 ```json
 { "where": { "ItemId": { "eq": "68df...ece" } }, "input": { "Price": 12.5 } }
 ```
-Target by `where` (typed filter) or `filter` (a raw string filter). `totalImpactedData` tells you how many records changed — guard against an empty `where` matching everything.
+Target rows with `where` (typed filter). The `filter` string arg is **deprecated — don't use it**. `totalImpactedData` tells you how many records changed — guard against an empty `where` matching everything.
 
-**Delete** — `delete<Schema>(filter: String, where: <Schema>FilterInput, input: <Schema>DeleteInput): ActionResponse`
+**Delete** — `delete<Schema>(where: <Schema>FilterInput, input: <Schema>DeleteInput): ActionResponse`
 ```graphql
 mutation DeleteProduct($where: ProductFilterInput) {
   deleteProduct(where: $where) { acknowledged totalImpactedData message }
