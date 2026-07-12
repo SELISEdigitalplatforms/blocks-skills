@@ -2,15 +2,24 @@
 
 End state: the React app runs at `https://<project-domain>:<port>` locally with a trusted cert, so Blocks SSO cookies are set and login works. Do the steps in order.
 
-## Step 1 — Determine the domain
+## Step 1 — Determine the domain (do this before generating the cert)
 
-The cert and the dev server must use the domain the SSO cookie is scoped to.
+The cert and the dev server must use the domain the SSO cookie is scoped to, so you **must** have a concrete domain before Step 3 — never invent or guess one. Resolve it in this order:
 
-- **From the project:** list projects with `GET /os/v4/Project/Gets` (see the [get-into-project flow](../../blocks-iam-sso-oidc-configuration/flows/get-into-project.md)). Each project has `applicationDomain`, `cookieDomain`, `customDomain`. Pick the app's origin domain — usually `applicationDomain` (e.g. `myapp.seliseblocks.com`). If `cookieDomain` is a parent like `.seliseblocks.com`, any subdomain under it works (e.g. `dev.myapp.seliseblocks.com`).
-- **If the project has none set, ask the user** for the domain their app is (or will be) served on and registered as the OIDC `redirectUri`. A domain is required — you can't issue a local cert without one.
+1. **Get it from the project info first.** List projects with `GET /os/v4/Project/Gets` (see the [get-into-project flow](../../blocks-iam-sso-oidc-configuration/flows/get-into-project.md)) and read the target project's **`applicationDomain`** (each project also has `cookieDomain`, `customDomain`). `applicationDomain` is the app's origin domain (e.g. `myapp.seliseblocks.com`) — use it. If `cookieDomain` is a parent like `.seliseblocks.com`, any subdomain under it also works (e.g. `dev.myapp.seliseblocks.com`).
+
+   ```bash
+   # pull applicationDomain for the chosen project (replace the [0] filter with the user's project)
+   DOMAIN=$(curl -s "$BLOCKS_API_URL/os/v4/Project/Gets?page=0&pageSize=100" \
+     -H "x-blocks-key: $ROOT" -H "Authorization: Bearer $TOK" \
+     | python3 -c "import sys,json;g=json.load(sys.stdin);p=[x for grp in g for x in (grp.get('projects') or [])][0];print(p.get('applicationDomain') or p.get('customDomain') or '')")
+   echo "$DOMAIN"
+   ```
+
+2. **If the lookup returns nothing** (no `applicationDomain`/`customDomain` set on the project, or you can't reach the project list), **ask the user** for the domain their app is (or will be) served on and registered as the OIDC `redirectUri`. Do not proceed to the cert step without a domain — you can't issue a local cert without one.
 
 ```bash
-DOMAIN=myapp.seliseblocks.com   # from Project/Gets or the user
+DOMAIN=myapp.seliseblocks.com   # resolved from Project/Gets applicationDomain, or supplied by the user
 PORT=5173                        # your dev server port
 ```
 
@@ -27,6 +36,8 @@ Tell the user this needs admin/sudo and edits a system file; show them the exact
 Verify: `ping -c1 $DOMAIN` should resolve to `127.0.0.1`.
 
 ## Step 3 — Generate a self-signed certificate with openssl
+
+**Precondition:** `$DOMAIN` is already resolved from Step 1 (the project's `applicationDomain`, or the user's answer). If it's empty, go back to Step 1 — don't issue a cert for a guessed domain.
 
 Issue a cert for `$DOMAIN`. The `subjectAltName` (SAN) **must** contain the exact domain — modern browsers ignore `CN` and reject a cert whose SAN doesn't list the host you're visiting.
 

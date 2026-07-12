@@ -11,10 +11,10 @@ Pure local tooling — the only Blocks API call is the optional `Project/Gets` l
 
 ## The domain is the crux
 
-You need a **domain name** to issue the certificate against and to run on — `localhost` won't do, because the cookie is scoped to the project's domain. Get it in this order:
+You need a **domain name** to issue the certificate against and to run on — `localhost` won't do, because the cookie is scoped to the project's domain. **Resolve the domain before generating the cert**, in this order (never guess one):
 
-1. **From the project config** — `GET /os/v4/Project/Gets` returns each project's `applicationDomain`, `cookieDomain`, and `customDomain` (see the shared [get-into-project flow](../blocks-iam-sso-oidc-configuration/flows/get-into-project.md) for how to list projects). Use the domain the cookie is scoped to — usually `applicationDomain` (e.g. `myapp.seliseblocks.com`); if `cookieDomain` is a parent (e.g. `.seliseblocks.com`), any subdomain under it works.
-2. **Ask the user** if the project config doesn't have one set. It must be the domain registered as the app's origin / OIDC `redirectUri`, or login still fails.
+1. **From the project info first** — `GET /os/v4/Project/Gets` returns each project's **`applicationDomain`**, `cookieDomain`, and `customDomain` (see the shared [get-into-project flow](../blocks-iam-sso-oidc-configuration/flows/get-into-project.md) for how to list projects). Use `applicationDomain` (e.g. `myapp.seliseblocks.com`); if `cookieDomain` is a parent (e.g. `.seliseblocks.com`), any subdomain under it works.
+2. **Only if the project has none set (or you can't find it), ask the user.** It must be the domain registered as the app's origin / OIDC `redirectUri`, or login still fails. Don't proceed to the cert without a concrete domain.
 
 You are not taking the real domain over the internet — you map it to `127.0.0.1` in your **hosts file**, so `https://myapp.seliseblocks.com:5173` resolves to your local dev server while every other machine still reaches the real site.
 
