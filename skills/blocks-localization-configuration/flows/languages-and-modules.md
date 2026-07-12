@@ -4,6 +4,8 @@ Before you can author translations you need the target **languages** and the **m
 
 > **Impersonation guard:** localization authoring is never run against `$ACCOUNT_TENANT`. `ACCOUNT_TENANT` is only for `Project/Gets`, impersonation status, and `impersonate`. If `hdr` does not use `$PTENANT`, stop and re-run `get-into-project`. Run `assert_project_scope` before `/Language`, `/Module`, and `/Key` authoring calls.
 
+> **Endpoint names — keep `/Gets`, ignore the swagger's `…Cloud…` variants.** The current swagger advertises `Language/GetCloudstLanguages` / `Module/GetCloudsModules` instead of `Language/Gets` / `Module/Gets`, but the `/Gets` routes are still served and are the ones to use (verified live 2026-07-13). The frontend ([blocks-localization-implementation](../../blocks-localization-implementation/SKILL.md)) depends on `/Gets` working with the public project key, so do not migrate these to the `…Cloud…` names.
+
 ## Languages
 
 1. List what's already there:

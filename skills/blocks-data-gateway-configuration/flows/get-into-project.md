@@ -54,15 +54,21 @@ curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/impersonation/status" \
 # -> { "impersonated": bool, "originalTenantId": "...", "impersonatedTenantId": "..." }
 ```
 - If `impersonated` is **true** and `impersonatedTenantId` is your target, you're done — use the current token.
-- If **false** (or pointed at a different tenant), request an impersonated token. **Note the host: this call goes to `iam.seliseblocks.com/api`, not `api.seliseblocks.com/iam/v4`:**
+- If **false** (or pointed at a different tenant), request an impersonated token. **`impersonate` requires a `client_id`** (verified live 2026-07-13): pass the account's built-in **`blocks-idp`** OIDC client id, or the endpoint returns `401 {"error":"invalid_client","error_description":"Client configuration not found"}`. Discover it once (don't hardcode) from the identity-providers list, then impersonate on the **standard host** (`$BLOCKS_API_URL/iam/v4`, same base as every other call — there is no separate host):
 
 ```bash
-PTOK=$(curl -s -X POST "https://iam.seliseblocks.com/api/auth/impersonate" \
+# 1) discover the blocks-idp client id (the "Blocks IAM" OIDC client)
+CLIENT_ID=$(curl -s "$BLOCKS_API_URL/iam/v4/auth/identity-providers" "${bootstrap_hdr[@]}" \
+  | python3 -c "import sys,json;d=json.load(sys.stdin).get('data',[]);print(next((p['clientId'] for p in d if p.get('provider')=='blocks-idp'),''))")
+: "${CLIENT_ID:?no blocks-idp client found; check /auth/identity-providers}"
+
+# 2) impersonate WITH client_id
+PTOK=$(curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/impersonate" \
   "${bootstrap_hdr[@]}" -H "Content-Type: application/json" \
-  --data "{\"targeted_tenant_id\":\"$PTENANT\",\"refresh_token\":\"$RT\"}" \
+  --data "{\"targeted_tenant_id\":\"$PTENANT\",\"refresh_token\":\"$RT\",\"client_id\":\"$CLIENT_ID\"}" \
   | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
 ```
-Response is `{ "impersonation_mode": true, "access_token": "...", ... }`. Send just `targeted_tenant_id` (the target project's tenant id) and the `refresh_token` from login — no `organization_id` needed. Impersonating into a tenant not shared with your account returns 403 `"Target tenant is not shared with the requesting user"` — pick a project from step 2's list.
+Response is `{ "impersonation_mode": true, "access_token": "...", "expires_in": 10, "impersonation_session_id": "...", ... }`. Notes (verified live): **`client_id` is required** (the missing field was the cause of `invalid_client`); the `refresh_token` is **single-use** — a successful impersonate consumes it, so re-run step 1 to get a fresh one before retrying; **`expires_in: 10` is cosmetic** — the JWT's real lifetime is ~600s (check the `exp` claim). Send `targeted_tenant_id` (the target project tenant id), the `refresh_token`, and `client_id` — no `organization_id` needed. Impersonating into a tenant not shared with your account returns 403 `"Target tenant is not shared with the requesting user"` — pick a project from step 2's list. To end impersonation, `POST /iam/v4/auth/impersonation/stop` with `{ "refresh_token", "impersonation_id": "<impersonation_session_id>" }`.
 
 ## The header/key convention for every config call
 

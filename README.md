@@ -12,8 +12,8 @@ Describe what you want to do; Claude picks the skill, follows its flow, and writ
 
 Blocks work divides into two modes, and the skills are organized around the difference:
 
-- **Configuration** — acting *on* a project as an admin: defining schemas, wiring SSO, seeding roles, editing org settings. This happens **inside a project/tenant**, so it requires the shared **initial steps** first: log in → list projects (`/os/v4/Project/Gets`) → **impersonate** into the target tenant to get a project-scoped token. Configuration calls then use **`x-blocks-key: <project-tenant-id>`** + the impersonated (or login) token + `projectKey: <project-tenant-id>`. (Root tenant is the `x-blocks-key` only for `Project/Gets` and `impersonate`; an in-project call keyed with root 401/403s.)
-- **Implementation** — the frontend app acting *as the signed-in user*: running GraphQL CRUD, uploading files, logging in via SSO, reading `/iam/me`. This needs **no initial steps** — the app uses the public **project key** (the project's tenant id, `x-blocks-key`) plus the end user's own session token.
+- **Configuration** — acting *on* a project as an admin from a CLI/script: defining schemas, wiring SSO, seeding roles, editing org settings. This happens **inside a project/tenant**, so it requires the shared **initial steps** first: log in → list projects (`/os/v4/Project/Gets`) → **impersonate** into the target tenant to get a project-scoped token (`PTOK`). Configuration calls then use **`x-blocks-key: <PTENANT>`** + `Authorization: Bearer <PTOK>` + `projectKey: <PTENANT>`. (The bootstrap/account tenant is the `x-blocks-key` only for `Project/Gets` and `impersonate`; an in-project call keyed with it 401/403s.)
+- **Implementation** — the frontend app acting *as the signed-in user*: running GraphQL CRUD, uploading files, logging in via SSO, reading `/iam/me`. This needs **no initial steps** and **no token in JS** — the app uses the public **project key** (`<PTENANT>`, `x-blocks-key`) plus the hosted **SSO session cookie** (`credentials: "include"`). The browser never holds the access or refresh token, and `PTOK` never ships to the client.
 
 The initial steps are documented once, as `flows/get-into-project.md`, inside each **configuration** skill. Implementation skills never reference them.
 
@@ -50,7 +50,7 @@ The initial steps are documented once, as `flows/get-into-project.md`, inside ea
 | `blocks-iam-users` | Users CRUD, current user (`/iam/me`), activity timeline, and assigning roles/permissions to a user. |
 | `blocks-iam-organizations` | Organizations CRUD, "my organizations", and the project org-creation / multi-org config. |
 
-These four run as **configuration** (admin tooling, with an impersonated project token via the initial steps) or as **implementation** (a frontend admin screen, with the signed-in user's token) — same endpoints, different token source.
+These four run as **configuration** (CLI/admin tooling, with an impersonated project token `PTOK` via the initial steps) or as **implementation** (a frontend admin screen, on the signed-in user's SSO cookie) — same endpoints, different credential. `/iam/me` is always the cookie path.
 
 ### Local development
 
@@ -83,17 +83,27 @@ skills/blocks-<name>/
 
 ## Auth & keys (verified live)
 
-- **`x-blocks-key` on every request.** Every Blocks API call carries the `x-blocks-key` header — **`auth-login` is the only exception** (it takes just username/password). Even pre-authorized calls (the storage pre-signed PUT) include it. The value is the tenant id of the project that owns the service (see below).
-- **Login:** `POST https://api.seliseblocks.com/iam/v4/auth-login` (note the dash) with `{ "username", "password" }` → `access_token` (~5 min) + `refresh_token`. The token's **`tenant_id` claim is the project/root tenant id.**
-- **Configuration** needs a project-scoped token via impersonation: `POST https://iam.seliseblocks.com/api/auth/impersonate` with `{ targeted_tenant_id, refresh_token }`. Then **`x-blocks-key: <project-tenant-id>`**, `Authorization: Bearer <impersonated (or login) token>`, `projectKey: <project-tenant-id>`. Root tenant is the `x-blocks-key` only for `Project/Gets` + `impersonate`; each service call must use the tenant that owns that service (verified: data/IAM and localization can live in different project tenants).
-- **Implementation** needs only the **project key** (the project's tenant id — public, shippable as `x-blocks-key`) and the end user's session token. In a frontend that's `VITE_BLOCKS_PROJECT_KEY = <project tenant id>`.
-- **URL prefix:** the served base is `https://api.seliseblocks.com/<svc>/v4`; the swagger's `/api/...` prefix is **not** part of the served path (`/data/v4/...`, `/iam/v4/iam/...`).
+There are three tenant ids and three ways a call is authenticated. Keep them straight and everything else follows.
 
-`.env` for admin tooling (never commit): `BLOCKS_API_URL`, `X_BLOCKS_KEY` (account key for login), `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`.
+**Three tenant ids:**
+- **`ACCOUNT_TENANT`** — the bootstrap/account tenant, from the login token's `tenant_id` claim. Used as `x-blocks-key` **only** to enter a project (`Project/Gets`, `impersonation/status`, `impersonate`). It must never key a real service call — an in-project call keyed with it 401/403s.
+- **`PTENANT`** — the target project's tenant id. This is `x-blocks-key` (and `projectKey` in bodies) on **every** real call, from both the CLI and the browser. Public and shippable (`VITE_BLOCKS_PROJECT_KEY`).
+- **`PTOK`** — the impersonated, project-scoped access token. **CLI/admin only; never ships to the client.**
+
+**Three authentication contexts:**
+- **CLI / configuration** — impersonate first: `POST https://iam.seliseblocks.com/api/auth/impersonate` with `{ targeted_tenant_id, refresh_token }` → `PTOK`. Then `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK>` + `projectKey: <PTENANT>`. Each service call uses the tenant that owns that service (verified: data/IAM and localization can live in different project tenants).
+- **Browser / implementation** — the app holds **no token**. Calls carry `x-blocks-key: <PTENANT>` + `credentials: "include"` so Blocks reads the hosted **SSO session cookie** set by `/idp/callback`. Renew with `POST /iam/v4/oidc/token` (`grant_type=refresh_token` + `client_id`, form-encoded, `credentials: "include"`) — this **rotates the cookies**; you send a `refresh_token` form field only if your project intentionally exposes a readable one to JS (usually it's HttpOnly). Wire it as the 401-retry path, then re-check `/iam/me`.
+- **Provider-direct** — the storage pre-signed `PUT` goes straight to the storage provider on a pre-authorized URL: **no Bearer token, and no `x-blocks-key`** unless the provider accepts unknown headers (Azure needs only `x-ms-blob-type: BlockBlob` + `Content-Type`).
+
+**Login:** `POST https://api.seliseblocks.com/iam/v4/auth-login` (note the dash) with `{ "username", "password" }` → `access_token` (~5 min) + `refresh_token`; the token's `tenant_id` claim is `ACCOUNT_TENANT`. `auth-login` is the **only** Blocks call that omits `x-blocks-key`.
+
+**URL prefix:** the served base is `https://api.seliseblocks.com/<svc>/v4`; the swagger's `/api/...` prefix is **not** part of the served path (`/data/v4/...`, `/iam/v4/iam/...`).
+
+`.env` for CLI/admin tooling (never commit): `BLOCKS_API_URL`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`. `ACCOUNT_TENANT`, `PTENANT`, and `PTOK` are derived by the initial steps at runtime — `PTOK` stays server-side.
 
 ## Frontend stack
 
-`references/react.md` in each skill targets the [blocks-construct-react](https://github.com/SELISEdigitalplatforms/blocks-construct-react) stack: **React 19 + TypeScript + Vite + Tailwind CSS + shadcn/ui + TanStack Query + Zustand**. Client-safe values go in `VITE_`-prefixed env vars; tokens come from the auth store at runtime.
+`references/react.md` in each skill targets the [blocks-construct-react](https://github.com/SELISEdigitalplatforms/blocks-construct-react) stack: **React 19 + TypeScript + Vite + Tailwind CSS + shadcn/ui + TanStack Query + Zustand**. Only client-safe values go in `VITE_`-prefixed env vars (the public `VITE_BLOCKS_PROJECT_KEY`, never `PTOK`). Runtime calls are **cookie-based** (`credentials: "include"`) — the auth store holds no token; it just exposes `refreshSession()` (a cookie-renewal call) and drives the 401-retry.
 
 **Frontend API base URL must be same-site with the app domain.** Blocks SSO stores the session in a Secure, domain-scoped cookie, and the browser only keeps/sends it when API calls go to a host under the **same registrable domain** as the app. So `VITE_BLOCKS_API_URL=https://api.seliseblocks.com` (the default) is correct **only** for apps served on `*.seliseblocks.com`. For an app on a custom domain, use **`https://blocksapi.<registrable-domain>`** — e.g. `abc.slsblx.com` → `https://blocksapi.slsblx.com`, `xyz.blx10.com` → `https://blocksapi.blx10.com` — otherwise the cookie is never stored and cookie-based calls (`/iam/me`, `/organizations/my`, logout) fail. When scaffolding a frontend on a custom domain, ask the user which base URL to use (they may keep the default).
 
