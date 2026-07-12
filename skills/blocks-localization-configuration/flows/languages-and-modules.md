@@ -1,8 +1,8 @@
 # Set up languages and modules
 
-Before you can author translations you need the target **languages** and the **module(s)** that group your keys. Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — you have the `hdr` array (`x-blocks-key: $PTENANT` + Bearer `$PTOK`) and `$PTENANT`. Base: `https://api.seliseblocks.com/localization/v4`.
+Before you can author translations you need the target **languages** and the **module(s)** that group your keys. Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — you have the `hdr` array (`x-blocks-key: $ACCOUNT_TENANT` + Bearer `$PTOK`) and `$PTENANT` for `projectKey`/`ProjectKey`. Base: `https://api.seliseblocks.com/localization/v4`.
 
-> **Impersonation guard:** localization authoring is never run against `$ACCOUNT_TENANT`. `ACCOUNT_TENANT` is only for `Project/Gets`, impersonation status, and `impersonate`. If `hdr` does not use `$PTENANT`, stop and re-run `get-into-project`. Run `assert_project_scope` before `/Language`, `/Module`, and `/Key` authoring calls.
+> **Config header guard:** localization authoring uses **`x-blocks-key: $ACCOUNT_TENANT`**, not `$PTENANT`. Run `assert_config_scope` before `/Language`, `/Module`, and `/Key` authoring calls.
 
 > **Endpoint names — keep `/Gets`, ignore the swagger's `…Cloud…` variants.** The current swagger advertises `Language/GetCloudstLanguages` / `Module/GetCloudsModules` instead of `Language/Gets` / `Module/Gets`, but the `/Gets` routes are still served and are the ones to use (verified live 2026-07-13). The frontend ([blocks-localization-implementation](../../blocks-localization-implementation/SKILL.md)) depends on `/Gets` working with the public project key, so do not migrate these to the `…Cloud…` names.
 

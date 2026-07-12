@@ -2,13 +2,13 @@
 
 The admin-side pipeline that the Blocks portal runs. End state: a live schema the gateway exposes as GraphQL CRUD. Do the steps in order; **step 6 (reload) is mandatory** or nothing goes live.
 
-Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — it defines `$BLOCKS_API_URL`, the `hdr` array (`x-blocks-key: $PTENANT` + `Authorization: Bearer $PTOK`), and `$PTENANT` (the project tenant id used as `projectKey`). All calls target `https://api.seliseblocks.com/data/v4` (no `/api`).
+Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — it defines `$BLOCKS_API_URL`, the `hdr` array (`x-blocks-key: $ACCOUNT_TENANT` + `Authorization: Bearer $PTOK`), and `$PTENANT` (the project tenant id used as `projectKey`). All calls target `https://api.seliseblocks.com/data/v4` (no `/api`).
 
-> **Impersonation guard:** schema configuration is never run against `$ACCOUNT_TENANT`. `ACCOUNT_TENANT` is only for the bootstrap calls in `get-into-project` (`Project/Gets`, impersonation status, and `impersonate`). If `hdr` does not use `$PTENANT`, stop and re-run `get-into-project` until `hdr=(-H "x-blocks-key: $PTENANT" -H "Authorization: Bearer $PTOK")`. Run `assert_project_scope` before sending schema/field/validation/access/reload calls.
+> **Config header guard:** schema configuration uses **`x-blocks-key: $ACCOUNT_TENANT`** (root tenant) + **`Authorization: Bearer $PTOK`**, with **`projectKey: $PTENANT`** in bodies. Never send `$PTENANT` as `x-blocks-key`. Run `assert_config_scope` before schema/field/validation/access/reload calls.
 
 ## Step 0 — Get into the project
 
-Run [get-into-project.md](get-into-project.md) first. After it you have `hdr` and `$PTENANT` in your shell. If a call later returns 401 / `session_expired`, re-run its step 1 (and re-impersonate if needed).
+Run [get-into-project.md](get-into-project.md) first. After it you have `hdr` and `$PTENANT` in your shell. If a call later returns 401 / `session_expired`, renew with `POST /iam/v4/auth-token` then re-impersonate (get-into-project → Token renewal).
 
 ## Step 1 — Confirm the data source & capture identifiers
 

@@ -4,7 +4,7 @@
 
 It produces three things the config flows use:
 - `ACCOUNT_TENANT` — the **bootstrap/account tenant id**, from the login token's `tenant_id` claim. Used only to enter a project: `Project/Gets`, impersonation status, and `impersonate`.
-- `PTENANT` — the **target project's tenant id** (from Project/Gets, or given by the user). This is the key that matters after impersonation: sent as the **`x-blocks-key` header** *and* as **`projectKey`** on every in-project service call. A service call keyed with `$ACCOUNT_TENANT` is a bug.
+- `PTENANT` — the **target project's tenant id** (from Project/Gets, or given by the user). This is the **project scope** for configuration: put it in **`projectKey`** (and equivalent body/query fields) on every in-project service call. It is **not** the `x-blocks-key` on configuration calls — that stays `ACCOUNT_TENANT` (see below).
 - `PTOK` — the impersonated access token valid for the project. Use this token for all project-scoped admin/config calls. It is short-lived session output; do not treat it as a durable `.env` secret.
 
 All verified live against `https://api.seliseblocks.com`.
@@ -24,7 +24,7 @@ RT=$(echo "$LOGIN"  | python3 -c "import sys,json;print(json.load(sys.stdin)['re
 ACCOUNT_TENANT=$(echo "$TOK" | cut -d. -f2 | python3 -c "import sys,base64,json;s=sys.stdin.read().strip();s+='='*(-len(s)%4);print(json.loads(base64.urlsafe_b64decode(s))['tenant_id'])")
 bootstrap_hdr=(-H "x-blocks-key: $ACCOUNT_TENANT" -H "Authorization: Bearer $TOK")
 ```
-Tokens are short-lived (~5 min). If a later call returns `session_expired`/401, re-run step 1 and impersonate again. Persist credentials and tenant ids in `.env`; regenerate `PTOK` per working session instead of relying on an old saved value.
+Tokens are short-lived (~5 min). If a later call returns `session_expired`/401, run **[Token renewal](#token-renewal-401--session_expired)** below instead of retrying with a stale `PTOK`.
 
 ## Step 2 — List the projects, pick one
 
@@ -68,11 +68,13 @@ Response is `{ "impersonation_mode": true, "access_token": "...", "expires_in": 
 
 ## The header/key convention for every config call
 
-```bash
-hdr=(-H "x-blocks-key: $PTENANT" -H "Authorization: Bearer $PTOK")
-# ...and put projectKey: $PTENANT in request bodies too
+Configuration for **data, IAM, storage, and localization** uses a strict split — do not swap these:
 
-assert_project_scope() {
+```bash
+hdr=(-H "x-blocks-key: $ACCOUNT_TENANT" -H "Authorization: Bearer $PTOK")
+# ...and put projectKey: $PTENANT (or ProjectKey) in request bodies / query params
+
+assert_config_scope() {
   : "${ACCOUNT_TENANT:?missing bootstrap tenant; run get-into-project}"
   : "${PTENANT:?missing project tenant; run get-into-project}"
   : "${PTOK:?missing impersonated token; run get-into-project}"
@@ -83,9 +85,27 @@ assert_project_scope() {
 }
 ```
 
-- **`x-blocks-key` header = `PTENANT`, never `ACCOUNT_TENANT`.** Configuration must run **after impersonation** and be **project-specific**: send the target project's tenant id (`PTENANT`). `ACCOUNT_TENANT` is a bootstrap-only key for entering the project; it must not appear in `hdr`, `projectKey`, or any project-scoped request.
-- **Guard before every project-scoped call:** run `assert_project_scope` before sending a project admin/config request.
+- **`x-blocks-key` header = `ACCOUNT_TENANT` (root tenant id), never `PTENANT`.** Verified for configuring data, IAM, storage, and localization — the header is always the root/account tenant; the impersonated token (`PTOK`) carries the project scope.
 - **`Authorization` = `PTOK`** (the impersonated token). Do not use the raw login token for project-scoped admin/config calls.
-- **`projectKey` in bodies = `PTENANT`** (the target project's tenant id).
+- **`projectKey` / `ProjectKey` in bodies or query = `PTENANT`** — the target project's tenant id (same value as `targeted_tenant_id` in impersonate). This selects *which project* you are configuring; it does **not** replace `x-blocks-key`.
+- **Guard before every config call:** run `assert_config_scope` and confirm `hdr` uses `$ACCOUNT_TENANT`, not `$PTENANT`, as `x-blocks-key`.
+
+## Token renewal (401 / session_expired)
+
+`PTOK` expires. When a configuration call returns 401 or `session_expired`, **do not** keep retrying the same token — renew and re-impersonate:
+
+```bash
+# 1) mint a fresh login access token
+RENEW=$(curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth-token" \
+  -H "x-blocks-key: $ACCOUNT_TENANT" -H "Content-Type: application/json" \
+  --data "{\"refresh_token\":\"$RT\"}")
+TOK=$(echo "$RENEW" | python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+RT=$(echo "$RENEW"  | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('refresh_token', sys.argv[1]))" "$RT")
+bootstrap_hdr=(-H "x-blocks-key: $ACCOUNT_TENANT" -H "Authorization: Bearer $TOK")
+
+# 2) impersonate again (re-run step 3) to get a fresh PTOK for the same PTENANT
+```
+
+If `auth-token` fails (refresh revoked/expired), re-run **step 1** (`auth-login`) to obtain a new `RT`, then **step 3** to impersonate again.
 
 Now continue with the service you're configuring — [languages-and-modules.md](languages-and-modules.md) then [translate-and-generate.md](translate-and-generate.md) for localization.

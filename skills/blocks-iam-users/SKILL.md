@@ -11,14 +11,19 @@ Base: `https://api.seliseblocks.com/iam/v4` — management endpoints under **`/i
 
 ## Auth
 
+**Admin/script calls** (create/update/list/assign):
 ```
-x-blocks-key: <PTENANT>                 # project tenant id
-Authorization: Bearer <PTOK>            # impersonated token for admin user-management calls
+x-blocks-key: <ACCOUNT_TENANT>   # root tenant id — never PTENANT here
+Authorization: Bearer <PTOK>     # impersonated token from get-into-project
 ```
 
-Create/update/list/assign operations are admin actions: run `get-into-project` first and use `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK>`. Never key these calls with the bootstrap/account tenant.
+**Browser/runtime** (`/iam/me`):
+```
+x-blocks-key: <PTENANT>
+credentials: include             # hosted SSO cookie
+```
 
-`GET /iam/v4/iam/me` is the runtime exception: a frontend calls it with `x-blocks-key: <PTENANT>` and `credentials: "include"` so Blocks uses the signed-in user's hosted SSO cookie/session. It returns the current user's own profile.
+Run `get-into-project` before admin user-management calls. On 401/`session_expired`, renew with `POST /iam/v4/auth-token` then re-impersonate.
 
 ## Endpoints → [endpoints.md](endpoints.md)
 
@@ -46,7 +51,7 @@ Full fields, enums, and examples: [endpoints.md](endpoints.md). Frontend hooks: 
 
 ## Gotchas
 
-- **`x-blocks-key` = `PTENANT`.** Wrong key, especially the bootstrap/account tenant, → 401.
+- **`x-blocks-key` = `ACCOUNT_TENANT` on admin/script calls; `PTENANT` on browser/runtime calls** (e.g. `/iam/me`, activate). Wrong admin key (especially `PTENANT` as header) → 401.
 - **Update/get/deactivate are POST** (except get-by-id and me, which are GET; me-edit is PATCH). No PUT.
 - **Roles/permissions on a user** reference roles by **slug** and permissions by **name** (as defined in blocks-iam-access-control) — not their itemIds.
 - **`organizationId`** matters in multi-org projects — creating/getting a user may need the target org; get-by-id accepts `?organizationId=`.

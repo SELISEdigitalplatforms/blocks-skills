@@ -14,7 +14,7 @@ Once a schema is created **and reloaded** (via **[blocks-data-gateway-configurat
 Gateway CRUD is runtime data access inside a project. The project key is always the target project tenant id (`PTENANT`), never the bootstrap/account tenant.
 
 - **Browser/runtime calls:** send `x-blocks-key: <PTENANT>` and `credentials: "include"` so Blocks uses the signed-in user's hosted SSO cookie/session. This is the normal React app path.
-- **Admin/build script calls only:** first run `blocks-data-gateway-configuration/flows/get-into-project.md`; send `x-blocks-key: <PTENANT>` plus `Authorization: Bearer <PTOK>`. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
+- **Admin/build script calls only:** first run `blocks-data-gateway-configuration/flows/get-into-project.md`; send **`x-blocks-key: <ACCOUNT_TENANT>`** plus `Authorization: Bearer <PTOK>`. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
 
 401 → wrong project key, missing/expired session, or expired admin token. Do not use the bootstrap/account tenant as `x-blocks-key` on gateway calls.
 

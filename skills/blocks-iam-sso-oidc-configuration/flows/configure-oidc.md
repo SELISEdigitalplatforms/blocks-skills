@@ -1,8 +1,8 @@
 # Ensure a blocks-oidc identity provider (client + provider)
 
-End state: the project has an active `blocks-oidc` identity provider, so the app can do authorization-code SSO. Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — you have the `hdr` array (`x-blocks-key: $PTENANT` + Bearer `$PTOK`) and `$PTENANT` (project tenant id). All calls target `https://api.seliseblocks.com/iam/v4`.
+End state: the project has an active `blocks-oidc` identity provider, so the app can do authorization-code SSO. Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — you have the `hdr` array (`x-blocks-key: $ACCOUNT_TENANT` + Bearer `$PTOK`), `$PTENANT` (project tenant id for `projectKey`), and `$ACCOUNT_TENANT`. All calls target `https://api.seliseblocks.com/iam/v4`.
 
-> **Impersonation guard:** OIDC configuration is never run against `$ACCOUNT_TENANT`. `ACCOUNT_TENANT` is only for the bootstrap calls in `get-into-project` (`Project/Gets`, impersonation status, and `impersonate`). If `hdr` does not use `$PTENANT`, stop and re-run `get-into-project` until `hdr=(-H "x-blocks-key: $PTENANT" -H "Authorization: Bearer $PTOK")`. Run `assert_project_scope` before identity-provider and OIDC-client calls.
+> **Config header guard:** IAM configuration uses **`x-blocks-key: $ACCOUNT_TENANT`** (root tenant) + **`Authorization: Bearer $PTOK`**. Put **`projectKey: $PTENANT`** in bodies. Never send `$PTENANT` as `x-blocks-key` on these admin calls. Run `assert_config_scope` before identity-provider and OIDC-client calls.
 
 The logic is a short decision tree: **provider exists? → done. else client exists? → create provider from it. else → create client, then provider.**
 
@@ -54,9 +54,18 @@ curl -s -X POST "$BLOCKS_API_URL/iam/v4/oidc-clients" "${hdr[@]}" -H "Content-Ty
 
 ## Step 4 — Create the blocks-oidc identity provider
 
-Build `wellKnownUrl` from the project tenant id: `https://iam.seliseblocks.com/T<tenantHex>/.well-known/openid-configuration` (tenantHex = the 32-hex tenant, dropping any leading env letter). Confirm it resolves first:
+Build `wellKnownUrl` from **`$PTENANT`** — the same project tenant id you impersonated into (`targeted_tenant_id`), **not** the root/account tenant (`$ACCOUNT_TENANT`):
+
+```
+https://iam.seliseblocks.com/$PTENANT/.well-known/openid-configuration
+```
+
+Use `$PTENANT` exactly as returned from `Project/Gets` (it may include a leading environment letter, e.g. `D87e3f79b6730453f91425c16c38d6375`). Do **not** strip or transform it into a `T<hex>` form.
+
+Confirm it resolves first:
 ```bash
-curl -s "https://iam.seliseblocks.com/T<tenantHex>/.well-known/openid-configuration" -H "x-blocks-key: $PTENANT" | head -c 120  # expect OIDC discovery JSON
+curl -s "https://iam.seliseblocks.com/$PTENANT/.well-known/openid-configuration" \
+  -H "x-blocks-key: $ACCOUNT_TENANT" | head -c 120   # expect OIDC discovery JSON
 ```
 
 Then create the provider:
@@ -68,7 +77,7 @@ curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/identity-providers" "${hdr[@]}" -H 
   "clientId": "<clientId from step 2/3>",
   "clientSecret": "<clientSecret from step 2/3>",
   "audience": "",
-  "wellKnownUrl": "https://iam.seliseblocks.com/T<tenantHex>/.well-known/openid-configuration",
+  "wellKnownUrl": "https://iam.seliseblocks.com/'"$PTENANT"'/.well-known/openid-configuration",
   "tokenEndpointAuthMethod": "client_secret_basic",
   "scope": "openid",
   "redirectUris": ["https://your.application-domain.com/callback"],
@@ -85,6 +94,6 @@ curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/identity-providers" "${hdr[@]}" -H 
 ## Verify
 
 - `GET /iam/v4/auth/identity-providers` → an entry with `providerType: "blocks-oidc"`, `isActive: true`, your `clientId` and `redirectUris`.
-- Smoke-test the runtime entry point (no session needed) — pass `x-blocks-key` as **both** a query param and a header: `GET /iam/v4/idp/initiate?x-blocks-key=<PTENANT>&clientId=<clientId>&redirectUri=<callback>` with header `x-blocks-key: <PTENANT>` should return `{ "redirect_uri": "https://iam.seliseblocks.com/api/oidc/authorize?...&code_challenge=..." }`. That URL is what the app redirects the browser to — continue in **[blocks-iam-sso-oidc-implementation](../../blocks-iam-sso-oidc-implementation/SKILL.md)**.
+- Smoke-test the runtime entry point (no session needed) — pass `x-blocks-key` as **both** a query param and a header using **`$PTENANT`** (the public project key for runtime, not the root tenant): `GET /iam/v4/idp/initiate?x-blocks-key=<PTENANT>&clientId=<clientId>&redirectUri=<callback>` with header `x-blocks-key: <PTENANT>` should return `{ "redirect_uri": "https://iam.seliseblocks.com/api/oidc/authorize?...&code_challenge=..." }`. That URL is what the app redirects the browser to — continue in **[blocks-iam-sso-oidc-implementation](../../blocks-iam-sso-oidc-implementation/SKILL.md)**.
 
-Error paths: 401 / `session_expired` → re-run [get-into-project.md](get-into-project.md). 400 → usually a `redirectUris` mismatch or missing `projectKey`.
+Error paths: 401 / `session_expired` → renew with `POST /iam/v4/auth-token` then re-impersonate ([get-into-project.md](get-into-project.md)). 400 → usually a `redirectUris` mismatch or missing `projectKey`.
