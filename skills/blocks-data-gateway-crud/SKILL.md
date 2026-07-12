@@ -39,7 +39,7 @@ Pluralization is generated, not guessable (`datastructure` → `getdatastructure
 
 ## Operation shapes (verified live)
 
-- **Read** — `get<Collection>(input: DynamicQueryInput, where: <Schema>FilterInput, order: [<Schema>SortInput!], paging: PaginationInput): <Schema>Result`. Result is `{ items[], totalCount, pageNo, pageSize, totalPages, hasNextPage, hasPreviousPage }`; `PaginationInput` is `{ pageNo, pageSize }`.
+- **Read** — `get<Collection>(input: DynamicQueryInput, where: <Schema>FilterInput, order: [<Schema>SortInput!], paging: PaginationInput): <Schema>Result`. Result is `{ items[], totalCount, pageNo, pageSize, totalPages, hasNextPage, hasPreviousPage }`; `PaginationInput` is `{ pageNo, pageSize }`. **`order` entries are `{ direction, field }`** — e.g. `[{ direction: DESC, field: "Price" }]` — not a `{ Field: DIRECTION }` map.
 - **Create** — `insert<Schema>(input: <Schema>InsertInput): ActionResponse`.
 - **Update** — `update<Schema>(filter: String, where: <Schema>FilterInput, input: <Schema>UpdateInput): ActionResponse`.
 - **Delete** — `delete<Schema>(filter: String, where: <Schema>FilterInput, input: <Schema>DeleteInput): ActionResponse`.

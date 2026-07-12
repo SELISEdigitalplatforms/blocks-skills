@@ -44,9 +44,10 @@ query GetProducts($where: ProductFilterInput, $paging: PaginationInput, $order: 
 ```
 Variables:
 ```json
-{ "where": { "Price": { "gt": 0 } }, "paging": { "pageNo": 1, "pageSize": 20 }, "order": [{ "Title": "ASC" }] }
+{ "where": { "Price": { "gt": 0 } }, "paging": { "pageNo": 1, "pageSize": 20 }, "order": [{ "direction": "DESC", "field": "Price" }] }
 ```
 - The result wrapper is always `{ items, totalCount, pageNo, pageSize, totalPages, hasNextPage, hasPreviousPage }`.
+- **`order` is an array of `{ direction, field }`** — `direction` is `ASC` or `DESC`, `field` is the PascalCase schema field name (**not** a `{ Field: DIRECTION }` map). Pass multiple entries to sort by more than one field, in order. Examples: `[{ "direction": "DESC", "field": "Price" }]`, `[{ "direction": "ASC", "field": "SoldCount" }]`.
 - `where` is a generated `<Schema>FilterInput` (per-field operators like `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `contains`, `in`, `and`/`or`). Omit it to fetch all.
 - Every record carries system fields — `ItemId` (the id), `Language`, `OrganizationId`, `Tags` — alongside your schema fields.
 
