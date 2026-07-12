@@ -5,6 +5,10 @@ Targets the `blocks-construct-react` stack. The DMS upload is two steps — pres
 ## Env
 
 ```bash
+# If your frontend relies on the Blocks session cookie, the API host must be SAME-SITE with the app
+# domain or the cookie won't be stored/sent. Keep this default only for apps on *.seliseblocks.com;
+# otherwise use https://blocksapi.<your-registrable-domain> (app abc.slsblx.com → https://blocksapi.slsblx.com;
+# app xyz.blx10.com → https://blocksapi.blx10.com). On a custom domain, ASK THE USER (they may keep the default).
 VITE_BLOCKS_API_URL=https://api.seliseblocks.com
 VITE_BLOCKS_PROJECT_KEY=<tenant_id>   # project key = token tenant_id; sent as x-blocks-key
 ```

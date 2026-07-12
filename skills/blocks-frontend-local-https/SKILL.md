@@ -34,6 +34,7 @@ Use **openssl** (preinstalled on macOS/Linux, and in Git Bash on Windows) to iss
 ## Gotchas
 
 - **Domain must match the cookie/redirect config.** A cert for the wrong domain runs HTTPS fine but SSO still fails — the cookie won't be scoped to where you're browsing. Match `cookieDomain` / the registered `redirectUri`.
+- **Point the API base URL at the same registrable domain, or the session cookie won't store.** The same same-site rule that forces HTTPS-on-the-real-domain locally also governs which API host the app calls: the Blocks session cookie is only kept when API requests go to a host under the app's registrable domain. Default `https://api.seliseblocks.com` is right only for `*.seliseblocks.com` apps; on a custom domain set `VITE_BLOCKS_API_URL=https://blocksapi.<your-registrable-domain>` (app `abc.slsblx.com` → `https://blocksapi.slsblx.com`; app `xyz.blx10.com` → `https://blocksapi.blx10.com`). Ask the user which base URL to use. See **[blocks-iam-sso-oidc-implementation](../blocks-iam-sso-oidc-implementation/SKILL.md)**.
 - **Hosts entry is required** — without `127.0.0.1 <domain>`, the browser resolves the real public IP instead of your dev server.
 - **The domain must be in the cert's `subjectAltName` (SAN)** — a matching `CN` alone isn't enough for modern browsers.
 - **Port is part of the origin**, not the cookie domain — `https://myapp.seliseblocks.com:5173` shares the cookie domain `myapp.seliseblocks.com`, so Secure cookies set for that domain apply. Register the port-bearing origin as the `redirectUri`.

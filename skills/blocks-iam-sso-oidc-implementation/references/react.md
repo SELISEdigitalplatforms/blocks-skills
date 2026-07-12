@@ -5,6 +5,12 @@ Wires the hosted authorization-code flow ([../flows/login-flow.md](../flows/logi
 ## Env
 
 ```bash
+# The API host must be SAME-SITE with your app domain or the Blocks session cookies won't be
+# stored/sent (the SSO callback sets Secure, domain-scoped cookies). Keep this default only if the
+# app runs on *.seliseblocks.com. Otherwise use https://blocksapi.<your-registrable-domain>:
+#   app abc.slsblx.com  → VITE_BLOCKS_API_URL=https://blocksapi.slsblx.com
+#   app xyz.blx10.com   → VITE_BLOCKS_API_URL=https://blocksapi.blx10.com
+# When wiring a new app on a custom domain, ASK THE USER which base URL to use (they may keep the default).
 VITE_BLOCKS_API_URL=https://api.seliseblocks.com
 VITE_BLOCKS_PROJECT_KEY=<project tenant id>          # x-blocks-key (public, ship it)
 VITE_BLOCKS_OIDC_CLIENT_ID=<oidc clientId>           # from blocks-iam-sso-oidc-configuration

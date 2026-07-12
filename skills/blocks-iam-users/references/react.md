@@ -145,6 +145,7 @@ queryClient.invalidateQueries({ queryKey: ["iam", "me"] });
 
 ## Notes
 
+- **`VITE_BLOCKS_API_URL` must be same-site with your app domain** for the cookie-based calls here (`/iam/me`) to work. On `*.seliseblocks.com` keep `https://api.seliseblocks.com`; on a custom domain use `https://blocksapi.<your-registrable-domain>` (app `abc.slsblx.com` → `https://blocksapi.slsblx.com`) — otherwise the session cookie isn't sent and `/iam/me` always 401s. Ask the user which base URL to use. See **[blocks-iam-sso-oidc-implementation](../../blocks-iam-sso-oidc-implementation/SKILL.md)**.
 - **`/iam/me` is the auth-state source of truth** — it succeeds only with a valid session (the cookie set by the SSO callback), so call it on page load, after login, and after the callback; a 401 means "logged out", not an error to retry. The client sends `credentials: "include"` so the cookie rides along even with no JS-held token. Cache it once (`["iam","me"]`) and drive role/permission gates off `me.permissions` / `me.roles`.
 - **Creating a user:** send `userPassType: 1` (Password — recommended; `2` = Pin) and `userCreationType: 2` (Api — recommended; `1` = Portal for admin-portal-style creation). See `endpoints.md` for the full enum member names.
 - **Lists are POST**; the timeline is a `GET` that still takes a page/filter body (send it as the request body).
