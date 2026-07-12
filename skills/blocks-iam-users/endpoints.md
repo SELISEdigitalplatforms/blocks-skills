@@ -1,6 +1,6 @@
 # Users — endpoint contracts
 
-Verified against the live IAM swagger + responses. Base `https://api.seliseblocks.com/iam/v4`; paths under `/iam/v4/iam/...`. Admin/script calls use `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK>` from `get-into-project`. Browser/runtime calls use `x-blocks-key: <PTENANT>` + hosted SSO cookies (`credentials: "include"`), especially `/iam/me`. Envelope: `{ data, errors, totalCount? }` unless noted.
+Verified against the live IAM swagger + responses. Base `https://api.seliseblocks.com/iam/v4`; paths under `/iam/v4/iam/...`. **Admin/script calls:** `x-blocks-key: <ACCOUNT_TENANT>` (root tenant) + `Authorization: Bearer <PTOK>` from `get-into-project`. **Browser/runtime calls:** `x-blocks-key: <PTENANT>` + hosted SSO cookies (`credentials: "include"`), especially `/iam/me`. Envelope: `{ data, errors, totalCount? }` unless noted.
 
 > **Swagger drift (verified live 2026-07-13):** `/iam/users/roles-and-permissions` and `/iam/users/timeline` are **absent from the current swagger but still served** (they respond `400` to an empty body — route exists — not `404`). Keep using them. The swagger also now advertises `POST /iam/users/access` and `POST /iam/users/revoke-access` (a grant/revoke pair) alongside them — an addition, not a replacement. Verify the exact `access`/`revoke-access` bodies live before adopting them.
 

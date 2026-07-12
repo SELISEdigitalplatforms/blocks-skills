@@ -12,7 +12,7 @@ DMS is the document management system embedded in the data service: pre-signed u
 Files are project-scoped. The project key is always the target project tenant id (`PTENANT`), never the bootstrap/account tenant.
 
 - **Browser/runtime calls:** send `x-blocks-key: <PTENANT>` and `credentials: "include"` so Blocks uses the signed-in user's hosted SSO cookie/session. Use this for user-facing uploads/downloads.
-- **Admin/build script calls only:** first run `blocks-data-gateway-configuration/flows/get-into-project.md`; send `x-blocks-key: <PTENANT>` plus `Authorization: Bearer <PTOK>`, and put `projectKey: <PTENANT>` where the body/query requires it. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
+- **Admin/build script calls only:** first run `blocks-data-gateway-configuration/flows/get-into-project.md`; send **`x-blocks-key: <ACCOUNT_TENANT>`** (root tenant) plus `Authorization: Bearer <PTOK>`, and put `projectKey: <PTENANT>` where the body/query requires it. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
 - **Pre-signed PUT:** the storage URL is pre-authorized and needs no Bearer token. Keep the project key on Blocks API calls; include `x-blocks-key` on the PUT only when the storage provider accepts it.
 
 401 → wrong project key, missing/expired session, or expired admin token.
@@ -45,6 +45,6 @@ Files are project-scoped. The project key is always the target project tenant id
 
 - **No `/Files/UploadFile`.** Uploading is presign → binary PUT. Don't add a metadata-commit step.
 - **Azure blob type** — an Azure PUT without `x-ms-blob-type: BlockBlob` fails; add it when the `uploadUrl` is an Azure Blob URL.
-- **`x-blocks-key` = `PTENANT` on every Blocks API request.** The pre-signed PUT is pre-authorized so it needs **no Bearer token**; include `x-blocks-key` on the PUT only when the storage provider accepts unknown headers.
+- **`x-blocks-key` on every Blocks API request.** Browser/runtime: `PTENANT`. Admin/config scripts: **`ACCOUNT_TENANT`** (see get-into-project). The pre-signed PUT is pre-authorized so it needs **no Bearer token**.
 - **`GetFile` confirms the upload** — a successful `GetFile` (with `FileId` + `ConfigurationName`) returning your file means it's stored.
 - Flat responses — don't expect `{ isSuccess, data, errors[] }`; read the file fields directly and handle `errors` as a string map.

@@ -13,10 +13,10 @@ Base: `https://api.seliseblocks.com/iam/v4` — management endpoints live under 
 
 Every call carries:
 ```
-x-blocks-key: <project key>          # the project's tenant id
-Authorization: Bearer <access_token>  # admin/impersonated token for config tooling, or the logged-in user's token in a frontend (subject to their permissions)
+x-blocks-key: <ACCOUNT_TENANT>        # root tenant id — on admin/script calls (after get-into-project)
+Authorization: Bearer <PTOK>           # impersonated token for config tooling
 ```
-These are project-scoped admin operations — for config tooling use a project-scoped (impersonated) token; a frontend can call them if the signed-in user holds the needed permission. 401 → wrong `x-blocks-key` or token.
+For **browser admin screens**, use `x-blocks-key: <PTENANT>` + `credentials: "include"` (hosted SSO cookie) instead. 401 on script calls → expired `PTOK`; renew via `POST /iam/v4/auth-token` then re-impersonate.
 
 ## Endpoints → [endpoints.md](endpoints.md)
 

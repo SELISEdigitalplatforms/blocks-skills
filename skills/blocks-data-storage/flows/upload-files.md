@@ -41,7 +41,7 @@ On success the file is stored; use `fileId` from step 1 to reference it. (`GetFi
 
 ## Which storage configurations exist? — `GET https://api.seliseblocks.com/logic/v4/Storage/Gets`
 
-Storage configs live on the **logic** service (note the different host path). Same project scope (`x-blocks-key: PTENANT`; plus the SSO cookie in browser flows, or Bearer `$PTOK` only for admin/build scripts). Returns an array; the `name` is what you pass as `configurationName`, and `storageStrategy` tells you the provider (so you know whether the PUT needs `x-ms-blob-type`):
+Storage configs live on the **logic** service (note the different host path). Admin scripts: **`x-blocks-key: $ACCOUNT_TENANT`** + Bearer `$PTOK`, with `projectKey: $PTENANT`. Browser flows: `x-blocks-key: $PTENANT` + SSO cookie. Returns an array; the `name` is what you pass as `configurationName`, and `storageStrategy` tells you the provider (so you know whether the PUT needs `x-ms-blob-type`):
 ```json
 [
   {

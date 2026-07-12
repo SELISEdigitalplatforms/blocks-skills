@@ -12,13 +12,13 @@ Base: `https://api.seliseblocks.com/localization/v4` — PascalCase controllers 
 ## Auth & keys — start here
 
 Localization authoring is project configuration, so it runs **inside a project/tenant** — do the shared initial steps first: **[flows/get-into-project.md](flows/get-into-project.md)** (login → list projects → impersonate). It yields:
-- **`ACCOUNT_TENANT`** — bootstrap/account tenant id. Used only inside get-into-project for `Project/Gets`, impersonation status, and `impersonate`.
-- **`PTENANT`** — the target project's tenant id → the **`x-blocks-key` header** *and* the **`projectKey`** body field / **`ProjectKey`** query param on every localization call.
+- **`ACCOUNT_TENANT`** — root/account tenant id. Used as **`x-blocks-key`** on every localization configuration call after impersonation.
+- **`PTENANT`** — the target project's tenant id → **`projectKey`** body field / **`ProjectKey`** query param. **Not** `x-blocks-key` on configuration calls.
 - **`PTOK`** — the impersonated access token valid for the project → `Authorization: Bearer`.
 
-**Use `PTENANT`, not `ACCOUNT_TENANT`, as `x-blocks-key`** — localization lives in the project tenant; keying with the bootstrap tenant returns 403 `SERVICE_ACCESS_DENIED` (verified live).
+**Strict rule:** configuring localization uses **`x-blocks-key: ACCOUNT_TENANT`** + **`Authorization: Bearer PTOK`** + **`projectKey`/`ProjectKey`: `PTENANT`**. Never send `PTENANT` as `x-blocks-key` on `/Language`, `/Module`, or `/Key` calls.
 
-> ⚠️ **Never configure against the bootstrap account tenant.** Authoring languages/modules/keys and generating files happens **after impersonation** and is **project-specific** — `x-blocks-key` and `projectKey`/`ProjectKey` are always `PTENANT`. `ACCOUNT_TENANT` is only a temporary bootstrap value for entering the project; never send it as the key on a `/Language`, `/Module`, or `/Key` call. Not impersonated yet? Run get-into-project first.
+> ⚠️ **Do not swap the keys.** Authoring happens **after impersonation** — `PTOK` carries project scope, but the header stays the root tenant. On `PTOK` expiry, renew with `POST /iam/v4/auth-token` then re-impersonate (get-into-project).
 
 ## The pipeline
 
@@ -45,6 +45,6 @@ Full request/response contracts: [endpoints.md](endpoints.md).
 - **`GenerateUilmFile` is mandatory** after any key change, per module — skip it and the frontend's `/Key/GetUilmFile` won't reflect your edits.
 - **Bulk over single.** Use `POST /Key/SaveKeys` (an array) when saving more than one key; `POST /Key/Save` is for a single key.
 - **`culture` must match a configured language's `languageCode` exactly** (`de-DE`, not `de`), or the value won't map at runtime.
-- **`x-blocks-key` = `PTENANT`** (the project tenant), and `projectKey`/`ProjectKey` = `PTENANT` too. Keying with `ACCOUNT_TENANT` → 403 `SERVICE_ACCESS_DENIED`.
+- **`x-blocks-key` = `ACCOUNT_TENANT`** on configuration calls; **`projectKey`/`ProjectKey` = `PTENANT`**. Never send `PTENANT` as `x-blocks-key` when authoring translations.
 - **Responses are `{ success, errorMessage, validationErrors[] }`** for saves (not the data-service envelope); check `success` and read `validationErrors` on failure.
 - New key? Set `isNewKey: true` and leave `itemId: ""`; editing? pass the existing `itemId`.

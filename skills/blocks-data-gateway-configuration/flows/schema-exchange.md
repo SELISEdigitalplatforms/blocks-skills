@@ -2,9 +2,9 @@
 
 Use when copying a project's data model to another (e.g. dev → staging, or cloning a template project). Both operations are **async**: the API acknowledges immediately and delivers the result via notification, correlated by the `messageCoRelationId` you supply.
 
-Preconditions: run **[get-into-project.md](get-into-project.md)** for **each** project — export/import are per-project, so you need an impersonated token for the source and another for the target. Header `x-blocks-key: $PTENANT` + Bearer the relevant project's `$PTOK`; `projectKey` in the body = that project's tenant id (`$PTENANT`).
+Preconditions: run **[get-into-project.md](get-into-project.md)** for **each** project — export/import are per-project, so you need an impersonated token for the source and another for the target. Header `x-blocks-key: $ACCOUNT_TENANT` + Bearer the relevant project's `$PTOK`; `projectKey` in the body = that project's tenant id (`$PTENANT`).
 
-> **Impersonation guard:** export/import must use the current source/target project's tenant id as both `x-blocks-key` and `projectKey`. If a source or target `hdr` does not use that project's `$PTENANT`, stop and obtain that project's impersonated `$PTOK`. Run `assert_project_scope` for each source/target shell before export/import/reload.
+> **Config header guard:** export/import use **`x-blocks-key: $ACCOUNT_TENANT`** (root tenant) per shell, with that project's `$PTENANT` as `projectKey`. Run `assert_config_scope` for each source/target shell before export/import/reload.
 
 ## Steps
 

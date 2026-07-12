@@ -1,8 +1,8 @@
 # Inventory and delete mock data
 
-Use when checking which collections hold seeded sample records, or cleaning them out before go-live ("remove the demo data", "reset the sample records"). Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — it gives the `hdr` array (`x-blocks-key: $PTENANT` + Bearer `$PTOK`) and `$PTENANT` (the project tenant id used as `projectKey`).
+Use when checking which collections hold seeded sample records, or cleaning them out before go-live ("remove the demo data", "reset the sample records"). Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — it gives the `hdr` array (`x-blocks-key: $ACCOUNT_TENANT` + Bearer `$PTOK`) and `$PTENANT` (the project tenant id used as `projectKey`).
 
-> **Impersonation guard:** mock-data inventory/deletion is project-scoped. If `hdr` does not use `$PTENANT`, stop; `ACCOUNT_TENANT` is only for `Project/Gets`, impersonation status, and `impersonate`. Run `assert_project_scope` before inventory/deletion calls.
+> **Config header guard:** mock-data calls use **`x-blocks-key: $ACCOUNT_TENANT`**, not `$PTENANT`. Run `assert_config_scope` before inventory/deletion calls.
 
 **Generation is not exposed in v4.** There is no mock-data *creation* endpoint — generate sample data in the OS portal (Data section) or insert real records through the runtime gateway ([blocks-data-gateway-crud](../../blocks-data-gateway-crud/SKILL.md)). The API's job here is inventory and deletion.
 

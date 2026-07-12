@@ -13,13 +13,13 @@ Admin base: `https://api.seliseblocks.com/iam/v4`.
 
 Configuration happens **inside a project/tenant**, so you first obtain an impersonated, project-scoped token via the shared initial steps — **[flows/get-into-project.md](flows/get-into-project.md)** (login → list projects → impersonate). It yields:
 
-- **`ACCOUNT_TENANT`** — bootstrap/account tenant id (login token's `tenant_id` claim). Used only inside get-into-project for `Project/Gets`, impersonation status, and `impersonate`.
-- **`PTENANT`** — the target project's tenant id → the **`x-blocks-key` header** *and* the **`projectKey`** in bodies (the OIDC client is created against the project).
+- **`ACCOUNT_TENANT`** — root/account tenant id (login token's `tenant_id` claim). Used as **`x-blocks-key`** on every IAM configuration call after impersonation.
+- **`PTENANT`** — the target project's tenant id → **`projectKey`** in bodies. Also used in **`wellKnownUrl`** when creating the identity provider (see below). **Not** `x-blocks-key` on configuration calls.
 - **`PTOK`** — the impersonated access token valid for the project → `Authorization: Bearer`.
 
-Every call here carries `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK>`. **Use `PTENANT`, not `ACCOUNT_TENANT`, as `x-blocks-key`** — an in-project call keyed with the bootstrap tenant is a scope bug.
+Every call here carries `x-blocks-key: <ACCOUNT_TENANT>` + `Authorization: Bearer <PTOK>`, with `projectKey: <PTENANT>` in bodies. **Strict rule:** `x-blocks-key` is the root tenant; `PTENANT` scopes the project via `projectKey` and `wellKnownUrl` only.
 
-> ⚠️ **Never configure against the bootstrap account tenant.** SSO/OIDC setup happens **after impersonation** and is **project-specific** — `x-blocks-key` and the OIDC client's `projectKey` are always `PTENANT`. `ACCOUNT_TENANT` is only a temporary bootstrap value for entering the project; never send it as `x-blocks-key`/`projectKey` on an identity-provider or oidc-client call. Not impersonated yet? Run get-into-project first.
+> ⚠️ **Do not swap the keys.** SSO/OIDC admin calls use **`x-blocks-key: ACCOUNT_TENANT`** + impersonated **`PTOK`**. Never send `PTENANT` as `x-blocks-key` on identity-provider or oidc-client calls. On `PTOK` expiry, renew with `POST /iam/v4/auth-token` then re-impersonate (get-into-project).
 
 ## Flow
 
@@ -33,7 +33,7 @@ Every call here carries `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK
 
 - **Identity provider** — what SSO login uses. `GET /iam/v4/auth/identity-providers` → `{ data: [{ provider, providerType, clientId, clientSecret, issuer, authorizationUrl, tokenUrl, ... }] }`. A project ships with a default `blocks-idp` of `providerType: "oidc"`; that is **not** the SSO provider you're creating. You want an entry with **`providerType: "blocks-oidc"`** — if none exists, create one.
 - **OIDC client** — the client credentials the provider wraps. `GET /iam/v4/oidc-clients` → `{ oIDCClientCredentials: [{ clientId, clientSecret, redirectUris, allowedScopes, allowedServiceAccessResources, allowedResponseTypes, clientName, ... }] }`. Create with `POST /iam/v4/oidc-clients` (body's `projectKey` = **`PTENANT`**, not root).
-- **well-known URL** — the identity-provider create needs `wellKnownUrl`. Format (verified): `https://iam.seliseblocks.com/T<tenantHex>/.well-known/openid-configuration`, where `<tenantHex>` is the project tenant id as 32 hex chars (strip any leading environment letter, e.g. `Dd653…` → `d653…`). Fetch it once to confirm it returns an OIDC discovery document before saving.
+- **well-known URL** — the identity-provider create needs `wellKnownUrl`. Format: **`https://iam.seliseblocks.com/<PTENANT>/.well-known/openid-configuration`** — use `$PTENANT` exactly (the project tenant id you impersonated into, same as `targeted_tenant_id`), **not** the root tenant (`ACCOUNT_TENANT`). Send it as returned from `Project/Gets` (may include a leading env letter, e.g. `D87e3f79…`). Fetch it once to confirm it returns an OIDC discovery document before saving.
 - **redirectUri** — must be your app's callback (e.g. `https://your-app.com/login/callback`) and match on the client, the provider, and the runtime `initiate` call. Mismatches are the most common failure.
 
 ## Gotchas
