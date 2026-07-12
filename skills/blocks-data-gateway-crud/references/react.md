@@ -90,8 +90,11 @@ interface CrudNames {
   updateType: string; // "ProductUpdateInput"
 }
 
+// order entries are { direction: "ASC" | "DESC", field: "<PascalCaseField>" }
+export type SortInput = { direction: "ASC" | "DESC"; field: string };
+
 export function makeCrud<TRecord, TInsert, TUpdate>(n: CrudNames, fieldSelection: string) {
-  function useList(vars: { where?: unknown; paging?: { pageNo: number; pageSize: number }; order?: unknown } = {}) {
+  function useList(vars: { where?: unknown; paging?: { pageNo: number; pageSize: number }; order?: SortInput[] } = {}) {
     return useQuery({
       queryKey: ["data", n.query, vars],
       queryFn: () =>
@@ -174,7 +177,10 @@ export const productsCrud = makeCrud<Product, ProductInsert, ProductUpdate>(
 import { productsCrud } from "./api";
 
 export function ProductList() {
-  const { data, isPending } = productsCrud.useList({ paging: { pageNo: 1, pageSize: 20 } });
+  const { data, isPending } = productsCrud.useList({
+    paging: { pageNo: 1, pageSize: 20 },
+    order: [{ direction: "DESC", field: "Price" }], // sort by { direction, field }
+  });
   const create = productsCrud.useCreate();
   const remove = productsCrud.useDelete();
 
