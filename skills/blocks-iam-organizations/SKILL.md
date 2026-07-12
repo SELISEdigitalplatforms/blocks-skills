@@ -1,6 +1,6 @@
 ---
 name: blocks-iam-organizations
-description: "Manage organizations (tenancy/workspaces) on a SELISE Blocks project via the IAM API (`https://api.seliseblocks.com/iam/v4/iam`): create an organization, update it (branding/theme/locale/addresses), get one by id, list/search organizations, read the current user's organizations (`/organizations/my`), and read or set the project's org-creation config (`/organizations/config`, incl. multi-org enablement). Use whenever the user wants to create or edit an organization, list orgs, fetch 'my organizations', configure whether/where orgs can be created, or turn multi-org on/off on Blocks — 'create an organization', 'update org branding', 'list organizations', 'get my orgs', 'enable multi-org', 'allow org creation from signup'. Works for admin tooling and frontend. Users/roles within an org are blocks-iam-users / blocks-iam-access-control; SSO is blocks-iam-sso-oidc-*."
+description: "Manage organizations (tenancy/workspaces) on a SELISE Blocks project via the IAM API (`https://api.seliseblocks.com/iam/v4/iam`): create an organization, update it (branding/theme/locale/addresses), get one by id, list/search organizations, read the current user's organizations (`/organizations/my`), and read or set the project's org-creation config (`/organizations/config`, incl. multi-org enablement). Use whenever the user wants to create or edit an organization, list orgs, fetch 'my organizations', configure whether/where orgs can be created, or turn multi-org on/off on Blocks — 'create an organization', 'update org branding', 'list organizations', 'get my orgs', 'enable multi-org', 'allow org creation from signup'. Primarily a frontend/implementation concern — most often reading the signed-in user's organizations and rendering an org switcher; the create/update/config operations are the rarer admin/config path. Users/roles within an org are blocks-iam-users / blocks-iam-access-control; SSO is blocks-iam-sso-oidc-*."
 ---
 
 # Blocks IAM — Organizations
@@ -11,11 +11,14 @@ Base: `https://api.seliseblocks.com/iam/v4` — endpoints under **`/iam/v4/iam/o
 
 ## Auth
 
+**Default case — a frontend, as the signed-in user.** Most usage is a running app reading the current user's orgs (`/organizations/my`, the org switcher) or an org's details. Here the caller is the logged-in user, whose session is the **SSO cookie** — no impersonation, no admin token to obtain:
 ```
-x-blocks-key: <project key>           # project tenant id
-Authorization: Bearer <access_token>   # admin/impersonated token in tooling, or the signed-in user's token in a frontend
+x-blocks-key: <project key>   # project tenant id — public, shippable
+# browser: credentials: "include" so the SSO session cookie identifies the user
 ```
-`GET /organizations/my` returns the **caller's** organizations (use the logged-in user's token in a frontend). Create/update/config are admin operations gated by the caller's permissions.
+`GET /organizations/my` takes **no user id** — it derives the user from that cookie, so call it only once logged in (after the SSO callback; verify with `GET /iam/me`). A 401 means "not logged in", not "no orgs".
+
+**Rare case — admin/config tooling, acting *on* a project.** Creating/updating orgs and reading/setting the project org-creation config (`/organizations/config`, multi-org) are admin operations. From a script that runs the initial steps, use an impersonated project-scoped token as `Authorization: Bearer <token>` (see any configuration skill's `flows/get-into-project.md`); from an admin **screen**, the signed-in admin's own session works if they hold the permission. Either way these are gated by the caller's permissions.
 
 ## Endpoints → [endpoints.md](endpoints.md)
 
@@ -33,6 +36,7 @@ Full fields + examples: [endpoints.md](endpoints.md). Frontend hooks: [reference
 
 ## Key concepts (verified live)
 
+- **"My organizations" = the logged-in user's own orgs.** `GET /organizations/my` → `{ isSuccess, errors, organizations: [{ itemId, name, createdDate }] }`, the lightweight list the caller belongs to (org switcher / "pick your workspace"). There's no user id in the request — the user is taken from the call's credentials, so in a frontend send the SSO session cookie (`credentials: "include"`) and call it only once logged in (after the SSO callback; verify with `GET /iam/me` — **[blocks-iam-users](../blocks-iam-users/SKILL.md)**). A 401 means "not logged in", not "no orgs". Persist the picked org and re-fetch the full record with get-by-id when you need branding/addresses. Frontend hook + switcher: [references/react.md](references/react.md).
 - **Different envelope from the rest of IAM.** Organization endpoints return `{ isSuccess, errors, … }` with the payload under a **named** key — `itemId` (create), `organization` (get-by-id), `organizations` (list / my) — **not** the `{ data }` envelope used by users/roles/permissions. Branch your parsing accordingly.
 - **List is a GET with query params**, not a POST body — `?Page=&PageSize=&Sort.Property=&Sort.IsDescending=&Filter.Name=&Filter.ShortCode=&Filter.IsEnabled=&…` → `{ isSuccess, organizations:[…] }`. (Contrast users/roles/permissions, whose lists are POST.)
 - **Config is flat** — `GET /organizations/config` → `{ allowOrgCreationFromCloud, allowOrgCreationFromConstruct, allowOrgCreationFromSignup, allowOrgCreationFromPortal, isMultiOrgEnabled, consentForMultiOrgEnable, itemId }` (no envelope). `POST` the same fields to set it. This is the project-wide policy for **where** new orgs may be created and whether multi-org is on.

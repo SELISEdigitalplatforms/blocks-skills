@@ -56,7 +56,18 @@ GET /iam/v4/iam/organizations?Page=0&PageSize=20&Sort.Property=name&Sort.IsDesce
 → `{ isSuccess, errors, organizations: [ <organization> ] }`.
 
 ## My organizations — `GET /iam/organizations/my`
-→ `{ isSuccess, errors, organizations: [ { itemId, name, createdDate } ] }`. The lightweight list of orgs the caller belongs to — ideal for an org switcher.
+→ `{ isSuccess, errors, organizations: [ { itemId, name, createdDate } ] }`. The lightweight list of orgs **the caller belongs to** — ideal for an org switcher or a "pick your workspace" screen.
+
+- **Identity source = the caller, not a query param.** There is no user id in the request; the endpoint derives the user from the credentials on the call. In a **frontend** that's the signed-in user's **SSO session cookie**, so the browser fetch must send `credentials: "include"` (plus `x-blocks-key`); in **admin tooling** it's whichever user's token (impersonated / logged-in) you send as `Authorization: Bearer`.
+- **Call it after auth is established** — after login / after the SSO callback sets the cookie. No session → 401 (route to login), not an empty array.
+- Items are **lightweight** (`itemId`, `name`, `createdDate`). For branding/addresses/theme etc., follow up with `GET /iam/organizations/{itemId}`.
+- Frontend example:
+```bash
+GET /iam/v4/iam/organizations/my
+Header: x-blocks-key: <project key>
+# browser: credentials: "include" so the session cookie rides along
+```
+See [references/react.md](references/react.md) for the hook + org switcher (with active-org persistence).
 
 ## Get org-creation config — `GET /iam/organizations/config`
 → **flat** (no envelope):
