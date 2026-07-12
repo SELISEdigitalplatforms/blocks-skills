@@ -24,6 +24,8 @@ List params are **PascalCase** (`ProjectKey`, `SchemaName`, `PageNo`, `PageSize`
 
 ## Step 3 — Create the schema
 
+> **Never define the system/default fields yourself.** Blocks auto-adds these to every entity schema — `ItemId`, `CreatedDate`, `CreatedBy`, `LastUpdatedDate`, `LastUpdatedBy`, `Language`, `OrganizationId`, and `Tags`. Only put your own domain fields in `fields[]`. Including any of the above causes duplicate/conflicting definitions — leave them out and Blocks manages them. (They still come back on reads, and you filter/sort by them in the CRUD skill — you just don't *create* them.)
+
 `POST /schemas/define`:
 ```json
 {
@@ -57,7 +59,7 @@ Keep `data.itemId` — the schema definition id used by field/validation/access 
   "deletableFieldNames": []
 }
 ```
-Field names to remove go in `deletableFieldNames`. To rewrite the whole definition, use `PUT /schemas/define` (create body + `itemId`).
+Field names to remove go in `deletableFieldNames`. To rewrite the whole definition, use `PUT /schemas/define` (create body + `itemId`). Same rule as step 3: **don't add or delete the system/default fields** (`ItemId`, `CreatedDate`, `CreatedBy`, `LastUpdatedDate`, `LastUpdatedBy`, `Language`, `OrganizationId`, `Tags`) — they're platform-managed.
 
 ## Step 5 — Validation and access (optional, per the request)
 
