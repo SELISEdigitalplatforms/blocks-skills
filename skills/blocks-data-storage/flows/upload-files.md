@@ -1,6 +1,6 @@
 # Upload and manage files (DMS)
 
-Any file-storage task on the data service: upload via pre-signed URL, download, browse, delete. Preconditions: a Bearer token and the **project key** (project tenant id) sent as both `x-blocks-key` and `projectKey`. All `/Files/*` routes are PascalCase and do **not** use the standard data envelope — errors come back as `Record<string,string>`. Base: `https://api.seliseblocks.com/data/v4`.
+Any file-storage task on the data service: upload via pre-signed URL, download, browse, delete. Preconditions: the **project key** (`PTENANT`) sent as both `x-blocks-key` and `projectKey`. Browser/runtime calls also send `credentials: "include"` for the hosted SSO cookie. Admin/build scripts may use Bearer `$PTOK` from `get-into-project`, but a deployed frontend must never use `PTOK` or impersonation. All `/Files/*` routes are PascalCase and do **not** use the standard data envelope — errors come back as `Record<string,string>`. Base: `https://api.seliseblocks.com/data/v4`.
 
 ## Upload = two steps (presign → PUT binary). No `/Files/UploadFile`.
 
@@ -26,14 +26,13 @@ Keep **`uploadUrl`** and **`fileId`** from the response.
 - **`parentDirectoryId`** — **must not be `null`**. Use `""` for the root, or a folder id to place the file inside a folder. Sending `null` is rejected — send an empty string instead.
 
 ### Step 2 — PUT the file bytes to `uploadUrl`
-Upload the raw file **binary** with a `PUT` to the returned `uploadUrl`. The URL is pre-authorized (no Bearer token needed) and expires, so upload promptly. Still include the **`x-blocks-key`** header (it rides on every request; the storage provider ignores unknown headers).
+Upload the raw file **binary** with a `PUT` to the returned `uploadUrl`. The URL is pre-authorized (no Bearer token needed) and expires, so upload promptly. Include `x-blocks-key` on the PUT only when the storage provider accepts unknown headers; the important project key is on the Blocks presign/GetFile calls.
 
 **Azure needs one extra header.** If the storage provider is **Azure**, the PUT must include `x-ms-blob-type: BlockBlob` or Azure rejects it. Detect the provider from the `uploadUrl` host — an Azure Blob URL looks like `https://<account>.blob.core.windows.net/...` — or from the storage config's `storageStrategy` (see below). Other providers (e.g. S3) don't need this header.
 
 ```bash
 # Azure example
 curl -s -X PUT "<uploadUrl>" \
-  -H "x-blocks-key: <project tenant id>" \
   -H "x-ms-blob-type: BlockBlob" \
   -H "Content-Type: application/pdf" \
   --data-binary @invoice-2026-07.pdf
@@ -42,7 +41,7 @@ On success the file is stored; use `fileId` from step 1 to reference it. (`GetFi
 
 ## Which storage configurations exist? — `GET https://api.seliseblocks.com/logic/v4/Storage/Gets`
 
-Storage configs live on the **logic** service (note the different host path). Same auth (`x-blocks-key` + Bearer). Returns an array; the `name` is what you pass as `configurationName`, and `storageStrategy` tells you the provider (so you know whether the PUT needs `x-ms-blob-type`):
+Storage configs live on the **logic** service (note the different host path). Same project scope (`x-blocks-key: PTENANT`; plus the SSO cookie in browser flows, or Bearer `$PTOK` only for admin/build scripts). Returns an array; the `name` is what you pass as `configurationName`, and `storageStrategy` tells you the provider (so you know whether the PUT needs `x-ms-blob-type`):
 ```json
 [
   {
@@ -72,7 +71,7 @@ Most projects have a single `"Default"` (Azure). Only enumerate this when you ne
 - Create folder: `POST /Files/CreateFolder` (`artifactName` = name, `parentId` to nest). Delete folder: `POST /Files/DeleteFolder` (`folderId`).
 - Delete a file: `POST /Files/DeleteFile` with `{ "fileId": "<fileId>", "projectKey": "<project tenant id>" }` → `{ isSuccess }`.
 
-Error paths: 401 → wrong `x-blocks-key`/expired token. A failed pre-signed PUT (expired URL) → redo step 1; don't reuse a stale `fileId`. An Azure PUT that 400s with a "blob type" error → you missed `x-ms-blob-type: BlockBlob`.
+Error paths: 401 → wrong `x-blocks-key`, missing/expired SSO session, or expired admin token. A failed pre-signed PUT (expired URL) → redo step 1; don't reuse a stale `fileId`. An Azure PUT that 400s with a "blob type" error → you missed `x-ms-blob-type: BlockBlob`.
 
 ## Verify
 

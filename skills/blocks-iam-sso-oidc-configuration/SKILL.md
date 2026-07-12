@@ -13,13 +13,13 @@ Admin base: `https://api.seliseblocks.com/iam/v4`.
 
 Configuration happens **inside a project/tenant**, so you first obtain an impersonated, project-scoped token via the shared initial steps — **[flows/get-into-project.md](flows/get-into-project.md)** (login → list projects → impersonate). It yields:
 
-- **`ROOT`** — root/account tenant id (login token's `tenant_id` claim). Used as `x-blocks-key` **only** for the account-level `Project/Gets` and `impersonate` calls in get-into-project.
+- **`ACCOUNT_TENANT`** — bootstrap/account tenant id (login token's `tenant_id` claim). Used only inside get-into-project for `Project/Gets`, impersonation status, and `impersonate`.
 - **`PTENANT`** — the target project's tenant id → the **`x-blocks-key` header** *and* the **`projectKey`** in bodies (the OIDC client is created against the project).
-- **`PTOK`** — an access token valid for the project (impersonated; the plain login token also works if your account already has access) → `Authorization: Bearer`.
+- **`PTOK`** — the impersonated access token valid for the project → `Authorization: Bearer`.
 
-Every call here carries `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK>`. **Use `PTENANT`, not `ROOT`, as `x-blocks-key`** — an in-project call keyed with the root tenant 401/403s (verified live).
+Every call here carries `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK>`. **Use `PTENANT`, not `ACCOUNT_TENANT`, as `x-blocks-key`** — an in-project call keyed with the bootstrap tenant is a scope bug.
 
-> ⚠️ **Never configure against the root tenant.** SSO/OIDC setup happens **after impersonation** and is **project-specific** — `x-blocks-key` and the OIDC client's `projectKey` are always `PTENANT`. The root/account tenant id (in this account, `d7e5554c758541db8a18694b64ef423d`) is used **only** for `Project/Gets` and `impersonate`; never send it as `x-blocks-key`/`projectKey` on an identity-provider or oidc-client call. Not impersonated yet? Run get-into-project first.
+> ⚠️ **Never configure against the bootstrap account tenant.** SSO/OIDC setup happens **after impersonation** and is **project-specific** — `x-blocks-key` and the OIDC client's `projectKey` are always `PTENANT`. `ACCOUNT_TENANT` is only a temporary bootstrap value for entering the project; never send it as `x-blocks-key`/`projectKey` on an identity-provider or oidc-client call. Not impersonated yet? Run get-into-project first.
 
 ## Flow
 
@@ -39,6 +39,6 @@ Every call here carries `x-blocks-key: <PTENANT>` + `Authorization: Bearer <PTOK
 ## Gotchas
 
 - **Impersonate first.** These are project-scoped admin calls; without the impersonated token you get 401.
-- **`projectKey` on the OIDC client = project tenant id (`PTENANT`), not `ROOT`.** The prep note calls this out explicitly.
+- **`projectKey` on the OIDC client = project tenant id (`PTENANT`), not `ACCOUNT_TENANT`.** The prep note calls this out explicitly.
 - **`requirePkce`**: the OIDC client sets `requirePkce: true` (the runtime `initiate` returns a PKCE `code_challenge`); the identity-provider record uses `requirePkce: false`. Keep this split unless you have a reason to change it.
 - **Idempotency**: always run step 1 (and step 2) first — don't create a duplicate client/provider if a usable one already exists.

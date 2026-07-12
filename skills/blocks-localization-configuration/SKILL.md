@@ -12,13 +12,13 @@ Base: `https://api.seliseblocks.com/localization/v4` — PascalCase controllers 
 ## Auth & keys — start here
 
 Localization authoring is project configuration, so it runs **inside a project/tenant** — do the shared initial steps first: **[flows/get-into-project.md](flows/get-into-project.md)** (login → list projects → impersonate). It yields:
-- **`ROOT`** — root/account tenant id. Used as `x-blocks-key` **only** for the account-level `Project/Gets` and `impersonate` calls in get-into-project.
+- **`ACCOUNT_TENANT`** — bootstrap/account tenant id. Used only inside get-into-project for `Project/Gets`, impersonation status, and `impersonate`.
 - **`PTENANT`** — the target project's tenant id → the **`x-blocks-key` header** *and* the **`projectKey`** body field / **`ProjectKey`** query param on every localization call.
-- **`PTOK`** — an access token valid for the project (impersonated; the plain login token also works if your account already has access) → `Authorization: Bearer`.
+- **`PTOK`** — the impersonated access token valid for the project → `Authorization: Bearer`.
 
-**Use `PTENANT`, not `ROOT`, as `x-blocks-key`** — localization lives in the project tenant; keying with the root tenant returns 403 `SERVICE_ACCESS_DENIED` (verified live).
+**Use `PTENANT`, not `ACCOUNT_TENANT`, as `x-blocks-key`** — localization lives in the project tenant; keying with the bootstrap tenant returns 403 `SERVICE_ACCESS_DENIED` (verified live).
 
-> ⚠️ **Never configure against the root tenant.** Authoring languages/modules/keys and generating files happens **after impersonation** and is **project-specific** — `x-blocks-key` and `projectKey`/`ProjectKey` are always `PTENANT`. The root/account tenant id (in this account, `d7e5554c758541db8a18694b64ef423d`) is used **only** for `Project/Gets` and `impersonate`; never send it as the key on a `/Language`, `/Module`, or `/Key` call. Not impersonated yet? Run get-into-project first.
+> ⚠️ **Never configure against the bootstrap account tenant.** Authoring languages/modules/keys and generating files happens **after impersonation** and is **project-specific** — `x-blocks-key` and `projectKey`/`ProjectKey` are always `PTENANT`. `ACCOUNT_TENANT` is only a temporary bootstrap value for entering the project; never send it as the key on a `/Language`, `/Module`, or `/Key` call. Not impersonated yet? Run get-into-project first.
 
 ## The pipeline
 
@@ -45,6 +45,6 @@ Full request/response contracts: [endpoints.md](endpoints.md).
 - **`GenerateUilmFile` is mandatory** after any key change, per module — skip it and the frontend's `/Key/GetUilmFile` won't reflect your edits.
 - **Bulk over single.** Use `POST /Key/SaveKeys` (an array) when saving more than one key; `POST /Key/Save` is for a single key.
 - **`culture` must match a configured language's `languageCode` exactly** (`de-DE`, not `de`), or the value won't map at runtime.
-- **`x-blocks-key` = `PTENANT`** (the project tenant), and `projectKey`/`ProjectKey` = `PTENANT` too. Keying with `ROOT` → 403 `SERVICE_ACCESS_DENIED`.
+- **`x-blocks-key` = `PTENANT`** (the project tenant), and `projectKey`/`ProjectKey` = `PTENANT` too. Keying with `ACCOUNT_TENANT` → 403 `SERVICE_ACCESS_DENIED`.
 - **Responses are `{ success, errorMessage, validationErrors[] }`** for saves (not the data-service envelope); check `success` and read `validationErrors` on failure.
 - New key? Set `isNewKey: true` and leave `itemId: ""`; editing? pass the existing `itemId`.

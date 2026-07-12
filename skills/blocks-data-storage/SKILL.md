@@ -7,10 +7,15 @@ description: "Store and serve files on a SELISE Blocks project via the data serv
 
 DMS is the document management system embedded in the data service: pre-signed upload URLs, folders, tags, metadata, and versions, under `https://api.seliseblocks.com/data/v4/Files/*`. Store a file here and keep its `fileId` in a schema field (see **[blocks-data-gateway-configuration](../blocks-data-gateway-configuration/SKILL.md)** / **[blocks-data-gateway-crud](../blocks-data-gateway-crud/SKILL.md)**) to associate it with a record.
 
-## Auth & keys (same model as the whole data service)
+## Auth & Keys
 
-- **Login:** `POST https://api.seliseblocks.com/iam/v4/auth-login` with `{ "username", "password" }` → `access_token` (~5 min) + `refresh_token`.
-- **The project key = the token's `tenant_id` claim.** Send it as the **`x-blocks-key` header** and, where a body/query needs it, as **`projectKey` / `ProjectKey`**. Plus `Authorization: Bearer <access_token>`. It's **not** the account/cloud login key. 401 → wrong key or expired token.
+Files are project-scoped. The project key is always the target project tenant id (`PTENANT`), never the bootstrap/account tenant.
+
+- **Browser/runtime calls:** send `x-blocks-key: <PTENANT>` and `credentials: "include"` so Blocks uses the signed-in user's hosted SSO cookie/session. Use this for user-facing uploads/downloads.
+- **Admin/build script calls only:** first run `blocks-data-gateway-configuration/flows/get-into-project.md`; send `x-blocks-key: <PTENANT>` plus `Authorization: Bearer <PTOK>`, and put `projectKey: <PTENANT>` where the body/query requires it. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
+- **Pre-signed PUT:** the storage URL is pre-authorized and needs no Bearer token. Keep the project key on Blocks API calls; include `x-blocks-key` on the PUT only when the storage provider accepts it.
+
+401 → wrong project key, missing/expired session, or expired admin token.
 
 ## URL & casing conventions (Files is the odd one out)
 
@@ -40,6 +45,6 @@ DMS is the document management system embedded in the data service: pre-signed u
 
 - **No `/Files/UploadFile`.** Uploading is presign → binary PUT. Don't add a metadata-commit step.
 - **Azure blob type** — an Azure PUT without `x-ms-blob-type: BlockBlob` fails; add it when the `uploadUrl` is an Azure Blob URL.
-- **`x-blocks-key` on every request** (project key). The pre-signed PUT is pre-authorized so it needs **no Bearer token**, but still include `x-blocks-key` — the storage provider ignores unknown headers. (`auth-login` is the only Blocks call that omits `x-blocks-key`.)
+- **`x-blocks-key` = `PTENANT` on every Blocks API request.** The pre-signed PUT is pre-authorized so it needs **no Bearer token**; include `x-blocks-key` on the PUT only when the storage provider accepts unknown headers.
 - **`GetFile` confirms the upload** — a successful `GetFile` (with `FileId` + `ConfigurationName`) returning your file means it's stored.
 - Flat responses — don't expect `{ isSuccess, data, errors[] }`; read the file fields directly and handle `errors` as a string map.

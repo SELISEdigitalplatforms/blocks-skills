@@ -1,6 +1,6 @@
 # GraphQL CRUD against the runtime gateway
 
-Once a schema is created **and reloaded** (via **[blocks-data-gateway-configuration](../../blocks-data-gateway-configuration/flows/configure-schema.md)**), the gateway auto-generates its CRUD. This flow is how to discover and call those operations. Same auth as everywhere: **`x-blocks-key: <project tenant id>`** on every request + `Authorization: Bearer <token>`. For the login+extract snippet that sets `$BLOCKS_API_URL`, `$PTENANT` (the project tenant id) and the `hdr` array, see the configuration skill's [get-into-project.md](../../blocks-data-gateway-configuration/flows/get-into-project.md).
+Once a schema is created **and reloaded** (via **[blocks-data-gateway-configuration](../../blocks-data-gateway-configuration/flows/configure-schema.md)**), the gateway auto-generates its CRUD. This flow is how to discover and call those operations. Every gateway call uses **`x-blocks-key: <PTENANT>`**. Browser/runtime calls send `credentials: "include"` for the hosted SSO cookie. Admin/build scripts may use `Authorization: Bearer $PTOK` from [get-into-project.md](../../blocks-data-gateway-configuration/flows/get-into-project.md), but a deployed frontend must never use `PTOK` or impersonation. Never use the bootstrap account tenant as the gateway key.
 
 **Gateway:** `POST https://api.seliseblocks.com/data/v4/gateway` — one endpoint, standard GraphQL body `{ "query": "...", "variables": { ... } }`.
 

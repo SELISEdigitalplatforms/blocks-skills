@@ -9,15 +9,14 @@ Once a schema is created **and reloaded** (via **[blocks-data-gateway-configurat
 
 **Gateway:** `POST https://api.seliseblocks.com/data/v4/gateway` — one endpoint for all schemas in the project, standard GraphQL body `{ "query": "...", "variables": { ... } }`.
 
-## Auth & keys (same model as the whole data service)
+## Auth & Keys
 
-- **Login:** `POST https://api.seliseblocks.com/iam/v4/auth-login` with `{ "username", "password" }` → `access_token` (~5 min) + `refresh_token`.
-- **The project key = the token's `tenant_id` claim.** Send it as the **`x-blocks-key` header** on every gateway call, alongside `Authorization: Bearer <access_token>`.
-  ```
-  x-blocks-key: <tenant_id>
-  Authorization: Bearer <access_token>
-  ```
-- It's **not** the account/cloud key used to reach login. 401 → wrong `x-blocks-key` or expired token (refresh via `POST /iam/v4/auth/refresh`).
+Gateway CRUD is runtime data access inside a project. The project key is always the target project tenant id (`PTENANT`), never the bootstrap/account tenant.
+
+- **Browser/runtime calls:** send `x-blocks-key: <PTENANT>` and `credentials: "include"` so Blocks uses the signed-in user's hosted SSO cookie/session. This is the normal React app path.
+- **Admin/build script calls only:** first run `blocks-data-gateway-configuration/flows/get-into-project.md`; send `x-blocks-key: <PTENANT>` plus `Authorization: Bearer <PTOK>`. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
+
+401 → wrong project key, missing/expired session, or expired admin token. Do not use the bootstrap/account tenant as `x-blocks-key` on gateway calls.
 
 ## What's where
 
@@ -51,6 +50,6 @@ Full query/variable examples are in [flows/graphql-crud.md](flows/graphql-crud.m
 ## Gotchas
 
 - **Reload gates everything.** If a `get…`/`insert…` field is missing, the schema hasn't been reloaded — go back to blocks-data-gateway-configuration and `POST /schema-configurations/reload`.
-- **`x-blocks-key` = tenant_id.** Reusing the account key → 401.
+- **`x-blocks-key` = `PTENANT`.** Reusing the bootstrap/account tenant key → 401.
 - **Introspect when unsure of inputs.** Right after creating a schema, `{ __type(name:"<Schema>InsertInput"){ inputFields{ name type{ kind name ofType{ name } } } } }` gives the exact fields instead of guessing.
 - **The gateway is not in the swagger.** These shapes were captured by live introspection; verify against your project if the platform changes.

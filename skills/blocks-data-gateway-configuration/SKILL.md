@@ -13,18 +13,18 @@ This is the **configuration** half. Once a schema is live here, the **[blocks-da
 
 Configuration happens **inside a project/tenant**, so you first obtain an impersonated, project-scoped token. This is the shared "initial steps" every Blocks config skill runs — **[flows/get-into-project.md](flows/get-into-project.md)** (login → list projects → impersonate). It gives you three values:
 
-- **`ROOT`** — root/account tenant id (the login token's `tenant_id` claim). Used as `x-blocks-key` **only** for the account-level `Project/Gets` and `impersonate` calls inside get-into-project.
+- **`ACCOUNT_TENANT`** — bootstrap/account tenant id (the login token's `tenant_id` claim). Used only inside get-into-project for `Project/Gets`, impersonation status, and `impersonate`.
 - **`PTENANT`** — the target project's tenant id (from `Project/Gets`, or user-provided) → the **`x-blocks-key` header** *and* the **`projectKey`** in bodies for every data-service call.
-- **`PTOK`** — an access token valid for the project (impersonated; the plain login token also works if your account already has access) → `Authorization: Bearer`.
+- **`PTOK`** — the impersonated access token valid for the project → `Authorization: Bearer`.
 
 Every configuration call therefore carries:
 ```
 x-blocks-key: <PTENANT>
 Authorization: Bearer <PTOK>
 ```
-…and puts `projectKey: <PTENANT>` in the body. **Use `PTENANT`, not `ROOT`, as `x-blocks-key`** — an in-project call keyed with the root tenant 401/403s (verified live). 401 / `session_expired` → wrong `x-blocks-key` or an expired token (re-run login).
+…and puts `projectKey: <PTENANT>` in the body. **Use `PTENANT`, not `ACCOUNT_TENANT`, as `x-blocks-key`** — an in-project call keyed with the bootstrap tenant is a scope bug. 401 / `session_expired` → wrong `x-blocks-key` or an expired token (re-run login).
 
-> ⚠️ **Never configure against the root tenant.** All configuration happens **after impersonation** and is **project-specific** — `x-blocks-key` and `projectKey` are always `PTENANT`. The root/account tenant id (in this account, `d7e5554c758541db8a18694b64ef423d`) is used **only** for `Project/Gets` and `impersonate` in get-into-project; it must never be sent as `x-blocks-key`/`projectKey` on a schema/field/access/reload call. If you haven't impersonated yet, do get-into-project first.
+> ⚠️ **Never configure against the bootstrap account tenant.** All configuration happens **after impersonation** and is **project-specific** — `x-blocks-key` and `projectKey` are always `PTENANT`. `ACCOUNT_TENANT` is only a temporary bootstrap value for entering the project; it must never be sent as `x-blocks-key`/`projectKey` on a schema/field/access/reload call. If you haven't impersonated yet, do get-into-project first.
 
 ## URL convention
 
@@ -64,6 +64,6 @@ Hand these to blocks-data-gateway-crud after a reload.
 ## Gotchas
 
 - **Reload or it didn't happen.** New/edited schemas are invisible to the gateway (and to blocks-data-gateway-crud) until reload succeeds.
-- **`x-blocks-key` = tenant_id, everywhere.** Reusing the account key on data calls → 401.
+- **`x-blocks-key` = `PTENANT`, everywhere project-scoped.** Reusing the bootstrap account tenant on data calls → 401.
 - **List params are PascalCase** — `ProjectKey`, `SchemaName`, `PageNo`, `PageSize`, `Keyword`, `SortBy`, `SortDescending`.
 - **Unnamed int enums.** `schemaType`, `SchemaAccessLevel`, validation `type`, policy enums, `exportOption` are numeric in the swagger with no member names. The mappings in the flows are from legacy docs — verify against the portal UI before scripting bulk changes.

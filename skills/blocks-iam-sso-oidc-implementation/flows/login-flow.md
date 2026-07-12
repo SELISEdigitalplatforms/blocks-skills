@@ -42,22 +42,23 @@ This **sets the session cookie**. Once it succeeds, the user is authenticated �
 
 ## Step 5 — Refresh the access token when it expires
 
-Access tokens are short-lived (~5 min). To mint a fresh one without sending the user back through login, call the OIDC token endpoint with the refresh token — a **`POST` with a form-encoded body**, not JSON:
+Access tokens are short-lived (~5 min). To renew without sending the user back through login, call the OIDC token endpoint as a **`POST` with a form-encoded body**, not JSON. In the hosted SSO flow the refresh token may be HttpOnly, so start with cookie-based refresh and include a `refresh_token` form field only if your project explicitly exposes one to JavaScript:
 
 ```bash
 curl -s -X POST "https://api.seliseblocks.com/iam/v4/oidc/token" \
   -H "x-blocks-key: $PROJECT_KEY" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "grant_type=refresh_token" \
-  --data-urlencode "client_id=$CLIENT_ID" \
-  --data-urlencode "refresh_token=$REFRESH_TOKEN"
+  --data-urlencode "client_id=$CLIENT_ID"
+# Add only when your project exposes a readable refresh token:
+# --data-urlencode "refresh_token=$REFRESH_TOKEN"
 ```
 
-- **Content-Type is `application/x-www-form-urlencoded`.** The body carries exactly `grant_type=refresh_token`, `client_id` (the OIDC `clientId`), and `refresh_token`.
+- **Content-Type is `application/x-www-form-urlencoded`.** The body always carries `grant_type=refresh_token` and `client_id` (the OIDC `clientId`). Add `refresh_token` only when the token is intentionally available to JS.
 - **`x-blocks-key` is required**, like every Blocks call.
-- On success Blocks issues a **new `access_token` and `refresh_token` and sets them in cookies** — so send the request with `credentials: "include"` from the browser so the `Set-Cookie` applies to your domain. The rotated refresh token replaces the old one (single-use), so always keep the newest.
+- On success Blocks issues a fresh session and sets rotated cookies — so send the request with `credentials: "include"` from the browser so the `Set-Cookie` applies to your domain.
 - **When to call it:** reactively, when a Blocks call returns 401 (refresh, then retry the original request once); or proactively, shortly before the access token expires.
-- **Where the `refresh_token` comes from:** this call needs the refresh token in the body, so your app must have it. If your session is entirely HttpOnly-cookie-based you may not be able to read it in JS — confirm for your project how the refresh token is exposed to the client (e.g. returned by the callback, or a readable cookie). The response body is expected to follow the OIDC token shape (`access_token`, `refresh_token`, `expires_in`, `token_type`); verify the exact fields against your project, since the tokens also arrive as cookies.
+- **Where the `refresh_token` comes from:** prefer not reading it at all. If your project requires the form field, confirm how the refresh token is exposed to the client (e.g. callback response or readable cookie) before wiring it into JS. If it is HttpOnly, JS cannot supply it; rely on cookie-based refresh or a backend-for-frontend endpoint.
 
 ## Notes
 

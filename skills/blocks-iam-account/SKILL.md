@@ -14,12 +14,14 @@ Base: `https://api.seliseblocks.com/iam/v4` (no `/api/` prefix — the swagger's
 
 ## Auth
 
-- Header **`x-blocks-key: <project key>`** on every call — the project's tenant id (what the portal exposes as `BLOCKS_X_BLOCKS_KEY`; public, safe in a client).
+- Header **`x-blocks-key: <PTENANT>`** on every call — the project's tenant id (what the portal exposes as `BLOCKS_X_BLOCKS_KEY`; public, safe in a client).
 - **Activate** does not need a bearer token (the activation code is the credential). **Logout** is **cookie/session based — no bearer token**: it identifies the session from the auth cookies the browser sends, so the call must go out with `credentials: "include"` and the cookies must reach the API (same-site).
 
 ## Activate a user — `POST /iam/v4/auth/activate`
 
 Completes account setup for a user created in an inactive state (the activation `code` arrives by email).
+
+Headers: `content-type: application/json` and `x-blocks-key: <PTENANT>`. **No `Authorization` header** — the activation code is the credential, but the project key is still mandatory.
 
 ```json
 {
@@ -40,7 +42,7 @@ Completes account setup for a user created in an inactive state (the activation 
 
 Note the capital **`L`** in the served path. This is a **cookie/session** call, not a token call:
 
-- Headers: `accept: application/json`, `content-type: application/json`, and `x-blocks-key: <project key>`. **No `Authorization` header.**
+- Headers: `accept: application/json`, `content-type: application/json`, and `x-blocks-key: <PTENANT>`. **No `Authorization` header.**
 - Body: **empty object** — `{}`.
 - **Must be sent with the browser's auth cookies** (`credentials: "include"`). The server reads the session from those cookies, revokes it, and clears them in the response `Set-Cookie`.
 
@@ -57,7 +59,7 @@ See [references/react.md](references/react.md) for an activation form and a logo
 
 ## Gotchas
 
-- **`x-blocks-key` = the project key** (tenant id). A wrong key → 401.
+- **`x-blocks-key` = `PTENANT`** (the project tenant id). Activation has no bearer token, but it still needs this project key. A wrong key → 401.
 - **Activation code is single-use and time-limited** — if it's expired, the user needs a fresh activation email (resend is a separate signup/user-management concern).
 - **Logout path is `/auth/Logout` (capital L) and the body is `{}`** — it is not a token endpoint. Don't send `Authorization` or a `refreshToken` in the body; the session comes from the cookies.
 - **Cookies must actually reach the API.** Logout only works when the session cookies are delivered to `api.seliseblocks.com`. That happens automatically when your app is served from the same registrable domain (`*.seliseblocks.com`, so the request is `same-site`). On a different domain the auth cookies are cross-site — they only ride along if they were issued `SameSite=None; Secure`; otherwise the call reaches the server without a session and cannot clear it.

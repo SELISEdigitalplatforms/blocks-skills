@@ -1,6 +1,8 @@
 # Ensure a blocks-oidc identity provider (client + provider)
 
-End state: the project has an active `blocks-oidc` identity provider, so the app can do authorization-code SSO. Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — you have the `hdr` array (`x-blocks-key: $ROOT` + Bearer `$PTOK`), `$ROOT`, and `$PTENANT` (project tenant id). All calls target `https://api.seliseblocks.com/iam/v4`.
+End state: the project has an active `blocks-oidc` identity provider, so the app can do authorization-code SSO. Preconditions: an impersonated project token from **[get-into-project.md](get-into-project.md)** — you have the `hdr` array (`x-blocks-key: $PTENANT` + Bearer `$PTOK`) and `$PTENANT` (project tenant id). All calls target `https://api.seliseblocks.com/iam/v4`.
+
+> **Impersonation guard:** OIDC configuration is never run against `$ACCOUNT_TENANT`. `ACCOUNT_TENANT` is only for the bootstrap calls in `get-into-project` (`Project/Gets`, impersonation status, and `impersonate`). If `hdr` does not use `$PTENANT`, stop and re-run `get-into-project` until `hdr=(-H "x-blocks-key: $PTENANT" -H "Authorization: Bearer $PTOK")`. Run `assert_project_scope` before identity-provider and OIDC-client calls.
 
 The logic is a short decision tree: **provider exists? → done. else client exists? → create provider from it. else → create client, then provider.**
 
@@ -45,7 +47,7 @@ curl -s -X POST "$BLOCKS_API_URL/iam/v4/oidc-clients" "${hdr[@]}" -H "Content-Ty
   "clientDisplayName": "My App SSO Client"
 }'
 ```
-- **`projectKey` = `$PTENANT`** (the project tenant id) — **not** `ROOT`.
+- **`projectKey` = `$PTENANT`** (the project tenant id) — **not** `ACCOUNT_TENANT`.
 - `redirectUris` must be your app's real callback URL(s); they have to match at every later step and at runtime.
 - `allowedServiceAccessResources` = the Blocks services the SSO'd session may reach — trim to what the app needs.
 - Keep `clientId` and `clientSecret` from the response for step 4.
