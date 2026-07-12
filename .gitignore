@@ -18,3 +18,5 @@ benchmark.json
 
 # Swagger spec cache (regenerate via tools/generate-api-docs.py)
 .swagger-cache/
+
+.scratch_*
