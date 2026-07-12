@@ -2,7 +2,11 @@
 
 Verified against the live IAM swagger + responses. Base `https://api.seliseblocks.com/iam/v4`; paths under `/iam/v4/iam/...`. Headers: `x-blocks-key: <project key>` + `Authorization: Bearer <token>`. Envelope: `{ data, errors, totalCount? }` unless noted.
 
-Unnamed int enums (verify names in portal): `userPassType 0|1|2`, `userCreationType 0|1|2|3|4|5`, `verifiedType 0|1|2|3`, `userMfaType 0|1|2|3|4`, `allowedLogInType 0|1|2|3`.
+**`userPassType`** (member names from platform source) — `0` None (no password credential set), `1` Password (bcrypt-hashed) — **recommended: use `1`** unless the user explicitly asks for another, `2` Pin (short numeric PIN, for kiosk / mobile unlock flows).
+
+**`userCreationType`** (member names from platform source) — `0` None (unset / legacy records), `1` Portal (created by an admin through the management portal), `2` Api (created programmatically through a public/partner API), `3` Service (created by a trusted internal service or background job), `4` Social (created via a social identity provider — Google, GitHub, …), `5` ThirdParty (created through a third-party integration / partner connector). **Recommended: `2` (Api)**; use `1` (Portal) when the creation is an admin-portal-style action.
+
+Still unnamed int enums (verify names in portal): `verifiedType 0|1|2|3`, `userMfaType 0|1|2|3|4`, `allowedLogInType 0|1|2|3`.
 
 ## Create — `POST /iam/users/create`
 ```json
@@ -16,8 +20,8 @@ Unnamed int enums (verify names in portal): `userPassType 0|1|2`, `userCreationT
   "salutation": "",
   "language": "en-US",
   "mailPurpose": "",
-  "userPassType": 0,
-  "userCreationType": 0,
+  "userPassType": 1,
+  "userCreationType": 2,
   "verifiedType": 0,
   "userMfaType": 1,
   "mfaEnabled": false,
@@ -33,7 +37,8 @@ Unnamed int enums (verify names in portal): `userPassType 0|1|2`, `userCreationT
 }
 ```
 - `roles` by **slug**, `permissions` by **name** (as defined in blocks-iam-access-control).
-- **Invite-and-activate:** create with an empty `password` and the appropriate `userPassType`/`userCreationType`, then have the user complete **blocks-iam-account** activate. To set a password immediately, provide `password`.
+- **`userPassType: 1` (Password)** and **`userCreationType: 2` (Api)** are the recommended defaults (see the enum note above). Stick with `userPassType: 1` unless the user explicitly wants a PIN; use `userCreationType: 1` (Portal) instead of `2` when modelling an admin-portal creation.
+- **Invite-and-activate:** create with an empty `password` (keep `userPassType: 1`), then have the user complete **blocks-iam-account** activate to set their password. To set a password immediately, provide `password` in this call.
 - `mailPurpose` optional (empty ok). `attributes` is a free-form object for custom fields.
 
 ## Update — `POST /iam/users/{id}`

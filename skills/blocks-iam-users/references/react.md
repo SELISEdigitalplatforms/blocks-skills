@@ -52,7 +52,8 @@ export const users = {
   patchMe: (body: object) => iam(`/me`, { method: "PATCH", body: JSON.stringify(body) }),
   list: (body: object = {}) => iam<Paged<Record<string, unknown>>>(`/users`, { method: "POST", body: JSON.stringify({ page: 0, pageSize: 20, ...body }) }),
   get: (id: string, organizationId?: string) => iam<{ data: Record<string, unknown> }>(`/users/${id}${organizationId ? `?organizationId=${organizationId}` : ""}`),
-  create: (body: object) => iam(`/users/create`, { method: "POST", body: JSON.stringify(body) }),
+  // When creating, default userPassType: 1 (Password) and userCreationType: 2 (Api) unless the caller overrides.
+  create: (body: object) => iam(`/users/create`, { method: "POST", body: JSON.stringify({ userPassType: 1, userCreationType: 2, ...body }) }),
   update: (id: string, body: object) => iam(`/users/${id}`, { method: "POST", body: JSON.stringify({ ...body, itemId: id }) }),
   assign: (userId: string, roles: string[], permissions: string[] = []) => iam(`/users/roles-and-permissions`, { method: "POST", body: JSON.stringify({ userId, roles, permissions }) }),
   deactivate: (userId: string) => iam(`/users/deactivate`, { method: "POST", body: JSON.stringify({ userId }) }),
@@ -145,6 +146,7 @@ queryClient.invalidateQueries({ queryKey: ["iam", "me"] });
 ## Notes
 
 - **`/iam/me` is the auth-state source of truth** — it succeeds only with a valid session (the cookie set by the SSO callback), so call it on page load, after login, and after the callback; a 401 means "logged out", not an error to retry. The client sends `credentials: "include"` so the cookie rides along even with no JS-held token. Cache it once (`["iam","me"]`) and drive role/permission gates off `me.permissions` / `me.roles`.
+- **Creating a user:** send `userPassType: 1` (Password — recommended; `2` = Pin) and `userCreationType: 2` (Api — recommended; `1` = Portal for admin-portal-style creation). See `endpoints.md` for the full enum member names.
 - **Lists are POST**; the timeline is a `GET` that still takes a page/filter body (send it as the request body).
 - Assign access with `roles-and-permissions` (roles by slug, permissions by name) rather than stuffing it into a profile update.
 - Server-side authorization still applies — UI gating is convenience, not security.
