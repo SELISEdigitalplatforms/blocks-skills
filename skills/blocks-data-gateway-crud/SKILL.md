@@ -39,10 +39,10 @@ Pluralization is generated, not guessable (`datastructure` → `getdatastructure
 
 ## Operation shapes (verified live)
 
-- **Read** — `get<Collection>(input: DynamicQueryInput, where: <Schema>FilterInput, order: [<Schema>SortInput!], paging: PaginationInput): <Schema>Result`. Result is `{ items[], totalCount, pageNo, pageSize, totalPages, hasNextPage, hasPreviousPage }`; `PaginationInput` is `{ pageNo, pageSize }`. **`order` entries are `{ direction, field }`** — e.g. `[{ direction: DESC, field: "Price" }]` — not a `{ Field: DIRECTION }` map.
+- **Read** — `get<Collection>(where: <Schema>FilterInput, order: [<Schema>SortInput!], paging: PaginationInput): <Schema>Result`. Result is `{ items[], totalCount, pageNo, pageSize, totalPages, hasNextPage, hasPreviousPage }`; `PaginationInput` is `{ pageNo, pageSize }`. **`order` entries are `{ direction, field }`** — e.g. `[{ direction: DESC, field: "Price" }]` — not a `{ Field: DIRECTION }` map. (The old `input: DynamicQueryInput` arg is **deprecated** — use `where`/`order`/`paging`.)
 - **Create** — `insert<Schema>(input: <Schema>InsertInput): ActionResponse`.
-- **Update** — `update<Schema>(filter: String, where: <Schema>FilterInput, input: <Schema>UpdateInput): ActionResponse`.
-- **Delete** — `delete<Schema>(filter: String, where: <Schema>FilterInput, input: <Schema>DeleteInput): ActionResponse`.
+- **Update** — `update<Schema>(where: <Schema>FilterInput, input: <Schema>UpdateInput): ActionResponse`. (The `filter: String` arg is **deprecated** — target rows with `where`.)
+- **Delete** — `delete<Schema>(where: <Schema>FilterInput, input: <Schema>DeleteInput): ActionResponse`. (The `filter: String` arg is **deprecated** — target rows with `where`.)
 - **ActionResponse** — `{ acknowledged, itemId, totalImpactedData, message }`. `itemId` on insert is the new record's `ItemId`; `totalImpactedData` on update/delete is the affected-row count (guard against an empty `where` matching everything).
 - **Casing** — insert/update input fields are **PascalCase**, matching the schema field names (`ItemId`, `ItemName`, …). Every record carries system fields `ItemId`, `Language`, `OrganizationId`, `Tags`.
 
