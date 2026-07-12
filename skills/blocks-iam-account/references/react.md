@@ -1,5 +1,7 @@
 # Frontend integration — activate & logout (React 19 / Vite / TanStack Query)
 
+> Logout is `POST /iam/v4/auth/Logout` (capital L), body `{}`, sent with `credentials: "include"` so the browser's SSO session cookies are revoked and cleared server-side. Project/user values are never hardcoded — the tenant comes from `x-blocks-key`, the session from the cookies.
+
 ## Env
 
 ```bash
@@ -11,8 +13,6 @@ VITE_BLOCKS_PROJECT_KEY=<project tenant id>   # x-blocks-key (public)
 
 ```ts
 // src/features/account/api.ts
-import { useAuthStore } from "@/stores/auth";
-
 const BASE = `${import.meta.env.VITE_BLOCKS_API_URL}/iam/v4`;
 const KEY = import.meta.env.VITE_BLOCKS_PROJECT_KEY as string;
 
@@ -37,17 +37,19 @@ export async function activate(input: ActivateInput) {
   return res.json();
 }
 
-export async function logout(refreshToken: string) {
-  const token = useAuthStore.getState().accessToken;
-  const res = await fetch(`${BASE}/auth/logout`, {
+// Logout is cookie/session based: capital-L `/auth/Logout`, empty `{}` body,
+// no Authorization header. `credentials: "include"` sends the SSO session
+// cookies so the server can revoke the session and clear them.
+export async function logout() {
+  const res = await fetch(`${BASE}/auth/Logout`, {
     method: "POST",
     headers: {
+      accept: "application/json",
       "Content-Type": "application/json",
       "x-blocks-key": KEY,
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    credentials: "include", // ensures the session cookie is cleared for hosted-SSO sessions
-    body: JSON.stringify({ refreshToken }),
+    credentials: "include",
+    body: JSON.stringify({}),
   });
   if (!res.ok) throw new Error(`logout failed: ${res.status}`);
 }
@@ -91,9 +93,11 @@ import { useAuthStore } from "@/stores/auth";
 export function useLogout() {
   return useMutation({
     mutationFn: async () => {
-      const rt = useAuthStore.getState().refreshToken;
-      if (rt) await logout(rt);
-      useAuthStore.getState().clear(); // drop local tokens regardless
+      try {
+        await logout();               // cookie/session logout — no args
+      } finally {
+        useAuthStore.getState().clear(); // always drop local state, even on failure
+      }
     },
   });
 }
@@ -103,4 +107,5 @@ export function useLogout() {
 
 - `captchaCode` / `mailPurpose` are optional — the API accepts empty strings; only populate them if your project enforces captcha or a custom mail purpose.
 - Read the activation `code` from the activation link's query string on the activation page.
-- After logout, clear all client tokens/state even if the network call fails, so the UI reflects a signed-out state.
+- After logout, clear all client tokens/state even if the network call fails, so the UI reflects a signed-out state (the hook's `finally` block does this).
+- The session cookies are HttpOnly and set by the hosted SSO login — the app can't read them; it only needs `credentials: "include"` so they ride along. On a domain outside `*.seliseblocks.com` the cookies are cross-site and only sent if issued `SameSite=None; Secure`.
