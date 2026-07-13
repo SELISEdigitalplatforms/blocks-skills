@@ -66,4 +66,30 @@ curl -s -X POST "https://api.seliseblocks.com/iam/v4/oidc/token" \
 - Keep `redirectUri` byte-identical across the client registration, the `initiate` call, and the IAM callback — mismatches are rejected.
 - The session lives in an HttpOnly cookie; the app typically doesn't hold the access token in JS. Make sure the app's domain lines up with the project's `cookieDomain`.
 
+## Optional — `/activate` (invite-and-activate, not SSO login)
+
+**This is not part of the login flow.** Users who are **already activated** use steps 1–4 above directly — no `/activate` route required.
+
+Wire `/activate` only when your app **creates or invites users** through the Blocks portal or IAM API and leaves them **inactive** until they set a password. The invite email links to **`/activate?code=<invitation-token>`**. The frontend page:
+
+1. Reads **`code`** from the query string (invitation token).
+2. Collects **`firstName`**, **`lastName`**, **password**, and **confirm password**.
+3. Submits **`POST /iam/v4/auth/activate`** only when password === confirm password:
+
+```json
+{
+  "code": "<invitation token>",
+  "password": "<chosen password>",
+  "captchaCode": "",           // optional
+  "mailPurpose": "",           // optional
+  "preventPostEvent": false,   // optional
+  "firstName": "Ada",
+  "lastName": "Lovelace"
+}
+```
+
+Headers: `content-type: application/json`, `x-blocks-key: <PROJECT_KEY>`. No bearer token.
+
+After activation the user is **active** and can sign in via steps 1–4. Wire the page with **[blocks-iam-account](../../blocks-iam-account/SKILL.md)**. See **[blocks-iam-sso-oidc-configuration](../../blocks-iam-sso-oidc-configuration/flows/configure-oidc.md)** for when to add this route.
+
 React wiring: [../references/react.md](../references/react.md).

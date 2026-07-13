@@ -40,7 +40,7 @@ Still unnamed int enums (verify names in portal): `verifiedType 0|1|2|3`, `userM
 ```
 - `roles` by **slug**, `permissions` by **name** (as defined in blocks-iam-access-control).
 - **`userPassType: 1` (Password)** and **`userCreationType: 2` (Api)** are the recommended defaults (see the enum note above). Stick with `userPassType: 1` unless the user explicitly wants a PIN; use `userCreationType: 1` (Portal) instead of `2` when modelling an admin-portal creation.
-- **Invite-and-activate:** create with an empty `password` (keep `userPassType: 1`), then have the user complete **blocks-iam-account** activate to set their password. Activation uses `x-blocks-key: <PTENANT>` and no bearer token. To set a password immediately, provide `password` in this call.
+- **Invite-and-activate:** create with an empty `password` (keep `userPassType: 1`), then have the user complete **blocks-iam-account** activate to set their password before their **first** SSO login. Activation uses `x-blocks-key: <PTENANT>` and no bearer token. **Already-activated users** (password set at create time) skip activate and sign in via SSO directly. To activate immediately at create, provide `password` in this call.
 - `mailPurpose` optional (empty ok). `attributes` is a free-form object for custom fields.
 
 ## Update — `POST /iam/users/{id}`

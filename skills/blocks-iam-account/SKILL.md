@@ -1,13 +1,13 @@
 ---
 name: blocks-iam-account
-description: "SELISE Blocks IAM account/session actions — activate a newly-created user account (`/auth/activate`, completing signup with the emailed code + a chosen password) and log a user out (`/auth/Logout`, a cookie/session-based call that revokes the session and clears the auth cookies). Use whenever the user wants to activate/confirm a new account, finish signup with an activation code, set the initial password on activation, or implement logout / end-session in a Blocks app or admin tool. Works for both admin tooling and frontend implementation. This is distinct from SSO/OIDC login (see blocks-iam-sso-oidc-implementation) — activate and logout are direct account-lifecycle calls."
+description: "SELISE Blocks IAM account/session actions — activate a newly-created user account (`/auth/activate` on an `/activate` page: invitation token as `code`, password + confirm password, firstName, lastName) and log a user out (`/auth/Logout`, a cookie/session-based call that revokes the session and clears the auth cookies). Use whenever the user wants to activate/confirm a new account, finish signup with an invitation/activation code, implement the /activate route, set the initial password on activation, or implement logout / end-session in a Blocks app or admin tool. Works for both admin tooling and frontend implementation. This is distinct from SSO/OIDC login (see blocks-iam-sso-oidc-implementation) — activate and logout are direct account-lifecycle calls."
 ---
 
 # Blocks IAM — Account Activation & Logout
 
 Two direct account/session calls on the IAM service, usable from admin tooling or a frontend app:
 
-- **Activate** — turn a freshly-created (inactive) user into an active one by validating the activation code and setting a password. After this the user can log in.
+- **Activate** — turn a freshly-created **inactive** user into an active one by validating the invitation token (`code`) and setting a password. Only needed when users are **created or invited** via the Blocks portal or API without an immediate password. Frontend: mount **`/activate`** for that invite flow — collect password + confirm password (submit only when they match), then call activate. **Already-activated users skip this** and log in via SSO directly (**blocks-iam-sso-oidc-implementation**).
 - **Logout** — revoke the refresh token, invalidate the session, clear cookies.
 
 Base: `https://api.seliseblocks.com/iam/v4` (no `/api/` prefix — the swagger's `/api` is not part of the served URL). These are `/auth/*` endpoints.
@@ -19,24 +19,27 @@ Base: `https://api.seliseblocks.com/iam/v4` (no `/api/` prefix — the swagger's
 
 ## Activate a user — `POST /iam/v4/auth/activate`
 
-Completes account setup for a user created in an inactive state (the activation `code` arrives by email).
+Completes account setup for a user created in an **inactive** state (typically via portal or API invite). The **`code`** is the **invitation token** from the invite email / activation link (typically a `?code=` query param on `/activate`). **Not used by already-activated users** — they sign in via SSO without this step.
 
-Headers: `content-type: application/json` and `x-blocks-key: <PTENANT>`. **No `Authorization` header** — the activation code is the credential, but the project key is still mandatory.
+Headers: `content-type: application/json` and `x-blocks-key: <PTENANT>`. **No `Authorization` header** — the invitation token is the credential.
+
+**Payload** (frontend sends after password === confirm password):
 
 ```json
 {
-  "code": "<activation code from the email>",
+  "code": "<invitation token from the URL>",
   "password": "<the user's chosen password>",
+  "captchaCode": "",           // optional
+  "mailPurpose": "",           // optional
+  "preventPostEvent": false,   // optional
   "firstName": "Ada",
-  "lastName": "Lovelace",
-  "captchaCode": "",
-  "mailPurpose": "",
-  "preventPostEvent": false
+  "lastName": "Lovelace"
 }
 ```
-- **`code` and `password` are the essential fields.** `captchaCode` and `mailPurpose` are **optional — send them empty** (`""`) unless your project specifically requires a captcha challenge or a non-default mail purpose.
-- `firstName` / `lastName` set the profile at activation; `preventPostEvent` suppresses downstream post-activation events (leave `false` normally).
-- On success the account is active and can log in (via SSO — **blocks-iam-sso-oidc-implementation** — or your auth flow).
+
+- **`code`, `password`, `firstName`, and `lastName` are required.** The UI collects password + **confirm password** — call activate **only when they match** (confirm password is not sent to the API).
+- **`captchaCode`, `mailPurpose`, and `preventPostEvent` are optional** — omit them or send empty/`false` unless your project requires captcha, a custom mail purpose, or suppressing post-activation events.
+- On success the account is active and can log in via SSO (**blocks-iam-sso-oidc-implementation**). Users who were created with a password already skip this step.
 
 ## Log out — `POST /iam/v4/auth/Logout`
 
