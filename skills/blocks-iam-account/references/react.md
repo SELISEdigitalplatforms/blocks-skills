@@ -22,21 +22,26 @@ const BASE = `${import.meta.env.VITE_BLOCKS_API_URL}/iam/v4`;
 const KEY = import.meta.env.VITE_BLOCKS_PROJECT_KEY as string;
 
 export interface ActivateInput {
-  code: string;
+  code: string;       // invitation token from /activate?code=
   password: string;
-  firstName?: string;
-  lastName?: string;
-  captchaCode?: string;   // optional — send "" if unused
-  mailPurpose?: string;   // optional — send "" if unused
-  preventPostEvent?: boolean;
+  firstName: string;
+  lastName: string;
+  captchaCode?: string;        // optional
+  mailPurpose?: string;        // optional
+  preventPostEvent?: boolean;  // optional
 }
 
-// Activation needs no bearer token — the code is the credential.
+// Activation needs no bearer token — the invitation code is the credential.
 export async function activate(input: ActivateInput) {
   const res = await fetch(`${BASE}/auth/activate`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-blocks-key": KEY },
-    body: JSON.stringify({ captchaCode: "", mailPurpose: "", preventPostEvent: false, ...input }),
+    body: JSON.stringify({
+      captchaCode: "",
+      mailPurpose: "",
+      preventPostEvent: false,
+      ...input,
+    }),
   });
   if (!res.ok) throw new Error(`activate failed: ${res.status}`);
   return res.json();
@@ -63,27 +68,51 @@ export async function logout() {
 ## Hooks + components
 
 ```tsx
-// src/features/account/activate-form.tsx
-import { useState } from "react";
+// src/features/account/activate-page.tsx — mount at /activate
+import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { activate } from "./api";
 
-export function ActivateForm({ code }: { code: string }) {  // code usually read from the URL
-  const [password, setPassword] = useState("");
+export function ActivatePage() {
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const code = useMemo(() => params.get("code") ?? "", [params]); // invitation token
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const m = useMutation({ mutationFn: () => activate({ code, password, firstName, lastName }) });
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [mismatch, setMismatch] = useState(false);
+
+  const m = useMutation({
+    mutationFn: () => activate({ code, password, firstName, lastName }),
+    onSuccess: () => navigate("/login", { replace: true }),
+  });
+
+  if (!code) return <p className="text-destructive text-sm">Missing invitation token — open the link from your invite email.</p>;
 
   return (
-    <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); m.mutate(); }}>
-      <input placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-      <input placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-      <input type="password" placeholder="Choose a password" value={password} onChange={(e) => setPassword(e.target.value)} />
+    <form
+      className="space-y-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (password !== confirmPassword) {
+          setMismatch(true);
+          return;
+        }
+        setMismatch(false);
+        m.mutate();
+      }}
+    >
+      <input placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+      <input placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+      <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+      <input type="password" placeholder="Confirm password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+      {mismatch && <p className="text-destructive text-sm">Passwords do not match.</p>}
       <button className="rounded bg-primary px-4 py-2 text-primary-foreground" disabled={m.isPending}>
         {m.isPending ? "Activating…" : "Activate account"}
       </button>
       {m.isError && <p className="text-destructive text-sm">{String(m.error)}</p>}
-      {m.isSuccess && <p className="text-sm">Account activated — you can now sign in.</p>}
     </form>
   );
 }
@@ -110,7 +139,8 @@ export function useLogout() {
 
 ## Notes
 
-- `captchaCode` / `mailPurpose` are optional — the API accepts empty strings; only populate them if your project enforces captcha or a custom mail purpose.
-- Read the activation `code` from the activation link's query string on the activation page.
+- Mount **`/activate`** in the router **only when the app uses invite-and-activate** (users created/invited via portal or API without a password). Not required for SSO login — already-activated users sign in directly. Invite links land here with `?code=<invitation-token>`.
+- The activate form needs **password + confirm password**; call `POST /auth/activate` only when they match. Payload: `{ code, password, firstName, lastName, captchaCode?, mailPurpose?, preventPostEvent? }` — confirm password is UI-only.
+- **`captchaCode` / `mailPurpose` / `preventPostEvent`** are optional on the API — the helper defaults them to `""` / `false`; populate only when your project requires them.
 - After logout, clear all client tokens/state even if the network call fails, so the UI reflects a signed-out state (the hook's `finally` block does this).
 - The session cookies are HttpOnly and set by the hosted SSO login — the app can't read them; it only needs `credentials: "include"` so they ride along. On a domain outside `*.seliseblocks.com` the cookies are cross-site and only sent if issued `SameSite=None; Secure`.

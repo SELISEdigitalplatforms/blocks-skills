@@ -99,3 +99,25 @@ curl -s -X POST "$BLOCKS_API_URL/iam/v4/auth/identity-providers" "${hdr[@]}" -H 
 - Smoke-test the runtime entry point (no session needed) — pass `x-blocks-key` as **both** a query param and a header using **`$PTENANT`** (the public project key for runtime, not the root tenant): `GET /iam/v4/idp/initiate?x-blocks-key=<PTENANT>&clientId=<clientId>&redirectUri=<callback>` with header `x-blocks-key: <PTENANT>` should return `{ "redirect_uri": "https://iam.seliseblocks.com/api/oidc/authorize?...&code_challenge=..." }`. That URL is what the app redirects the browser to — continue in **[blocks-iam-sso-oidc-implementation](../../blocks-iam-sso-oidc-implementation/SKILL.md)**.
 
 Error paths: 401 / `session_expired` → renew with `POST /iam/v4/auth-token` then re-impersonate ([get-into-project.md](get-into-project.md)). 400 → usually a `redirectUris` mismatch or missing `projectKey`.
+
+## Optional — `/activate` page (invite-and-activate only)
+
+**Not part of the SSO login flow.** Users who are **already activated** can sign in via SSO at any time — no `/activate` route needed.
+
+Add `/activate` only when your app **creates or invites users** through the Blocks portal or IAM API and leaves them **inactive** until they set a password (invite-and-activate). Those users receive an invitation link (e.g. `/activate?code=<invitation-token>`) and must call **`POST /iam/v4/auth/activate`** once before their first SSO login.
+
+The page collects **`firstName`**, **`lastName`**, **password**, and **confirm password**. Only call activate when password and confirm password **match**. Payload:
+
+```json
+{
+  "code": "<invitation token from the URL>",
+  "password": "<chosen password>",
+  "captchaCode": "",           // optional
+  "mailPurpose": "",           // optional
+  "preventPostEvent": false,   // optional
+  "firstName": "Ada",
+  "lastName": "Lovelace"
+}
+```
+
+Headers: `content-type: application/json`, `x-blocks-key: <PTENANT>`. No bearer token. After activation the user can sign in via SSO. Wire the page with **[blocks-iam-account](../../blocks-iam-account/SKILL.md)**; SSO login itself is **[blocks-iam-sso-oidc-implementation](../../blocks-iam-sso-oidc-implementation/SKILL.md)**.
