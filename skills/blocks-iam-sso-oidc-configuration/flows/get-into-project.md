@@ -32,7 +32,21 @@ Tokens are short-lived (~5 min). If a later call returns `session_expired`/401, 
 curl -s "$BLOCKS_API_URL/os/v4/Project/Gets?page=0&pageSize=100" \
   "${bootstrap_hdr[@]}"
 ```
-The response is a **bare JSON array of tenant-groups**, each `{ tenantGroupId, projects[], isShared, nonSharedProject }`. Each `projects[]` entry has `name`, **`tenantId`**, `organizationId`, `applicationDomain`, `environment`, `isProduction`, `itemId`, …
+The response is a **bare JSON array of tenant-groups**, each `{ tenantGroupId, projects[], isShared, nonSharedProject }`. Each entry in **`projects[]`** has at least:
+- `name`, **`tenantId`** (→ `PTENANT`), `organizationId`, `itemId`, `isProduction`
+- **`environment`** — segregates which environment the user is working in (e.g. `Development`, `Staging`, `Production`)
+- **`applications[]`** — array of app entries; each has a **`domain`** property — this is the **applicationDomain** (often a full URL like `https://dfsgso.slsblx.com`)
+
+There is **no** top-level `applicationDomain` on the project object — read it from **`applications[].domain`**.
+
+**Picking a project:** match the user's project name if given; otherwise list `name` + `environment` and ask. **Picking an environment:** if only one project (or one distinct `environment`) matches, use it; if several environments exist, ask which environment the user is working on.
+
+**Resolving applicationDomain:** from the chosen project, inspect **`applications[]`**:
+- **One application** → use its `domain`.
+- **Multiple applications** → the domains may look like `https://dfsgso.slsblx.com`, `https://other.slsblx.com` — **ask the user which to pick** if it's not obvious from context.
+- Strip the URL scheme for hosts/cert/dev-server use: `https://dfsgso.slsblx.com` → `dfsgso.slsblx.com`.
+
+See **[blocks-frontend-local-https](../../blocks-frontend-local-https/flows/setup-local-https.md)** for the full domain-resolution walkthrough (local HTTPS / OIDC `redirectUri`).
 
 - **If the user named a project/tenant**, find it in the array and confirm it's present.
 - **Otherwise, ask the user which project to configure** — list the `name` + `environment` options. Don't guess.

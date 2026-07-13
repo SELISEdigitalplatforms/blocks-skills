@@ -4,24 +4,47 @@ End state: the React app runs at `https://<project-domain>:<port>` locally with 
 
 ## Step 1 — Determine the domain (do this before generating the cert)
 
-The cert and the dev server must use the domain the SSO cookie is scoped to, so you **must** have a concrete domain before Step 3 — never invent or guess one. Resolve it in this order:
+The cert and the dev server must use the domain the SSO cookie is scoped to, so you **must** have a concrete domain before Step 3 — never invent or guess one. Resolve it from **`GET /os/v4/Project/Gets`** first (see [get-into-project](../../blocks-iam-sso-oidc-configuration/flows/get-into-project.md) for login/bootstrap headers).
 
-1. **Get it from the project info first.** List projects with `GET /os/v4/Project/Gets` (see the [get-into-project flow](../../blocks-iam-sso-oidc-configuration/flows/get-into-project.md)) and read the target project's **`applicationDomain`** (each project also has `cookieDomain`, `customDomain`). `applicationDomain` is the app's origin domain (e.g. `myapp.seliseblocks.com`) — use it. If `cookieDomain` is a parent like `.seliseblocks.com`, any subdomain under it also works (e.g. `dev.myapp.seliseblocks.com`).
+### How `Project/Gets` exposes the domain
 
-   ```bash
-   # pull applicationDomain for the chosen project (replace the [0] filter with the user's project)
-   bootstrap_hdr=(-H "x-blocks-key: $ACCOUNT_TENANT" -H "Authorization: Bearer $TOK")
-   DOMAIN=$(curl -s "$BLOCKS_API_URL/os/v4/Project/Gets?page=0&pageSize=100" \
-     "${bootstrap_hdr[@]}" \
-     | python3 -c "import sys,json;g=json.load(sys.stdin);p=[x for grp in g for x in (grp.get('projects') or [])][0];print(p.get('applicationDomain') or p.get('customDomain') or '')")
-   echo "$DOMAIN"
-   ```
+The response is an array of tenant-groups; each has a **`projects`** array. For each project entry:
+- **`environment`** — use this to know which environment the user is working in (`Development`, `Staging`, `Production`, …).
+- **`applications`** — array of app records; each has a **`domain`** property. **That `domain` is the applicationDomain** — often a full URL like `https://dfsgso.slsblx.com`.
 
-2. **If the lookup returns nothing** (no `applicationDomain`/`customDomain` set on the project, or you can't reach the project list), **ask the user** for the domain their app is (or will be) served on and registered as the OIDC `redirectUri`. Do not proceed to the cert step without a domain — you can't issue a local cert without one.
+There is no flat `applicationDomain` field on the project object itself.
+
+### Resolution order
+
+1. **Pick the project** — match the name the user gave, or list `name` + `environment` and ask.
+2. **Pick the environment** — if only one project (or one distinct `environment`) applies, use it automatically; if several environments exist, **ask the user** which one they are working on.
+3. **Pick the application domain** — from the chosen project's `applications[]`:
+   - **One entry** → take its `domain`.
+   - **Multiple entries** → list the `domain` values (e.g. `https://dfsgso.slsblx.com`, `https://other.slsblx.com`) and **ask the user which to pick** unless context makes one obvious.
+4. **Normalize for local dev** — strip the scheme (and any trailing slash) so hosts/cert/dev-server use the hostname only: `https://dfsgso.slsblx.com` → `dfsgso.slsblx.com`.
 
 ```bash
-DOMAIN=myapp.seliseblocks.com   # resolved from Project/Gets applicationDomain, or supplied by the user
-PORT=5173                        # your dev server port
+bootstrap_hdr=(-H "x-blocks-key: $ACCOUNT_TENANT" -H "Authorization: Bearer $TOK")
+# Example: first project, first application — replace with the user's project/environment/app choice
+RAW=$(curl -s "$BLOCKS_API_URL/os/v4/Project/Gets?page=0&pageSize=100" "${bootstrap_hdr[@]}" \
+  | python3 -c "
+import sys, json
+groups = json.load(sys.stdin)
+projects = [p for g in groups for p in (g.get('projects') or [])]
+p = projects[0]  # TODO: filter by user project + environment
+apps = p.get('applications') or []
+print(apps[0]['domain'] if apps else '')
+")
+DOMAIN=$(python3 -c "from urllib.parse import urlparse; u='$RAW'.strip(); print(urlparse(u if '://' in u else '//'+u).hostname or u.replace('https://','').replace('http://','').strip('/'))")
+echo "applicationDomain (raw): $RAW"
+echo "DOMAIN (hostname for cert/hosts): $DOMAIN"
+```
+
+5. **If the lookup returns nothing** (no `applications`, empty `domain`, or you can't reach the project list), **ask the user** for the domain their app is served on and registered as the OIDC `redirectUri`. Do not proceed to the cert step without a domain.
+
+```bash
+DOMAIN=dfsgso.slsblx.com   # hostname from applications[].domain, or supplied by the user
+PORT=5173                   # your dev server port
 ```
 
 ## Step 2 — Point the domain at your machine (hosts file)
@@ -38,7 +61,7 @@ Verify: `ping -c1 $DOMAIN` should resolve to `127.0.0.1`.
 
 ## Step 3 — Generate a self-signed certificate with openssl
 
-**Precondition:** `$DOMAIN` is already resolved from Step 1 (the project's `applicationDomain`, or the user's answer). If it's empty, go back to Step 1 — don't issue a cert for a guessed domain.
+**Precondition:** `$DOMAIN` is already resolved from Step 1 (`applications[].domain` on the chosen project/environment, hostname normalized, or the user's answer). If it's empty, go back to Step 1 — don't issue a cert for a guessed domain.
 
 Issue a cert for `$DOMAIN`. The `subjectAltName` (SAN) **must** contain the exact domain — modern browsers ignore `CN` and reject a cert whose SAN doesn't list the host you're visiting.
 
