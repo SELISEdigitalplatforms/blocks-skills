@@ -12,7 +12,7 @@ DMS is the document management system embedded in the data service: pre-signed u
 Files are project-scoped. The project key is always the target project tenant id (`PTENANT`), never the bootstrap/account tenant.
 
 - **Browser/runtime calls:** send `x-blocks-key: <PTENANT>` and `credentials: "include"` so Blocks uses the signed-in user's hosted SSO cookie/session. Use this for user-facing uploads/downloads.
-- **Admin/build script calls only:** first run `blocks-data-gateway-configuration/flows/get-into-project.md`; send **`x-blocks-key: <ACCOUNT_TENANT>`** (root tenant) plus `Authorization: Bearer <PTOK>`, and put `projectKey: <PTENANT>` where the body/query requires it. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
+- **Admin/build script calls only:** first run [flows/get-into-project.md](flows/get-into-project.md); send **`x-blocks-key: <ACCOUNT_TENANT>`** (root tenant) plus `Authorization: Bearer <PTOK>`, and put `projectKey: <PTENANT>` where the body/query requires it. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
 - **Pre-signed PUT:** the storage URL is pre-authorized and needs no Bearer token. Keep the project key on Blocks API calls; include `x-blocks-key` on the PUT only when the storage provider accepts it.
 
 401 → wrong project key, missing/expired session, or expired admin token.

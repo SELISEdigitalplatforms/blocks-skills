@@ -18,7 +18,7 @@ x-blocks-key: <project key>   # project tenant id — public, shippable
 ```
 `GET /organizations/my` takes **no user id** — it derives the user from that cookie, so call it only once logged in (after the SSO callback; verify with `GET /iam/me`). A 401 means "not logged in", not "no orgs".
 
-**Rare case — admin/config tooling, acting *on* a project.** Creating/updating orgs and reading/setting the project org-creation config (`/organizations/config`, multi-org) are admin operations. From a script that runs the initial steps: **`x-blocks-key: <ACCOUNT_TENANT>`** (root tenant) + `Authorization: Bearer <PTOK>` (see `flows/get-into-project.md`); from an admin **screen**, the signed-in admin's session uses `x-blocks-key: <PTENANT>` + `credentials: "include"`. On script 401, renew with `POST /iam/v4/auth-token` then re-impersonate.
+**Rare case — admin/config tooling, acting *on* a project.** Creating/updating orgs and reading/setting the project org-creation config (`/organizations/config`, multi-org) are admin operations. From a script that runs the initial steps: **`x-blocks-key: <ACCOUNT_TENANT>`** (root tenant) + `Authorization: Bearer <PTOK>` (see [flows/get-into-project.md](flows/get-into-project.md)); from an admin **screen**, the signed-in admin's session uses `x-blocks-key: <PTENANT>` + `credentials: "include"`. On script 401, renew with `POST /iam/v4/auth-token` then re-impersonate.
 
 ## Endpoints → [endpoints.md](endpoints.md)
 
