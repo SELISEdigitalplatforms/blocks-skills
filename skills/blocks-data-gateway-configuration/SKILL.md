@@ -11,6 +11,8 @@ This is the **configuration** half. Once a schema is live here, the **[blocks-da
 
 ## Auth & keys — start here (the #1 thing people get wrong)
 
+> **Prerequisites:** a Blocks account, at least one project, and a `.env` with `BLOCKS_API_URL`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`. Missing or unknown — no `.env`, `auth-login` 401, empty `Project/Gets` — run the **blocks-onboarding** skill first.
+
 Configuration happens **inside a project/tenant**, so you first obtain an impersonated, project-scoped token. This is the shared "initial steps" every Blocks config skill runs — **[flows/get-into-project.md](flows/get-into-project.md)** (login → list projects → impersonate). It gives you three values:
 
 - **`ACCOUNT_TENANT`** — bootstrap/account tenant id (the login token's `tenant_id` claim). Used as **`x-blocks-key`** on every configuration call (data, IAM, storage, localization) after impersonation.

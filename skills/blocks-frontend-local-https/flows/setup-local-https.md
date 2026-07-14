@@ -4,7 +4,7 @@ End state: the React app runs at `https://<project-domain>:<port>` locally with 
 
 ## Step 1 — Determine the domain (do this before generating the cert)
 
-The cert and the dev server must use the domain the SSO cookie is scoped to, so you **must** have a concrete domain before Step 3 — never invent or guess one. Resolve it from **`GET /os/v4/Project/Gets`** first (see [get-into-project](../../blocks-iam-sso-oidc-configuration/flows/get-into-project.md) for login/bootstrap headers).
+The cert and the dev server must use the domain the SSO cookie is scoped to, so you **must** have a concrete domain before Step 3 — never invent or guess one. Resolve it from **`GET /os/v4/Project/Gets`** first (see [get-into-project](get-into-project.md) for login/bootstrap headers).
 
 ### How `Project/Gets` exposes the domain
 

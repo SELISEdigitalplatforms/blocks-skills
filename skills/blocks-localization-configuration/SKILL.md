@@ -11,6 +11,8 @@ Base: `https://api.seliseblocks.com/localization/v4` — PascalCase controllers 
 
 ## Auth & keys — start here
 
+> **Prerequisites:** a Blocks account, at least one project, and a `.env` with `BLOCKS_API_URL`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`. Missing or unknown — no `.env`, `auth-login` 401, empty `Project/Gets` — run the **blocks-onboarding** skill first.
+
 Localization authoring is project configuration, so it runs **inside a project/tenant** — do the shared initial steps first: **[flows/get-into-project.md](flows/get-into-project.md)** (login → list projects → impersonate). It yields:
 - **`ACCOUNT_TENANT`** — root/account tenant id. Used as **`x-blocks-key`** on every localization configuration call after impersonation.
 - **`PTENANT`** — the target project's tenant id → **`projectKey`** body field / **`ProjectKey`** query param. **Not** `x-blocks-key` on configuration calls.

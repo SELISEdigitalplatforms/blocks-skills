@@ -28,7 +28,7 @@ Response: `{ oIDCClientCredentials: [ { clientId, clientSecret, redirectUris, al
 
 ## Step 3 — Create the OIDC client
 
-The app's callback URL should match the **applicationDomain** from `Project/Gets`: `projects[].applications[].domain` on the target project/environment (often `https://dfsgso.slsblx.com` — use the full URL for `redirectUris`; ask the user if multiple `applications` exist). See [blocks-frontend-local-https](../../blocks-frontend-local-https/flows/setup-local-https.md) for domain resolution.
+The app's callback URL should match the **applicationDomain** from `Project/Gets`: `projects[].applications[].domain` on the target project/environment (often `https://dfsgso.slsblx.com` — use the full URL for `redirectUris`; ask the user if multiple `applications` exist). See [blocks-frontend-local-https](../../blocks-frontend-local-https/SKILL.md) for domain resolution.
 
 ```bash
 curl -s -X POST "$BLOCKS_API_URL/iam/v4/oidc-clients" "${hdr[@]}" -H "Content-Type: application/json" --data-raw '{
