@@ -45,7 +45,7 @@ The initial steps are documented once, as `flows/get-into-project.md`, inside ea
 
 | Skill | Covers |
 |-------|--------|
-| `blocks-iam-account` | Account/session actions: activate a new user (`/auth/activate`) and logout (`/auth/logout`). |
+| `blocks-iam-account` | Account/session actions: activate a new user (`/auth/activate`) and logout (`/auth/Logout` — capital L). |
 | `blocks-iam-access-control` | RBAC: create/update/list/get permissions and roles; add/remove permissions on a role. |
 | `blocks-iam-users` | Users CRUD, current user (`/iam/me`), activity timeline, and assigning roles/permissions to a user. |
 | `blocks-iam-organizations` | Organizations CRUD, "my organizations", and the project org-creation / multi-org config. |

@@ -59,7 +59,7 @@ Hand these to blocks-data-gateway-crud after a reload.
 - **Reload** — `POST /schema-configurations/reload`. Schema/field/validation/access edits are **staged** until this succeeds (`data: true`); the gateway does not see them before. Every config flow ends here. Check pending edits with `GET /schemas/unadapted-change-logs`.
 - **Access & policies** — each schema (and optionally field) has read/write/edit/delete access levels; Custom levels are driven by rule-based data-access policies. See [configure-schema.md](flows/configure-schema.md) step 5.
 - **Mock data** — seeded sample records; the API inventories and deletes them (generation is portal-only). See [manage-mock-data.md](flows/manage-mock-data.md).
-- **Schema exchange** — async export/import of a whole data model between projects, correlated by `messageCoRelationId`, result delivered via notification (**blocks-os** skill). See [schema-exchange.md](flows/schema-exchange.md).
+- **Schema exchange** — async export/import of a whole data model between projects, correlated by `messageCoRelationId`, result delivered via a notification from the OS service (no skill in this repo covers notifications yet — verify the result live or in the portal). See [schema-exchange.md](flows/schema-exchange.md).
 
 ## Gotchas
 
