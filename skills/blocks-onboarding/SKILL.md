@@ -1,6 +1,6 @@
 ---
 name: blocks-onboarding
-description: "Onboard a user into SELISE Blocks before any other Blocks skill can run — detect their current state and get them to a working setup: no Blocks account yet (guide signup at https://cloud.seliseblocks.com), account but no project (guide project creation in the portal), project but no credentials file (have the user create the `.env`), or everything present (verify and hand off). Use whenever a user is new to Blocks, asks how to get started / sign up / create their first project, or when a prerequisite fails in another skill — missing `.env` or `BLOCKS_USERNAME`, `auth-login` returns 401/invalid credentials, or `Project/Gets` returns no projects. Signup and project creation are PORTAL-ONLY (browser, not API) — this skill covers when to hand off to the browser, what the user will do there, and how to verify and resume afterwards. Run the preflight here whenever the user's account/project state is unknown."
+description: "Onboard a user into SELISE Blocks before any other Blocks skill can run — detect their current state and get them to a working setup: no Blocks account yet (guide signup at https://os.seliseblocks.com), account but no project (guide project creation in the portal), project but no credentials file (have the user create the `.env`), or everything present (verify and hand off). Use whenever a user is new to Blocks, asks how to get started / sign up / create their first project, or when a prerequisite fails in another skill — missing `.env` or `BLOCKS_USERNAME`, `auth-login` returns 401/invalid credentials, or `Project/Gets` returns no projects. Signup and project creation are PORTAL-ONLY (browser, not API) — this skill covers when to hand off to the browser, what the user will do there, and how to verify and resume afterwards. Run the preflight here whenever the user's account/project state is unknown."
 ---
 
 # Blocks — Onboarding & Preflight
@@ -14,7 +14,7 @@ Most state is discoverable — don't interrogate the user. Run **[scripts/prefli
 | Exit | State | What to do |
 |---|---|---|
 | `2` | No `.env` / vars missing | Ask one question: *"Do you already have a Blocks account?"* No → [flows/first-time-setup.md](flows/first-time-setup.md). Yes → have them create the `.env` (below), re-run preflight. |
-| `3` | Login failed (401 / error) | Wrong username or password. Have the user re-check the `.env` values or reset the password via the portal login page (https://cloud.seliseblocks.com). Re-run preflight. |
+| `3` | Login failed (401 / error) | Wrong username or password. Have the user re-check the `.env` values or reset the password via the portal login page (https://os.seliseblocks.com). Re-run preflight. |
 | `4` | Account OK, **no projects** | Guide project creation in the portal — [flows/first-time-setup.md](flows/first-time-setup.md) step 2. Wait for the user, re-run preflight. |
 | `0` | Ready | Preflight prints the projects (`name · environment · tenantId`). Confirm which project + environment the user means, then continue with the skill that brought you here. |
 
@@ -48,7 +48,7 @@ Answers that determine routing and configuration, in one batch rather than dribb
 
 | Action | Where |
 |---|---|
-| Sign up / reset password | Portal only (https://cloud.seliseblocks.com) |
+| Sign up / reset password | Portal only (https://os.seliseblocks.com) |
 | Create a project | Portal only |
 | Generate mock/sample data | Portal only (API can inventory + delete) |
 | Trust a local dev certificate | User's OS (manual) |
