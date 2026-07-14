@@ -141,7 +141,7 @@ Mount it at the callback path:
 
 ## Notes
 
-- **SSO login does not require `/activate`.** Already-activated users sign in via `/login/callback` only. Add `/activate` when inactive users are invited via the portal or API — see **[blocks-iam-account](../../blocks-iam-account/references/react.md)**.
+- **SSO login does not require `/activate`.** Already-activated users sign in via `/login/callback` only. Add `/activate` when inactive users are invited via the portal or API — see **[blocks-iam-account](../../blocks-iam-account/SKILL.md)**.
 - The session is an HttpOnly cookie set by `/idp/callback`. Runtime API calls to Blocks services should be sent with `credentials: "include"` (or per your gateway setup) so the cookie rides along; you usually won't read the access token in JS.
 - **Refresh** is `POST /iam/v4/oidc/token` with a **form-encoded** body (`grant_type=refresh_token`, `client_id`, optional `refresh_token`) + `x-blocks-key` + `credentials:"include"`; it rotates cookies. Wire it as the 401-retry path. Do not store a refresh token in JS unless the project explicitly exposes one.
 - Keep `VITE_BLOCKS_REDIRECT_URI` exactly equal to a registered `redirectUri` and to your router's callback path.
