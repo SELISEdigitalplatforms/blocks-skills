@@ -23,7 +23,7 @@ x-blocks-key: <PTENANT>
 credentials: include             # hosted SSO cookie
 ```
 
-Run `get-into-project` before admin user-management calls. On 401/`session_expired`, renew with `POST /iam/v4/auth-token` then re-impersonate.
+Run [flows/get-into-project.md](flows/get-into-project.md) before admin user-management calls. On 401/`session_expired`, renew with `POST /iam/v4/auth-token` then re-impersonate.
 
 ## Endpoints → [endpoints.md](endpoints.md)
 
