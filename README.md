@@ -10,7 +10,7 @@ Describe what you want to do; Claude picks the skill, follows its flow, and writ
 
 ## When a user arrives (first run)
 
-Don't assume an account, a project, or credentials exist. **Probe first, ask second**: run `blocks-onboarding`'s `scripts/preflight.sh` — it distinguishes *no `.env`* / *bad credentials* / *no projects* / *ready*, and prints the project list on success. Signup and project creation are **portal-only** (`https://os.seliseblocks.com`); the onboarding skill covers the browser hand-off, the `.env` the user writes themselves (never through chat), and what to ask up front (project + environment, custom domain or `*.seliseblocks.com`, Construct or not).
+Don't assume an account, a project, or credentials exist. **Probe first, ask second**: run `blocks-onboarding`'s `scripts/preflight.sh` — it distinguishes *no `.env`* / *bad credentials* / *no projects* / *ready*, and prints the project list on success. Only **signup is portal-only** (`https://os.seliseblocks.com`); projects and environments are created, extended, and deleted **via API** (`blocks-onboarding/flows/manage-projects.md`) — proactively ask what the user wants to build and suggest a dev-only project as the default. The onboarding skill covers the signup hand-off, the `.env` the user writes themselves (never through chat), and what to ask up front (project + environment, custom domain or `*.seliseblocks.com`, Construct or not).
 
 ## The core split: configuration vs. implementation
 
@@ -27,7 +27,7 @@ The initial steps live as `flows/get-into-project.md` — an identical copy embe
 
 | Skill | Mode | Covers |
 |-------|------|--------|
-| `blocks-onboarding` | Preflight | Detect the user's state (no account / no project / no `.env` / ready) via `scripts/preflight.sh`, guide signup + first project in the portal (`https://os.seliseblocks.com`), have the user write the `.env`, and hand off to the right skill. **Run this whenever the user is new or a prerequisite fails.** |
+| `blocks-onboarding` | Preflight | Detect the user's state (no account / no project / no `.env` / ready) via `scripts/preflight.sh`, guide signup in the portal (`https://os.seliseblocks.com`), have the user write the `.env`, create the first project via API (suggest a dev-only default; add/delete environments later — `flows/manage-projects.md`), and hand off to the right skill. **Run this whenever the user is new or a prerequisite fails.** |
 
 ### Data (`data/v4`)
 

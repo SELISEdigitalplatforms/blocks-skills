@@ -1,6 +1,6 @@
-# First-time setup (signup → first project → `.env`)
+# First-time setup (signup → `.env` → first project)
 
-The two browser steps an agent cannot do for the user, plus the credentials file. Hand off, wait, verify with [../scripts/preflight.sh](../scripts/preflight.sh) after each step — don't assume.
+The one browser step an agent cannot do for the user (signup), the credentials file, and the first project (which the agent creates via API). Verify with [../scripts/preflight.sh](../scripts/preflight.sh) after each step — don't assume.
 
 ## Step 1 — Sign up (no Blocks account yet)
 
@@ -13,13 +13,17 @@ Verify: have them create the `.env` (step 3), then run preflight — exit `4` (n
 
 ## Step 2 — Create the first project (account, but `Project/Gets` is empty)
 
-Projects are created in the portal, not via API. Tell the user, in **https://os.seliseblocks.com**:
+The **agent creates the project via API** — don't send the user to the browser for this. Be proactive:
 
-1. Create a new project — pick a name (provisioning takes a few minutes).
-2. Note which **environment** they're setting up (e.g. Development); the skills will ask.
-3. Say when it's done.
+1. Ask **what they want to build** and suggest a project name derived from it.
+2. **Suggest a `dev`-only environment as the default** — tell the user more environments (`test`, `stg`, `uat`, `prod`, …) can be added at any time later and deleted again, so starting minimal costs nothing.
+3. On the user's go-ahead, create it — [manage-projects.md](manage-projects.md) has the exact `Project/Create` call, and the add/delete-environment calls for later.
+
+(The portal at https://os.seliseblocks.com works too, if the user prefers clicking.)
 
 Verify: re-run preflight — exit `0` and the project appears with its `tenantId`.
+
+> **Order note:** this step needs working credentials, so in practice it runs *after* step 3 (`.env`) — preflight exit `4` is exactly this state.
 
 ## Step 3 — The `.env`
 
@@ -39,5 +43,5 @@ Then: add `.env` to `.gitignore`, run preflight, and continue with the skill tha
 |---|---|---|
 | preflight exit `2` | `.env` missing/incomplete | (Re)create it — step 3 |
 | preflight exit `3` | Bad username/password | Re-check values; reset password at the portal login |
-| preflight exit `4` after project creation | Provisioning not finished, or wrong account | Wait a few minutes, re-run; confirm the user created the project under the same account as the `.env` |
+| preflight exit `4` after project creation | `Project/Create` didn't stick, or wrong account | Check the create response was `isSuccess: true`; re-run preflight; confirm the `.env` account is the one the project was created under. Don't blindly re-POST — check `Project/Gets` first ([manage-projects.md](manage-projects.md)) |
 | Login succeeds in the portal but preflight exit `3` | Portal uses social login; no password set | Set a password on the account (portal profile/security settings) |

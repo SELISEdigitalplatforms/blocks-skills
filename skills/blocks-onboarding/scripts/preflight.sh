@@ -43,7 +43,7 @@ except Exception:
     print("PREFLIGHT[3]: Project/Gets returned non-JSON — token/URL problem."); sys.exit(3)
 projects = [p for g in (groups or []) for p in (g.get("projects") or [])]
 if not projects:
-    print("PREFLIGHT[4]: login OK, but the account has no projects — create one in the portal (https://os.seliseblocks.com), then re-run.")
+    print("PREFLIGHT[4]: login OK, but the account has no projects — ask the user what they want to build and create one via API (flows/manage-projects.md; suggest a dev-only default), then re-run.")
     sys.exit(4)
 print(f"PREFLIGHT[0]: ready — {len(projects)} project(s):")
 for p in projects:
