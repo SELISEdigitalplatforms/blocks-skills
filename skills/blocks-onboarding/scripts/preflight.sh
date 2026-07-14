@@ -35,10 +35,10 @@ print(json.loads(base64.urlsafe_b64decode(s))['tenant_id'])")
 
 PROJECTS=$(curl -s "$BLOCKS_API_URL/os/v4/Project/Gets?page=0&pageSize=100" \
   -H "x-blocks-key: $ACCOUNT_TENANT" -H "Authorization: Bearer $TOK")
-printf '%s' "$PROJECTS" | python3 - << 'PY'
-import sys, json
+PROJECTS="$PROJECTS" python3 << 'PY'
+import os, sys, json
 try:
-    groups = json.load(sys.stdin)
+    groups = json.loads(os.environ["PROJECTS"])
 except Exception:
     print("PREFLIGHT[3]: Project/Gets returned non-JSON — token/URL problem."); sys.exit(3)
 projects = [p for g in (groups or []) for p in (g.get("projects") or [])]
