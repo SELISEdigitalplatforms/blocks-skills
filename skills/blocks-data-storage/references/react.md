@@ -126,4 +126,4 @@ export function FileUpload() {
 }
 ```
 
-To attach the file to a record, keep `upload.data.fileId` and set it on a schema field via **[blocks-data-gateway-crud](../../blocks-data-gateway-crud/references/react.md)** (e.g. `insertProduct({ ..., ImageFileId: fileId })`).
+To attach the file to a record, keep `upload.data.fileId` and set it on a schema field via **[blocks-data-gateway-crud](../../blocks-data-gateway-crud/SKILL.md)** (e.g. `insertProduct({ ..., ImageFileId: fileId })`).

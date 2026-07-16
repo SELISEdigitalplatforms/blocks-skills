@@ -11,6 +11,8 @@ Admin base: `https://api.seliseblocks.com/iam/v4`.
 
 ## Auth & keys — start here
 
+> **Prerequisites:** a Blocks account, at least one project, and a `.env` with `BLOCKS_API_URL`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`. Missing or unknown — no `.env`, `auth-login` 401, empty `Project/Gets` — run the **blocks-onboarding** skill first.
+
 Configuration happens **inside a project/tenant**, so you first obtain an impersonated, project-scoped token via the shared initial steps — **[flows/get-into-project.md](flows/get-into-project.md)** (login → list projects → impersonate). It yields:
 
 - **`ACCOUNT_TENANT`** — root/account tenant id (login token's `tenant_id` claim). Used as **`x-blocks-key`** on every IAM configuration call after impersonation.

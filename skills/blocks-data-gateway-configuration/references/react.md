@@ -1,6 +1,6 @@
 # Frontend integration — schema admin (React 19 / Vite / TanStack Query)
 
-Targets the `blocks-construct-react` stack. For most apps schema configuration is done in the Blocks portal, not in app code — reach for this only when you're building an admin surface that manages schemas at runtime. To *use* the resulting data, see **[blocks-data-gateway-crud](../../blocks-data-gateway-crud/references/react.md)**.
+Targets the `blocks-construct-react` stack. For most apps schema configuration is done in the Blocks portal, not in app code — reach for this only when you're building an admin surface that manages schemas at runtime. To *use* the resulting data, see **[blocks-data-gateway-crud](../../blocks-data-gateway-crud/SKILL.md)**.
 
 ## Env
 

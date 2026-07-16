@@ -8,6 +8,10 @@ Describe what you want to do; Claude picks the skill, follows its flow, and writ
 
 > v4 renamed the v1 services. Old names appear only as recognition aliases: **idp → iam**, **uds/data-gateway → data**, **uilm → localization**. All `/…/v1/` routes are dead.
 
+## When a user arrives (first run)
+
+Don't assume an account, a project, or credentials exist. **Probe first, ask second**: run `blocks-onboarding`'s `scripts/preflight.sh` — it distinguishes *no `.env`* / *bad credentials* / *no projects* / *ready*, and prints the project list on success. Only **signup is portal-only** (`https://os.seliseblocks.com`); projects and environments are created, extended, and deleted **via API** (`blocks-onboarding/flows/manage-projects.md`) — proactively ask what the user wants to build and suggest a dev-only project as the default. The onboarding skill covers the signup hand-off, the `.env` the user writes themselves (never through chat), and what to ask up front (project + environment, custom domain or `*.seliseblocks.com`, Construct or not).
+
 ## The core split: configuration vs. implementation
 
 Blocks work divides into two modes, and the skills are organized around the difference:
@@ -15,9 +19,15 @@ Blocks work divides into two modes, and the skills are organized around the diff
 - **Configuration** — acting *on* a project as an admin from a CLI/script: defining schemas, wiring SSO, seeding roles, editing org settings. Requires the shared **initial steps**: log in → list projects → **impersonate** → `PTOK`. Configuration calls use **`x-blocks-key: <ACCOUNT_TENANT>`** (root tenant) + `Authorization: Bearer <PTOK>` + **`projectKey: <PTENANT>`**.
 - **Implementation** — the frontend app acting *as the signed-in user*: running GraphQL CRUD, uploading files, logging in via SSO, reading `/iam/me`. This needs **no initial steps** and **no token in JS** — the app uses the public **project key** (`<PTENANT>`, `x-blocks-key`) plus the hosted **SSO session cookie** (`credentials: "include"`). The browser never holds the access or refresh token, and `PTOK` never ships to the client.
 
-The initial steps are documented once, as `flows/get-into-project.md`, inside each **configuration** skill. Implementation skills never reference them.
+The initial steps live as `flows/get-into-project.md` — an identical copy embedded in **every skill that can run impersonated calls** (kept in sync by `tools/lint.py`), so each skill works standalone. Pure implementation skills don't carry it.
 
 ## Skills
+
+### Getting started
+
+| Skill | Mode | Covers |
+|-------|------|--------|
+| `blocks-onboarding` | Preflight | Detect the user's state (no account / no project / no `.env` / ready) via `scripts/preflight.sh`, guide signup in the portal (`https://os.seliseblocks.com`), have the user write the `.env`, create the first project via API (suggest a dev-only default; add/delete environments later — `flows/manage-projects.md`), and hand off to the right skill. **Run this whenever the user is new or a prerequisite fails.** |
 
 ### Data (`data/v4`)
 
@@ -45,7 +55,7 @@ The initial steps are documented once, as `flows/get-into-project.md`, inside ea
 
 | Skill | Covers |
 |-------|--------|
-| `blocks-iam-account` | Account/session actions: activate a new user (`/auth/activate`) and logout (`/auth/logout`). |
+| `blocks-iam-account` | Account/session actions: activate a new user (`/auth/activate`) and logout (`/auth/Logout` — capital L). |
 | `blocks-iam-access-control` | RBAC: create/update/list/get permissions and roles; add/remove permissions on a role. |
 | `blocks-iam-users` | Users CRUD, current user (`/iam/me`), activity timeline, and assigning roles/permissions to a user. |
 | `blocks-iam-organizations` | Organizations CRUD, "my organizations", and the project org-creation / multi-org config. |
@@ -72,14 +82,15 @@ Skills are focused and hand-authored; not every skill needs every file.
 skills/blocks-<name>/
 ├── SKILL.md            ← routing: auth model, endpoint map, key concepts, gotchas
 ├── flows/              ← step-by-step procedures
-│   ├── get-into-project.md   ← the shared "initial steps" (configuration skills only)
+│   ├── get-into-project.md   ← the shared "initial steps" (identical copy in every skill that impersonates)
 │   └── <kebab-name>.md
+├── scripts/            ← executable helpers (e.g. blocks-onboarding/scripts/preflight.sh)
 ├── endpoints.md        ← exact request/response contracts (management skills)
 └── references/
     └── react.md        ← typed client + TanStack Query hooks (React 19 stack)
 ```
 
-`SKILL.md` frontmatter carries the trigger-rich `description` that routes requests to the skill. Configuration skills carry `flows/get-into-project.md`; implementation skills do not.
+`SKILL.md` frontmatter carries the trigger-rich `description` that routes requests to the skill. Every skill that can run impersonated calls carries its own copy of `flows/get-into-project.md`; `tools/lint.py` keeps the copies identical and checks frontmatter limits and link integrity.
 
 ## Auth & keys (verified live)
 
@@ -110,6 +121,7 @@ There are three tenant ids and three ways a call is authenticated. Keep them str
 ## Example prompts
 
 ```
+I'm brand new to Blocks — get me set up                             → blocks-onboarding
 Create a Product schema with title/price and reload it              → blocks-data-gateway-configuration
 Wire create/read/update/delete for Product into my React app        → blocks-data-gateway-crud
 Upload a PDF and get a download link                                → blocks-data-storage

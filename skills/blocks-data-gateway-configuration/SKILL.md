@@ -11,6 +11,8 @@ This is the **configuration** half. Once a schema is live here, the **[blocks-da
 
 ## Auth & keys — start here (the #1 thing people get wrong)
 
+> **Prerequisites:** a Blocks account, at least one project, and a `.env` with `BLOCKS_API_URL`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD`. Missing or unknown — no `.env`, `auth-login` 401, empty `Project/Gets` — run the **blocks-onboarding** skill first.
+
 Configuration happens **inside a project/tenant**, so you first obtain an impersonated, project-scoped token. This is the shared "initial steps" every Blocks config skill runs — **[flows/get-into-project.md](flows/get-into-project.md)** (login → list projects → impersonate). It gives you three values:
 
 - **`ACCOUNT_TENANT`** — bootstrap/account tenant id (the login token's `tenant_id` claim). Used as **`x-blocks-key`** on every configuration call (data, IAM, storage, localization) after impersonation.
@@ -59,7 +61,7 @@ Hand these to blocks-data-gateway-crud after a reload.
 - **Reload** — `POST /schema-configurations/reload`. Schema/field/validation/access edits are **staged** until this succeeds (`data: true`); the gateway does not see them before. Every config flow ends here. Check pending edits with `GET /schemas/unadapted-change-logs`.
 - **Access & policies** — each schema (and optionally field) has read/write/edit/delete access levels; Custom levels are driven by rule-based data-access policies. See [configure-schema.md](flows/configure-schema.md) step 5.
 - **Mock data** — seeded sample records; the API inventories and deletes them (generation is portal-only). See [manage-mock-data.md](flows/manage-mock-data.md).
-- **Schema exchange** — async export/import of a whole data model between projects, correlated by `messageCoRelationId`, result delivered via notification (**blocks-os** skill). See [schema-exchange.md](flows/schema-exchange.md).
+- **Schema exchange** — async export/import of a whole data model between projects, correlated by `messageCoRelationId`, result delivered via a notification from the OS service (no skill in this repo covers notifications yet — verify the result live or in the portal). See [schema-exchange.md](flows/schema-exchange.md).
 
 ## Gotchas
 

@@ -16,7 +16,7 @@ Every call carries:
 x-blocks-key: <ACCOUNT_TENANT>        # root tenant id — on admin/script calls (after get-into-project)
 Authorization: Bearer <PTOK>           # impersonated token for config tooling
 ```
-For **browser admin screens**, use `x-blocks-key: <PTENANT>` + `credentials: "include"` (hosted SSO cookie) instead. 401 on script calls → expired `PTOK`; renew via `POST /iam/v4/auth-token` then re-impersonate.
+Admin/script calls require impersonating first — [flows/get-into-project.md](flows/get-into-project.md). For **browser admin screens**, use `x-blocks-key: <PTENANT>` + `credentials: "include"` (hosted SSO cookie) instead. 401 on script calls → expired `PTOK`; renew via `POST /iam/v4/auth-token` then re-impersonate.
 
 ## Endpoints → [endpoints.md](endpoints.md)
 

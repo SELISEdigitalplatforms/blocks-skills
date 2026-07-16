@@ -1,6 +1,6 @@
 # Get into a project (login → pick project → impersonate)
 
-**Run this first, before any configuration call.** Configuring a Blocks service (data, IAM, …) happens *inside a project/tenant*, so you must obtain an **impersonated, project-scoped token**. This flow is shared by all Blocks configuration skills — the steps are identical whether you're configuring the data gateway or IAM SSO.
+**Run this first, before any configuration call.** Prerequisites: a Blocks account, at least one project, and a `.env` with `BLOCKS_API_URL`, `BLOCKS_USERNAME`, `BLOCKS_PASSWORD` — if any of that is missing or unknown (no `.env`, login 401, empty project list), run the **blocks-onboarding** skill first. Configuring a Blocks service (data, IAM, …) happens *inside a project/tenant*, so you must obtain an **impersonated, project-scoped token**. This flow is shared by all Blocks configuration skills — the steps are identical whether you're configuring the data gateway or IAM SSO.
 
 It produces three things the config flows use:
 - `ACCOUNT_TENANT` — the **bootstrap/account tenant id**, from the login token's `tenant_id` claim. Used only to enter a project: `Project/Gets`, impersonation status, and `impersonate`.
@@ -46,7 +46,7 @@ There is **no** top-level `applicationDomain` on the project object — read it 
 - **Multiple applications** → the domains may look like `https://dfsgso.slsblx.com`, `https://other.slsblx.com` — **ask the user which to pick** if it's not obvious from context.
 - Strip the URL scheme for hosts/cert/dev-server use: `https://dfsgso.slsblx.com` → `dfsgso.slsblx.com`.
 
-See **[blocks-frontend-local-https](../../blocks-frontend-local-https/flows/setup-local-https.md)** for the full domain-resolution walkthrough (local HTTPS / OIDC `redirectUri`).
+See the **blocks-frontend-local-https** skill for the full domain-resolution walkthrough (local HTTPS / OIDC `redirectUri`).
 
 - **If the user named a project/tenant**, find it in the array and confirm it's present.
 - **Otherwise, ask the user which project to configure** — list the `name` + `environment` options. Don't guess.
@@ -122,4 +122,4 @@ bootstrap_hdr=(-H "x-blocks-key: $ACCOUNT_TENANT" -H "Authorization: Bearer $TOK
 
 If `auth-token` fails (refresh revoked/expired), re-run **step 1** (`auth-login`) to obtain a new `RT`, then **step 3** to impersonate again.
 
-Now continue with the service you're configuring — [configure-oidc.md](configure-oidc.md) for IAM SSO, or the data gateway configuration skill's schema flow.
+Now continue with the flow that brought you here — you have `ACCOUNT_TENANT`, `PTENANT`, and `PTOK`.

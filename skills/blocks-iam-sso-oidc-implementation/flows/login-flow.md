@@ -90,6 +90,6 @@ Wire `/activate` only when your app **creates or invites users** through the Blo
 
 Headers: `content-type: application/json`, `x-blocks-key: <PROJECT_KEY>`. No bearer token.
 
-After activation the user is **active** and can sign in via steps 1–4. Wire the page with **[blocks-iam-account](../../blocks-iam-account/SKILL.md)**. See **[blocks-iam-sso-oidc-configuration](../../blocks-iam-sso-oidc-configuration/flows/configure-oidc.md)** for when to add this route.
+After activation the user is **active** and can sign in via steps 1–4. Wire the page with **[blocks-iam-account](../../blocks-iam-account/SKILL.md)**. See **[blocks-iam-sso-oidc-configuration](../../blocks-iam-sso-oidc-configuration/SKILL.md)** for when to add this route.
 
 React wiring: [../references/react.md](../references/react.md).

@@ -29,6 +29,7 @@ Details + React wiring: [flows/render-and-switch.md](flows/render-and-switch.md)
 ## Gotchas
 
 - **`x-blocks-key` = the project key** (project tenant id). No impersonation; this is public frontend access.
+- **Env vars** (see [references/react.md](references/react.md)): `VITE_BLOCKS_API_URL`, `VITE_BLOCKS_PROJECT_KEY`, and `VITE_BLOCKS_I18N_MODULES` (comma-separated modules to preload, e.g. `common,login`).
 - **Cache per (language, module)** and invalidate on language switch — don't refetch every render.
 - **Preload the default language** before first paint (or gate UI) so users don't see raw keys flash.
 - **`culture` must match exactly** — request `de-DE`, not `de`; it must equal a configured `languageCode`.

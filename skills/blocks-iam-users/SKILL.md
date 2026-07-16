@@ -23,7 +23,7 @@ x-blocks-key: <PTENANT>
 credentials: include             # hosted SSO cookie
 ```
 
-Run `get-into-project` before admin user-management calls. On 401/`session_expired`, renew with `POST /iam/v4/auth-token` then re-impersonate.
+Run [flows/get-into-project.md](flows/get-into-project.md) before admin user-management calls. On 401/`session_expired`, renew with `POST /iam/v4/auth-token` then re-impersonate.
 
 ## Endpoints → [endpoints.md](endpoints.md)
 
@@ -54,5 +54,6 @@ Full fields, enums, and examples: [endpoints.md](endpoints.md). Frontend hooks: 
 - **`x-blocks-key` = `ACCOUNT_TENANT` on admin/script calls; `PTENANT` on browser/runtime calls** (e.g. `/iam/me`, activate). Wrong admin key (especially `PTENANT` as header) → 401.
 - **Update/get/deactivate are POST** (except get-by-id and me, which are GET; me-edit is PATCH). No PUT.
 - **Roles/permissions on a user** reference roles by **slug** and permissions by **name** (as defined in blocks-iam-access-control) — not their itemIds.
+- **Timeline is a `GET` that requires a JSON body** (`ItemId` + paging) — many HTTP clients silently drop bodies on GET. Use `curl -X GET --data-raw '...'` or a client that supports it; an empty-body 400 means the body was dropped, not that the route is wrong.
 - **`organizationId`** matters in multi-org projects — creating/getting a user may need the target org; get-by-id accepts `?organizationId=`.
 - The user list `data[]` is returned as loosely-typed objects in the swagger — treat fields defensively and confirm against a live response for your project.

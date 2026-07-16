@@ -11,12 +11,12 @@ Once a schema is created **and reloaded** (via **[blocks-data-gateway-configurat
 
 ## Auth & Keys
 
-Gateway CRUD is runtime data access inside a project. The project key is always the target project tenant id (`PTENANT`), never the bootstrap/account tenant.
+Gateway CRUD is runtime data access inside a project. The **project key** (`projectKey` fields, and the browser's `x-blocks-key`) is always the target project's tenant id (`PTENANT`) — but note the `x-blocks-key` **header differs by context** below.
 
 - **Browser/runtime calls:** send `x-blocks-key: <PTENANT>` and `credentials: "include"` so Blocks uses the signed-in user's hosted SSO cookie/session. This is the normal React app path.
-- **Admin/build script calls only:** first run `blocks-data-gateway-configuration/flows/get-into-project.md`; send **`x-blocks-key: <ACCOUNT_TENANT>`** plus `Authorization: Bearer <PTOK>`. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
+- **Admin/build script calls only:** first run [flows/get-into-project.md](flows/get-into-project.md); send **`x-blocks-key: <ACCOUNT_TENANT>`** plus `Authorization: Bearer <PTOK>`. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
 
-401 → wrong project key, missing/expired session, or expired admin token. Do not use the bootstrap/account tenant as `x-blocks-key` on gateway calls.
+401 → wrong project key, missing/expired session, or expired admin token.
 
 ## What's where
 
@@ -50,6 +50,6 @@ Full query/variable examples are in [flows/graphql-crud.md](flows/graphql-crud.m
 ## Gotchas
 
 - **Reload gates everything.** If a `get…`/`insert…` field is missing, the schema hasn't been reloaded — go back to blocks-data-gateway-configuration and `POST /schema-configurations/reload`.
-- **`x-blocks-key` = `PTENANT`.** Reusing the bootstrap/account tenant key → 401.
+- **`x-blocks-key` = `PTENANT` on browser/runtime calls; `ACCOUNT_TENANT` + `Bearer PTOK` on impersonated admin/script calls.** Mixing them — `ACCOUNT_TENANT` without the impersonated token, or `PTENANT` on an impersonated call → 401.
 - **Introspect when unsure of inputs.** Right after creating a schema, `{ __type(name:"<Schema>InsertInput"){ inputFields{ name type{ kind name ofType{ name } } } } }` gives the exact fields instead of guessing.
 - **The gateway is not in the swagger.** These shapes were captured by live introspection; verify against your project if the platform changes.
