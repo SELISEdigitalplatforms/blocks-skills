@@ -51,7 +51,7 @@ curl -s -X POST "$BLOCKS_API_URL/os/v4/Project/Create" \
     \"isAcceptBlocksTerms\": true,
     \"isUseBlocksExclusively\": true,
     \"isProduction\": false,
-    \"resources\": [],
+    \"resources\": [{\"resourceId\":\"data\",\"name\":\"data-gateway\",\"link\":\"\"}],
     \"applicationContexts\": [
       {\"environment\": \"dev\", \"domain\": \"https://dev-$SUF.seliseblocks.com\", \"cookieDomain\": \"seliseblocks.com\"}
     ]
@@ -63,6 +63,7 @@ curl -s -X POST "$BLOCKS_API_URL/os/v4/Project/Create" \
 - **The `domain` you send is ignored** — the backend assigns its own (e.g. `https://djzqto.slsblx.com`, cookie domain `slsblx.com`, env letter + random). Send a well-formed placeholder anyway (the portal does); read the real domain back from `Project/Gets` → `applications[].domain`.
 - `isAcceptBlocksTerms: true` is the user accepting Blocks' terms — only send it after the user has agreed to create the project.
 - Provisioning is fast (seconds, not minutes). **Verify, don't assume**: re-run `Project/Gets` (or the preflight) and confirm the new environment(s) appear with a `tenantId`.
+- **`resources` — two paths.** The agent/API path (shown above) includes `"resources":[{"resourceId":"data","name":"data-gateway","link":""}]` — this **auto-provisions the default Blocks MongoDB** so the project is data-ready immediately after creation, with zero portal steps. `GET /data/v4/configurations` will return a populated `data` object and **NO `POST /configurations` call is ever needed** (that endpoint is only for attaching a custom external database). The portal path: if the user creates the project in the browser portal and the data-gateway resource is not configured there, `GET /configurations` returns `data: null` and the agent must fall back to `POST /configurations` with the Blocks-provided default connection. **Always prefer the agent path** — it avoids a round-trip and a manual portal step. For adding environments to an existing project, omit `resources` (or keep it `[]`) — the data source is already provisioned on the project.
 
 ## Add an environment to an existing project
 

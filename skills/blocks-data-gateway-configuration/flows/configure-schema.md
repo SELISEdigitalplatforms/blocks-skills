@@ -15,7 +15,16 @@ Run [get-into-project.md](get-into-project.md) first. After it you have `hdr` an
 ```bash
 curl -s "$BLOCKS_API_URL/data/v4/configurations" "${hdr[@]}"
 ```
-Keep `data.projectKey`, `data.collectionNamePattern` (default `sb_{SchemaName}s`), `data.isCollectionNameEditable`. If `data` is null, no data source exists yet — `POST /configurations` with `{ connectionString, databaseName, projectKey }` first (use the project's MongoDB, or the Blocks-provided default configured in the OS portal).
+Keep `data.projectKey`, `data.collectionNamePattern` (default `sb_{SchemaName}s`), `data.isCollectionNameEditable`.
+
+**Two scenarios for `data`:**
+
+| `data` value | Meaning | Action |
+|---|---|---|
+| **Populated** (has `projectKey`, `collectionNamePattern`, etc.) | Data source is already provisioned | Continue to Step 2 — **do NOT call `POST /configurations`** |
+| **`null`** | No data source exists | This only happens for projects created **via the portal without the data-gateway resource**. Fix: `POST /configurations` with `{ connectionString, databaseName, projectKey }` using the Blocks-provided default connection string. |
+
+> **Agent/API path (recommended):** When the project is created via `Project/Create` with `"resources":[{"resourceId":"data","name":"data-gateway","link":""}]` (see **blocks-onboarding → manage-projects**), the default Blocks MongoDB is **auto-provisioned**. `GET /configurations` returns a populated `data` object immediately — **never call `POST /configurations` on an agent-created project**. The `POST /configurations` endpoint exists **only** for attaching a custom external database or for fixing portal-created projects that are missing the data-gateway resource. Attempting to POST configs on an already-provisioned project can permanently poison it. If `data` is populated, proceed directly to Step 2.
 
 ## Step 2 — Does the schema already exist?
 
