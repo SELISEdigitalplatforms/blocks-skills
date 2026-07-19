@@ -11,12 +11,12 @@ Once a schema is created **and reloaded** (via **[blocks-data-gateway-configurat
 
 ## Auth & Keys
 
-Gateway CRUD is runtime data access inside a project. The **project key** (`projectKey` fields, and the browser's `x-blocks-key`) is always the target project's tenant id (`PTENANT`) — but note the `x-blocks-key` **header differs by context** below.
+Gateway CRUD is runtime data access inside a project. The **project key** (`projectKey` fields, and the browser's `x-blocks-key`) is always the target project's tenant id (`PTENANT`) — but note the **`x-blocks-key` header differs by context** below.
 
 - **Browser/runtime calls:** send `x-blocks-key: <PTENANT>` and `credentials: "include"` so Blocks uses the signed-in user's hosted SSO cookie/session. This is the normal React app path.
-- **Admin/build script calls only:** first run [flows/get-into-project.md](flows/get-into-project.md); send **`x-blocks-key: <ACCOUNT_TENANT>`** plus `Authorization: Bearer <PTOK>`. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
+- **Admin/build script calls:** first run [flows/get-into-project.md](flows/get-into-project.md) to obtain an impersonated token (`PTOK`); then send **`x-blocks-key: <PTENANT>`** (the project tenant — NOT the account tenant) plus `Authorization: Bearer <PTOK>`. The impersonated token is scoped to the project tenant; using `x-blocks-key: <ACCOUNT_TENANT>` with an impersonated token returns `"Field 'X' does not exist on type 'Query'"` because the schema lives in the project tenant, not the account tenant. A deployed frontend must never use `PTOK` or impersonation.
 
-401 → wrong project key, missing/expired session, or expired admin token.
+401 → wrong project key, missing/expired session, or expired admin token. `"Field '…' does not exist on type 'Query'/'Mutation'"` → wrong `x-blocks-key` tenant (account tenant instead of project tenant on impersonated calls), or schema not reloaded.
 
 ## What's where
 
@@ -50,6 +50,8 @@ Full query/variable examples are in [flows/graphql-crud.md](flows/graphql-crud.m
 ## Gotchas
 
 - **Reload gates everything.** If a `get…`/`insert…` field is missing, the schema hasn't been reloaded — go back to blocks-data-gateway-configuration and `POST /schema-configurations/reload`.
-- **`x-blocks-key` = `PTENANT` on browser/runtime calls; `ACCOUNT_TENANT` + `Bearer PTOK` on impersonated admin/script calls.** Mixing them — `ACCOUNT_TENANT` without the impersonated token, or `PTENANT` on an impersonated call → 401.
+- **`x-blocks-key` = `PTENANT` on impersonated admin/script calls, NOT `ACCOUNT_TENANT`.** An impersonated token is scoped to the project tenant; setting `x-blocks-key` to the account tenant returns `"Field 'X' does not exist on type 'Query'/'Mutation'"` because the schema lives at the project level.
+- **`acknowledged: true` ≠ success.** `ActionResponse.acknowledged` means the gateway accepted the mutation — it does NOT guarantee the record was persisted. A filter that matches nothing (wrong tenant, wrong schema, missing required fields) still returns `acknowledged: true` with no error. Always read back (`get<Collection>`) after a mutation to confirm the record exists.
+- **Some schemas expose no `id` field.** If `get<Collection>.items[]` lacks an `id` field, use the system field `ItemId` instead for updates (`where: { ItemId: { eq: "..." } }`). All records carry `ItemId` regardless of whether the schema declares an `Id` field.
 - **Introspect when unsure of inputs.** Right after creating a schema, `{ __type(name:"<Schema>InsertInput"){ inputFields{ name type{ kind name ofType{ name } } } } }` gives the exact fields instead of guessing.
 - **The gateway is not in the swagger.** These shapes were captured by live introspection; verify against your project if the platform changes.
