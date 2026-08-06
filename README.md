@@ -144,6 +144,12 @@ Add a language switcher and translate the UI                        → blocks-l
 python3 tools/generate-api-docs.py iam data
 ```
 
+## Contributing and security
+
+- Contribution conventions and workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Reporting a vulnerability: [SECURITY.md](SECURITY.md)
+- Community standards: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+
 ## License
 
 MIT — see `LICENSE`.

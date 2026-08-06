@@ -20,3 +20,24 @@ benchmark.json
 .swagger-cache/
 
 .scratch_*
+
+# --- open-source baseline: secrets, build output, local agent files ---
+node_modules/
+bin/
+obj/
+dist/
+build/
+out/
+coverage/
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+QWEN.md
+.cursorrules
+.clinerules
+.windsurfrules
+graphify-out/
+results/
+.sonarqube/
+scripts/scan.sh
+*-secrets.json
