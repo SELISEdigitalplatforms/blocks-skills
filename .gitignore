@@ -20,3 +20,19 @@ benchmark.json
 .swagger-cache/
 
 .scratch_*
+
+# --- local AI / scan workspace (do not commit) ---
+graphify-out/
+results/
+.sonarqube/
+scripts/scan.sh
+*-secrets.json
+
+# --- AI agent instruction files (do not commit) ---
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+QWEN.md
+.cursorrules
+.clinerules
+.windsurfrules
