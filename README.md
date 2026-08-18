@@ -16,7 +16,7 @@ Don't assume an account, a project, or credentials exist. **Probe first, ask sec
 
 Blocks work divides into two modes, and the skills are organized around the difference:
 
-- **Configuration** — acting *on* a project as an admin from a CLI/script: defining schemas, wiring SSO, seeding roles, editing org settings. Requires the shared **initial steps**: log in → list projects → **impersonate** → `PTOK`. Configuration calls use **`x-blocks-key: <ACCOUNT_TENANT>`** (root tenant) + `Authorization: Bearer <PTOK>` + **`projectKey: <PTENANT>`**.
+- **Configuration** — acting *on* a project as an admin from a CLI/script: defining schemas, wiring SSO, seeding roles, editing org settings. Requires the shared **initial steps**: log in → list projects → **impersonate** → `PTOK`. Configuration calls use **`x-blocks-key: <ACCOUNT_TENANT>`** (root tenant) + `Authorization: Bearer <PTOK>` and include **`projectKey: <PTENANT>`** where the endpoint DTO defines it. Storage object DTOs do not.
 - **Implementation** — the frontend app acting *as the signed-in user*: running GraphQL CRUD, uploading files, logging in via SSO, reading `/iam/me`. This needs **no initial steps** and **no token in JS** — the app uses the public **project key** (`<PTENANT>`, `x-blocks-key`) plus the hosted **SSO session cookie** (`credentials: "include"`). The browser never holds the access or refresh token, and `PTOK` never ships to the client.
 
 The initial steps live as `flows/get-into-project.md` — an identical copy embedded in **every skill that can run impersonated calls** (kept in sync by `tools/lint.py`), so each skill works standalone. Pure implementation skills don't carry it.
@@ -35,7 +35,7 @@ The initial steps live as `flows/get-into-project.md` — an identical copy embe
 |-------|------|--------|
 | `blocks-data-gateway-configuration` | Configuration | Create/edit schemas & fields, field validation (incl. AI regex), access policies, **reload**; plus mock-data cleanup and schema-exchange between projects. Embeds the initial-steps flow. |
 | `blocks-data-gateway-crud` | Implementation | GraphQL CRUD against the runtime gateway (`POST /data/v4/gateway`): `get<Collection>` queries, `insert/update/delete<Schema>` mutations, and typed React hooks. |
-| `blocks-data-storage` | Implementation | Files / DMS: pre-signed-URL upload pipeline, download, folders, tags/versions, delete. |
+| `blocks-data-storage` | Implementation | Permission-aware file/directory tree: cloud and local uploads, browse/search, versions, trash, sharing, ACLs, and inheritance. |
 
 ### IAM — SSO / OIDC (`iam/v4`)
 
@@ -98,13 +98,13 @@ There are three tenant ids and three ways a call is authenticated. Keep them str
 
 **Three tenant ids:**
 - **`ACCOUNT_TENANT`** — the root/account tenant, from the login token's `tenant_id` claim. Used as **`x-blocks-key` on every configuration call** (data, IAM, storage, localization) after impersonation — and also for bootstrap calls (`Project/Gets`, `impersonation/status`, `impersonate`).
-- **`PTENANT`** — the target project's tenant id. On **configuration** calls it goes in **`projectKey`** (and equivalent body/query fields) only — **not** as `x-blocks-key`. On **browser/runtime** calls it is the public **`x-blocks-key`** (`VITE_BLOCKS_PROJECT_KEY`).
+- **`PTENANT`** — the target project's tenant id. On **configuration** calls it goes in **`projectKey`** (and equivalent body/query fields) where the endpoint DTO defines it—**not** as `x-blocks-key`; the storage object APIs instead derive scope from `PTOK`. On **browser/runtime** calls it is the public **`x-blocks-key`** (`VITE_BLOCKS_PROJECT_KEY`).
 - **`PTOK`** — the impersonated, project-scoped access token. **CLI/admin only; never ships to the client.**
 
 **Three authentication contexts:**
-- **CLI / configuration** — impersonate first: `POST https://api.seliseblocks.com/iam/v4/auth/impersonate` with `{ targeted_tenant_id, refresh_token, client_id }` (`client_id` = `57214b67-aa9c-4307-92ab-a25e35180fac`) → `PTOK`. Then **`x-blocks-key: <ACCOUNT_TENANT>`** + `Authorization: Bearer <PTOK>` + **`projectKey: <PTENANT>`**. Strict: the header is always the root tenant; the project is selected via `projectKey`. On 401/`session_expired`, renew with `POST /iam/v4/auth-token` then re-impersonate.
+- **CLI / configuration** — impersonate first: `POST https://api.seliseblocks.com/iam/v4/auth/impersonate` with `{ targeted_tenant_id, refresh_token, client_id }` (`client_id` = `57214b67-aa9c-4307-92ab-a25e35180fac`) → `PTOK`. Then use **`x-blocks-key: <ACCOUNT_TENANT>`** + `Authorization: Bearer <PTOK>` and **`projectKey: <PTENANT>`** only where the endpoint DTO requires it. Storage object endpoints do not accept an invented project field; their project scope comes from `PTOK`. On 401/`session_expired`, renew with `POST /iam/v4/auth-token` then re-impersonate.
 - **Browser / implementation** — the app holds **no token**. Calls carry `x-blocks-key: <PTENANT>` + `credentials: "include"` so Blocks reads the hosted **SSO session cookie** set by `/idp/callback`. Renew with `POST /iam/v4/oidc/token` (`grant_type=refresh_token` + `client_id`, form-encoded, `credentials: "include"`) — this **rotates the cookies**; you send a `refresh_token` form field only if your project intentionally exposes a readable one to JS (usually it's HttpOnly). Wire it as the 401-retry path, then re-check `/iam/me`.
-- **Provider-direct** — the storage pre-signed `PUT` goes straight to the storage provider on a pre-authorized URL: **no Bearer token, and no `x-blocks-key`** unless the provider accepts unknown headers (Azure needs only `x-ms-blob-type: BlockBlob` + `Content-Type`).
+- **Provider-direct** — the storage pre-signed `PUT` goes straight to the provider on a pre-authorized URL: **no Bearer token and no `x-blocks-key`**. Send only provider-required headers (Azure needs `x-ms-blob-type: BlockBlob` plus `Content-Type`).
 
 **Login:** `POST https://api.seliseblocks.com/iam/v4/auth-login` (note the dash) with `{ "username", "password" }` → `access_token` (~5 min) + `refresh_token`; the token's `tenant_id` claim is `ACCOUNT_TENANT`. `auth-login` is the **only** Blocks call that omits `x-blocks-key`.
 

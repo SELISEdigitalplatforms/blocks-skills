@@ -1,83 +1,171 @@
-# Upload and manage files (DMS)
+# Upload and download files
 
-Any file-storage task on the data service: upload via pre-signed URL, download, browse, delete. Preconditions: the **project key** (`PTENANT`) sent as both `x-blocks-key` and `projectKey`. Browser/runtime calls also send `credentials: "include"` for the hosted SSO cookie. Admin/build scripts may use Bearer `$PTOK` from `get-into-project`, but a deployed frontend must never use `PTOK` or impersonation. All `/Files/*` routes are PascalCase and do **not** use the standard data envelope — errors come back as `Record<string,string>`. Base: `https://api.seliseblocks.com/data/v4`.
+Use the Blocks CLI for terminal work and `@seliseblocks/client` for application code. Raw HTTP examples below document the wire contract. The current file routes are lowercase kebab-case under `https://api.seliseblocks.com/data/v4/files`.
 
-## Upload = two steps (presign → PUT binary). No `/Files/UploadFile`.
+## Choose an upload path
 
-The upload is **just two calls**: get a pre-signed URL, then PUT the file bytes to it. You do **not** call `/Files/UploadFile` — presign + PUT is the whole upload.
+| Storage mode | Workflow |
+|---|---|
+| Cloud/object storage | Authenticated pre-sign request, then unauthenticated provider PUT |
+| Local storage | One authenticated multipart request to Blocks Data |
 
-### Step 1 — Get a pre-signed upload URL — `POST /data/v4/Files/GetPreSignedUrlForUpload`
+Both workflows create the file object and version directly. Do not call a DMS registration endpoint afterward.
+
+## Cloud upload
+
+### 1. Create metadata and obtain a signed URL
+
+`POST /data/v4/files/get-pre-signed-url-for-upload`
+
 ```json
 {
-  "name": "invoice-2026-07.pdf",
-  "projectKey": "<project tenant id>",
+  "name": "invoice-2026-08.pdf",
   "accessModifier": "Private",
   "configurationName": "Default",
-  "moduleName": 3,
-  "parentDirectoryId": "",
+  "moduleName": 8,
+  "parentDirectoryId": "<directory id>",
   "tags": "invoices",
-  "metaData": "{}"
+  "metaData": "{}",
+  "additionalProperties": {
+    "invoiceNumber": "INV-1042"
+  }
 }
 ```
-Keep **`uploadUrl`** and **`fileId`** from the response.
-- **`accessModifier`** — `"Public"` or `"Private"`. Public files are readable without auth; Private require access.
-- **`configurationName`** — the storage configuration to use. `"Default"` targets the project's default store. To use a specific one, list the project's storage configs (see below) and pass its `name`.
-- **`moduleName`** — **must have a value** (an int). Use **`3`** (recommended); any int is accepted, but don't omit it.
-- **`parentDirectoryId`** — **must not be `null`**. Use `""` for the root, or a folder id to place the file inside a folder. Sending `null` is rejected — send an empty string instead.
 
-### Step 2 — PUT the file bytes to `uploadUrl`
-Upload the raw file **binary** with a `PUT` to the returned `uploadUrl`. The URL is pre-authorized (no Bearer token needed) and expires, so upload promptly. Include `x-blocks-key` on the PUT only when the storage provider accepts unknown headers; the important project key is on the Blocks presign/GetFile calls.
+Keep `uploadUrl` and `fileId` from the response. Check `isSuccess` and `errors` when present.
 
-**Azure needs one extra header.** If the storage provider is **Azure**, the PUT must include `x-ms-blob-type: BlockBlob` or Azure rejects it. Detect the provider from the `uploadUrl` host — an Azure Blob URL looks like `https://<account>.blob.core.windows.net/...` — or from the storage config's `storageStrategy` (see below). Other providers (e.g. S3) don't need this header.
+- Omit `itemId` to create a new file. Pass an existing file id as `itemId` to create a version after an Edit permission check.
+- For cloud upload, an empty `parentDirectoryId` resolves through `moduleName` to that module's default directory.
+- The backend module default is `8` (`Default_Construct`), but pass the module your feature actually uses.
+- Use `Private` unless unauthenticated download is intentional.
+- The request creates metadata before any bytes are uploaded. A failed provider PUT is a partial workflow; retry with a new pre-sign operation or remove the incomplete object according to product policy.
+
+Do not add `projectKey`; project scope comes from authentication.
+
+### 2. PUT bytes to the provider URL
+
+The signed URL is already authorized. Send no Bearer token, cookie, or `x-blocks-key` to it.
 
 ```bash
-# Azure example
-curl -s -X PUT "<uploadUrl>" \
-  -H "x-ms-blob-type: BlockBlob" \
-  -H "Content-Type: application/pdf" \
-  --data-binary @invoice-2026-07.pdf
+curl -X PUT '<uploadUrl>' \
+  -H 'Content-Type: application/pdf' \
+  -H 'x-ms-blob-type: BlockBlob' \
+  --data-binary @invoice-2026-08.pdf
 ```
-On success the file is stored; use `fileId` from step 1 to reference it. (`GetFile` in the management section is the source of truth that it registered.)
 
-## Which storage configurations exist? — `GET https://api.seliseblocks.com/logic/v4/Storage/Gets`
+`x-ms-blob-type` is required for Azure Blob uploads. For other providers, send only the headers required by the signed policy. Upload promptly because the URL expires.
 
-Storage configs live on the **logic** service (note the different host path). Admin scripts: **`x-blocks-key: $ACCOUNT_TENANT`** + Bearer `$PTOK`, with `projectKey: $PTENANT`. Browser flows: `x-blocks-key: $PTENANT` + SSO cookie. Returns an array; the `name` is what you pass as `configurationName`, and `storageStrategy` tells you the provider (so you know whether the PUT needs `x-ms-blob-type`):
-```json
-[
-  {
-    "name": "Default",
-    "storageStrategy": "Azure",
-    "connectionString": "D***…t",
-    "itemId": "0ffac412-b0b6-4e31-aa17-4f194f09e4d8",
-    "organizationId": "default",
-    "createdDate": "2025-02-09T13:18:54.725Z"
-  }
-]
+### 3. Verify or download
+
+`GET /data/v4/files/get-file?FileId=<fileId>&ConfigurationName=Default`
+
+Use the returned `url` to download. Add `Version=<number>` to request a particular version. Query binding is case-insensitive in the service, but application code should use the SDK rather than constructing query strings.
+
+## Local-storage upload
+
+`POST /data/v4/files/upload-file-to-local-storage` as `multipart/form-data`.
+
+| Field | Meaning |
+|---|---|
+| `File` | Required binary part |
+| `Name` | Required file name |
+| `ItemId` | Existing file id when creating a version |
+| `ParentDirectoryId` | Parent directory; empty remains at top level |
+| `AccessModifier` | Usually `Private` |
+| `ConfigurationName` | Usually `Default` |
+| `Tags` | Tag text |
+| `MetaData` | Metadata string |
+| `AdditionalProperties[key]` | Repeated additional-property fields |
+
+Do not manually set a multipart boundary; let the HTTP client create it.
+
+## CLI
+
+```bash
+# Complete cloud workflow: pre-sign, provider PUT, verify
+blocks data files upload --file ./invoice.pdf \
+  --parent-id '<directory id>' \
+  --configuration-name Default
+
+# Split workflow when another process performs the PUT
+blocks data files presigned-upload-url \
+  --name invoice.pdf \
+  --parent-directory-id '<directory id>'
+
+blocks data files upload-to-url \
+  --url '<uploadUrl>' \
+  --file ./invoice.pdf \
+  --content-type application/pdf
+
+# Local-storage deployment
+blocks data files upload-to-local-storage --file ./invoice.pdf \
+  --parent-directory-id '<directory id>'
+
+blocks data files get '<fileId>' --configuration-name Default
+blocks data files get-many '<fileId1>' '<fileId2>'
 ```
-Most projects have a single `"Default"` (Azure). Only enumerate this when you need a non-default store or want to confirm the provider.
 
-## Download & browse
+Run `blocks data files <command> --help` for exact flags in the installed CLI version.
 
-- **Get one file — `GET /data/v4/Files/GetFile`** — query params `FileId` and `ConfigurationName` (PascalCase): `GET /Files/GetFile?FileId=<fileId>&ConfigurationName=Default`. The response `url` is the download link.
-- **Get several files — `POST /data/v4/Files/GetFiles`** with a JSON body:
-  ```json
-  { "fileIds": ["<fileId>", "<fileId2>"], "configurationName": "Default" }
-  ```
-- **File info / listing — `POST /data/v4/Files/GetFilesInfo`** — paginated metadata: `{ page, pageSize, sort: { property, isDescending }, filter: { name?, additionalProperties? }, projectKey }` → `data[]` + `totalCount`.
-- **DMS files & folders — `POST /data/v4/Files/GetDmsFileAndFolder`** — browse a folder tree: `{ parentId, skip, take, searchKey }`.
+## TypeScript SDK
 
-## Folders & delete
+```ts
+const presign = await blocksClient.data.files.presignedUploadUrl({
+  name: file.name,
+  accessModifier: "Private",
+  configurationName: "Default",
+  moduleName: 8,
+  parentDirectoryId,
+  tags: "invoices",
+  metaData: "{}",
+});
 
-- Create folder: `POST /Files/CreateFolder` (`artifactName` = name, `parentId` to nest). Delete folder: `POST /Files/DeleteFolder` (`folderId`).
-- Delete a file: `POST /Files/DeleteFile` with `{ "fileId": "<fileId>", "projectKey": "<project tenant id>" }` → `{ isSuccess }`.
+// The endpoint response is currently unknown at the SDK boundary; validate it.
+if (!presign || typeof presign !== "object") throw new Error("Upload was not prepared");
+const { uploadUrl, fileId } = presign as { uploadUrl?: string; fileId?: string };
+if (!uploadUrl || !fileId) throw new Error("Upload URL or file id is missing");
 
-Error paths: 401 → wrong `x-blocks-key`, missing/expired SSO session, or expired admin token. A failed pre-signed PUT (expired URL) → redo step 1; don't reuse a stale `fileId`. An Azure PUT that 400s with a "blob type" error → you missed `x-ms-blob-type: BlockBlob`.
+await blocksClient.data.files.uploadToUrl({
+  url: uploadUrl,
+  body: file,
+  contentType: file.type || "application/octet-stream",
+});
 
-## Verify
+const stored = await blocksClient.data.files.get(fileId, {
+  configurationName: "Default",
+});
+```
 
-- `GET /Files/GetFile?FileId=<fileId>&ConfigurationName=Default` → non-null `url`, correct `name`/`sizeInBytes`. Download the `url` and compare bytes for a full round-trip.
-- `POST /Files/GetFilesInfo` filtered by `name` → the file appears.
+For local storage:
+
+```ts
+await blocksClient.data.files.uploadToLocalStorage({
+  file,
+  name: file.name,
+  parentDirectoryId,
+  accessModifier: "Private",
+  configurationName: "Default",
+});
+```
+
+## Versions
+
+List versions with `GET /files/get-file-versions?fileId=<id>&limit=25&cursor=<cursor>`. To upload a cloud-backed version explicitly:
+
+1. `POST /files/create-file-version` with `{ "fileId": "<id>", "configurationName": "Default" }`.
+2. Validate its signed upload URL.
+3. PUT the bytes using `data.files.uploadToUrl`.
+
+Alternatively, pass the existing id as `itemId` to the normal cloud or local upload request.
+
+## Other file operations
+
+- Batch download metadata: `POST /files/get-files` with `fileIds` and optional `configurationName`.
+- Metadata list: `POST /files/get-files-info` with paging/filter/sort fields.
+- Additional properties: `POST /files/update-file-additional-info` with `itemId` and `additionalProperties`.
+- Soft delete: `POST /files/delete-file` with `{ "fileId": "...", "permanent": false }`.
+- Permanent delete: same route with `permanent: true`; make this an explicit destructive choice.
 
 ## Associate a file with a record
 
-Store the returned `fileId` in a schema field (e.g. `ItemImageFileId` String, or an `ItemImageFileIds` array). Define the field via **[blocks-data-gateway-configuration](../../blocks-data-gateway-configuration/SKILL.md)** and set it on insert/update via **[blocks-data-gateway-crud](../../blocks-data-gateway-crud/SKILL.md)**.
+Store `fileId` in a schema field through [blocks-data-gateway-crud](../../blocks-data-gateway-crud/SKILL.md). The storage object remains the source of file metadata, content, versions, and access policy.
