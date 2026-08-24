@@ -1,71 +1,101 @@
 # Contributing
 
-This repo is a set of Claude Code skills for the SELISE Blocks v4 API. The bar for every contribution is the same: **everything Claude might act on must be grounded in real, verified API behavior** — not assumed from a swagger read.
+This repo is a source of **agent instructions**, not application code. Nobody builds a Blocks app here — other repos consume these skills, either through the `blocks` CLI (`blocks skill list` / `show` / `add`) or by vendoring the tree with [BOOTSTRAP.md](./BOOTSTRAP.md).
 
-## Repo structure
+The bar for every contribution is the same: **everything must be grounded in behavior you actually ran** — not inferred from source, not assumed from a help string, not invented to fill a gap.
+
+## Where things live
+
+Skill *sources* are not in this repo. They live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills) under `blocks-skills/`, which is what `blocks skill list` / `show` / `add` publishes and what `BOOTSTRAP.md` vendors.
+
+| Change | Repo |
+|---|---|
+| A skill's content — `SKILL.md`, flows, references | `blocks-cli`, under `blocks-skills/` |
+| Routing table, hard rules, workflow | this repo, inside the `blocks-skills:distributable` markers in [AGENTS.md](./AGENTS.md) |
+| The vendoring procedure | this repo, [BOOTSTRAP.md](./BOOTSTRAP.md) |
+
+A new skill needs both: the content in `blocks-cli`, and a routing-table row here. **A skill missing from the routing table is invisible to agents and is never vendored** — `BOOTSTRAP.md` treats that table as its manifest.
+
+A skill directory looks like this:
 
 ```
-skills/blocks-<name>/
-├── SKILL.md            ← routing: auth model, endpoint map, key concepts, gotchas
-├── flows/*.md          ← step-by-step procedures
-│   └── get-into-project.md   ← the shared "initial steps" (configuration skills only)
-├── endpoints.md        ← exact request/response contracts (where a skill warrants one)
-└── references/react.md ← typed client + TanStack Query hooks (React 19 stack)
-tools/generate-api-docs.py   ← optional bootstrap from swagger
+blocks-skills/blocks-<name>/
+├── SKILL.md            ← required: frontmatter + surface, key concepts, gotchas
+├── flows/*.md          ← step-by-step procedures, where the job has them
+├── references/*.md     ← app-code patterns (typed hooks, components, config)
+└── scripts/*           ← executable helpers, where a skill needs one
 ```
 
-Skills are **focused** — one clear job each (e.g. "GraphQL CRUD", "SSO configuration", "organizations"). Not every skill needs `endpoints.md` or `flows/`; include what the job needs. `skill-creator` is meta-tooling, not a product skill.
+Skills are **focused** — one clear job each. Most are a single `SKILL.md`; add `flows/`, `references/`, or `scripts/` only where the job needs them.
 
-## Configuration vs. implementation (know which you're writing)
+Because vendoring copies each skill directory on its own, **every relative link inside a skill must resolve within that directory**. Link to `flows/x.md` and `../SKILL.md` from a flow; never to a sibling skill or any path above the skill's own directory.
 
-Every skill is one of two modes, and it changes the auth model and whether the initial steps apply:
+## CLI or SDK — know which you're writing
 
-- **Configuration** — admin action *on* a project (define schemas, wire SSO, seed roles, edit org settings). It happens inside a tenant, so it **requires the initial steps**: log in → `GET /os/v4/Project/Gets` → impersonate (`POST https://api.seliseblocks.com/iam/v4/auth/impersonate` with `{ targeted_tenant_id, refresh_token, client_id }`, where `client_id` = `57214b67-aa9c-4307-92ab-a25e35180fac`). Configuration calls use **`x-blocks-key: <ACCOUNT_TENANT>`** (root tenant) + the impersonated token + **`projectKey: <PTENANT>`**. On token expiry: `POST /iam/v4/auth-token` then re-impersonate. Configuration skills embed `flows/get-into-project.md` and every flow starts from it.
-- **Implementation** — the frontend acting *as the signed-in user* (CRUD, uploads, SSO login, `/iam/me`). **No initial steps.** Uses the public **project key** (`x-blocks-key` = the project tenant id) + the user's session token.
+Every skill is anchored to one of two surfaces, and getting this wrong misroutes the whole skill:
 
-Do not add the initial-steps flow to an implementation skill, and do not omit it from a configuration one. A management skill (users/roles/permissions/orgs) that serves both modes documents the two token sources explicitly rather than assuming one.
+- **CLI** — terminal and admin work, project-scoped: defining schemas, registering an OIDC client, authoring translations, managing other users, rotating secrets, triggering deploys. Every mutating command is shown as `--dry-run` first, then `--yes`.
+- **SDK** — application code acting as the signed-in user, via `@seliseblocks/client`: reading and writing records, uploading files, the login flow, rendering translations, sending mail.
+
+Some areas legitimately span both (a skill may cover admin CLI commands *and* the SDK calls an app makes). When that happens, say which half owns which task rather than blurring them.
+
+**Never document a raw `fetch` or `curl` against the platform API.** If a capability appears to have no CLI or SDK path, that is the finding — write it down as such (as `blocks-notification` and `blocks-release-deployment` do) rather than reaching around the supported surface.
 
 ## The grounding rule (non-negotiable)
 
-**Verify against the live API before you document it.** Drive the real endpoint with real credentials (a throwaway/dev project), and write down what actually happens:
+**Run it before you document it.** Drive the real command or SDK call against a throwaway/dev project, and write down what actually happened.
 
-- The **served path** — the swagger `basePath` `/api` is often *not* served (`/data/v4/...`, `/iam/v4/iam/...`). Confirm the real URL.
-- The **real request and response shapes** — swagger frequently types responses as a bare `object` or omits them entirely. Capture the live shape; if you genuinely can't, write "response shape not documented — inspect the live response" and type it `unknown`. Never fabricate JSON.
-- **Quirks, verbatim** — mutating GETs (a GET that needs a body → note it and how to call it from a browser), non-standard envelopes (`{isSuccess, organization}` vs `{data}`), casing splits (`refreshToken` vs `refresh_token`), list endpoints that are POST-with-body vs GET-with-query.
-- **Integer enums have no member names** in swagger. Reference the numeric union and mark any interpreted meaning **unverified — confirm in the portal**.
-- **Endpoints missing from swagger** (e.g. the GraphQL gateway) are discovered by introspection/probing and labeled as verified-live, with the method noted.
+- **Exact commands and flags.** Copy them from a run that worked. Don't guess a flag name because it would be symmetrical with another command.
+- **Real output shapes.** If you can't verify a response shape, say "response shape not verified — inspect the live response" and type it `unknown`. **Never fabricate output.**
+- **Quirks, verbatim.** Where behavior is surprising, record it and why. `blocks-notifier` documents that `notifier unread` flattens its subscription filter into query params because Fetch forbids a GET body — that is the standard to match.
+- **Absences are findings.** "No SDK namespace exists for this" and "this is CLI-only by design" belong in the skill, stated plainly.
+- **Destructive commands** are documented with their `--dry-run` step and a note that confirmation is required.
 
-For hand-authored files, every path/method/field/header you write must match what you verified. Old v1 routes (`/idp/v1/`, `/uds/v1/`, …) are dead — use them only as recognition aliases in a `description`.
+Honesty beats completeness. An unverified detail marked unverified is fine; a smoothed-over guess is not.
+
+## Writing a `SKILL.md`
+
+Frontmatter is `name` plus a trigger-rich, third-person `description`. The description is the entire routing signal — an agent picks the skill from it alone, so it must carry:
+
+1. **What the skill does**, concretely, naming the CLI commands or SDK namespaces involved.
+2. **The phrases and situations that should invoke it** — including how a user would actually phrase it, symptoms and error messages included ("redirect loops", "a session that doesn't stick").
+3. **What it is not**, naming the sibling skill that owns that instead.
+
+Lean slightly pushy. Under-triggering is the common failure — a skill nobody routes to might as well not exist. Point 3 matters as much as point 1: most misrouting is between neighbors, so `blocks-notification` explicitly disclaims sending and points at `blocks-notifier`.
+
+The body then covers the surface, key concepts, and gotchas. Keep the conversational flow in the skill; keep exact command contracts where they belong and don't restate them in two places.
 
 ## Adding or improving a flow
 
 1. Pick a real multi-step sequence a developer actually needs.
-2. Create `skills/blocks-<name>/flows/<kebab-name>.md`:
-   - **When to use + preconditions.** For configuration flows, the first precondition is running `get-into-project.md` (it exports `$ROOT`, `$PTENANT`, `$PTOK`/`hdr`). For implementation flows, state the project key + user token.
-   - **Numbered steps:** `METHOD /path` — why, the fields the step turns on, what to keep from the response. Real, runnable curl where it helps.
-   - **Branches and error paths** (401 / `session_expired` → re-login/impersonate; validation branches).
-   - A **Verify** section: which call confirms success and what to look for.
-3. Add it to the SKILL.md routing table.
+2. Create `blocks-skills/blocks-<name>/flows/<kebab-name>.md`:
+   - **When to use, plus preconditions** — what must already be true (logged in, project selected, schema reloaded).
+   - **Numbered steps** with the real, runnable command or call: why the step exists, and what to carry forward from its output.
+   - **Branches and error paths**, including what the failure actually looks like.
+   - A **Verify** section: the command that confirms success, and what to look for in its output.
+3. Add it to the routing table in `SKILL.md`.
 
 ## Adding or improving a reference
 
-`references/react.md` targets React 19 + TypeScript + Vite + Tailwind + shadcn/ui + TanStack Query + Zustand. Include: a typed client slice (fetch wrapper adding `x-blocks-key` + Bearer, base URL from `VITE_` env, 401-refresh-retry), hooks for the highest-value endpoints, and one realistic component. Client-safe values only in `VITE_` vars — the project key is public; tokens come from the auth store at runtime. Keep it ~150–300 lines.
+`references/*.md` targets the stack `blocks new web` scaffolds: **React 18 + TypeScript + Vite + TanStack Query**. Include a realistic slice of app code — hooks for the highest-value operations and one component that uses them — built on the single shared `blocksClient`. Keep it roughly 150–300 lines. Never put secrets in client-side code or env vars.
 
 ## Adding a new skill
 
-1. **Decide the mode** (configuration vs implementation) and the one job it owns. Keep it focused — split rather than sprawl.
-2. **Verify the endpoints live** (see the grounding rule). Optionally seed `endpoints.md` with `python3 tools/generate-api-docs.py <svc>`, then correct it against live behavior — the generator is a starting point, not ground truth.
-3. **Write `SKILL.md`:** frontmatter `name` + a trigger-rich, third-person `description` (say what it does *and* the phrases/contexts that should invoke it; be a little "pushy" to avoid under-triggering); then the auth model, an endpoint map, key concepts (marked "verified live"), and gotchas.
-4. **Configuration skill?** Copy `flows/get-into-project.md` from an existing configuration skill and point flows at it.
-5. **Cross-link** related skills by name (config ↔ implementation, "store a fileId here, set it there"). Keep relative links valid.
+1. **Decide the surface** (CLI, SDK, or both) and the one job the skill owns. Split rather than sprawl.
+2. **Verify everything live** (see the grounding rule).
+3. **Write `SKILL.md`** — frontmatter first; it decides whether the skill is ever used.
+4. **Disclaim** the siblings it borders — name them in the description so misrouting between neighbors is caught. Do not link across skill directories; vendoring copies them independently.
+5. **Add it to the routing table in [AGENTS.md](./AGENTS.md)** — inside the distributable markers — and to the skills list in [README.md](./README.md). A skill missing from the routing table is invisible to agents and is never vendored.
 
 ## PR expectations
 
-- **Live-verified, or labeled.** State that you drove the endpoints (and the date). Anything you couldn't verify is marked unverified in the text, not smoothed over.
-- **Grounding check:** every route/field in a hand-authored file traces to something you verified or to that skill's `endpoints.md`.
-- **Honesty over completeness:** undocumented responses, unnamed enums, and platform quirks are documented as such.
-- **Right mode:** initial steps present iff the skill is configuration; correct token source described.
-- Style: imperative, concrete, American spelling, tables over prose walls, no marketing language.
-- Scope: one skill per PR where practical; keep cross-links resolving.
+- **Verified, or labeled.** State that you ran the commands, and when. Anything unverified is marked unverified in the text.
+- **Grounding check:** every command, flag, and field traces to something you ran.
+- **Correct surface:** CLI vs SDK stated, no raw HTTP anywhere, `--dry-run` shown before `--yes`.
+- **Routable:** frontmatter description carries triggers *and* disclaimers; the skill is listed in `AGENTS.md` and `README.md`.
+- **Links resolve** within the skill's own directory — no links to a sibling skill or above the directory.
+- **No AI-tool attribution** anywhere — not in docs, comments, or commit messages.
+- **Style:** imperative, concrete, American spelling, tables over prose walls, no marketing language.
+- **Scope:** one skill per PR where practical.
 
 By contributing you agree your contributions are licensed under the MIT License.
