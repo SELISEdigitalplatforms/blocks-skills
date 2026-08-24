@@ -1,50 +1,98 @@
 ---
 name: blocks-data-storage
-description: "Store and serve files on a SELISE Blocks project via the data service's DMS (document management system) — the `/data/v4/Files/*` API. Covers the pre-signed-URL upload (get upload URL → PUT the file binary to storage, with the Azure `x-ms-blob-type` header when needed → get download URL), downloading/listing files, folders (create/list/delete), tags/metadata/versions, and deleting files. Use whenever the user wants to upload, download, browse, organize, or delete FILES/attachments/documents/images on Blocks — 'upload a PDF and get a link', 'attach an image to a record', 'let users download this file', 'create a folder and list its contents', 'get a presigned upload URL'. This is separate from the data model: to define schemas use blocks-data-gateway-configuration, and to CRUD records use blocks-data-gateway-crud (store a file here, keep its fileId in a schema field there)."
+description: "Build file and document-management features on SELISE Blocks Data: upload/download, directory trees, cursor-paginated browse/search, versions, rename/move/copy, soft delete/trash/restore, sharing, access policies, and inheritance. Use whenever a user mentions files, attachments, documents, images, folders, a file browser, shared files, permissions, or version history. This is separate from schemas/records: store the returned fileId in a field managed through blocks-data-gateway-crud."
 ---
 
-# Blocks Data — Storage (Files / DMS)
+# Blocks Data — Storage
 
-DMS is the document management system embedded in the data service: pre-signed upload URLs, folders, tags, metadata, and versions, under `https://api.seliseblocks.com/data/v4/Files/*`. Store a file here and keep its `fileId` in a schema field (see **[blocks-data-gateway-configuration](../blocks-data-gateway-configuration/SKILL.md)** / **[blocks-data-gateway-crud](../blocks-data-gateway-crud/SKILL.md)**) to associate it with a record.
+Storage is a permission-aware object tree containing directories and files. Uploading a new file creates the file object and initial version directly in that tree. The old DMS registration and folder routes are retired.
 
-## Auth & Keys
+## Authentication
 
-Files are project-scoped. The project key is always the target project tenant id (`PTENANT`), never the bootstrap/account tenant.
+- **Browser/runtime:** send `x-blocks-key: <PTENANT>`, the signed-in user's session credentials, and `credentials: "include"` when cookie-based authentication is used.
+- **Admin/terminal:** prefer `blocks data files *`; the CLI resolves the selected project and impersonation context. For raw admin calls, send the root account tenant as `x-blocks-key` with the impersonated project's Bearer `PTOK`. The token carries project scope—do not add invented `projectKey` fields to storage DTOs.
+- **Provider PUT:** send no Blocks Bearer token and no `x-blocks-key`. Send only headers required by the signed provider policy, such as `Content-Type` and Azure's `x-ms-blob-type: BlockBlob`.
 
-- **Browser/runtime calls:** send `x-blocks-key: <PTENANT>` and `credentials: "include"` so Blocks uses the signed-in user's hosted SSO cookie/session. Use this for user-facing uploads/downloads.
-- **Admin/build script calls only:** first run [flows/get-into-project.md](flows/get-into-project.md); send **`x-blocks-key: <ACCOUNT_TENANT>`** (root tenant) plus `Authorization: Bearer <PTOK>`, and put `projectKey: <PTENANT>` where the body/query requires it. This is for setup scripts, smoke tests, and internal tooling only. A deployed frontend must never use `PTOK` or impersonation.
-- **Pre-signed PUT:** the storage URL is pre-authorized and needs no Bearer token. Keep the project key on Blocks API calls; include `x-blocks-key` on the PUT only when the storage provider accepts it.
+Prefer the Blocks CLI for terminal work and `@seliseblocks/client` for app code:
 
-401 → wrong project key, missing/expired session, or expired admin token.
+- `blocksClient.data.files` — upload/download, metadata, versions, copy/move/rename/delete.
+- `blocksClient.data.directories` — create/get/update/delete/move.
+- `blocksClient.data.objects` — list/search/trash/shared/restore/purge/share/access/inheritance.
 
-## URL & casing conventions (Files is the odd one out)
+## Canonical route groups
 
-- Base: `https://api.seliseblocks.com/data/v4` — **no `/api/` prefix.**
-- **`/Files/*` routes are PascalCase** (`/Files/GetFile`, `/Files/GetPreSignedUrlForUpload`, `/Files/GetFiles`, `/Files/GetDmsFileAndFolder`, …), and so are `GetFile`'s **query params** (`FileId`, `ConfigurationName`, `Version`).
-- **Files does NOT use the standard data envelope.** Responses are flat (`FileResponse`, `GetPreSignedUrlForUploadResponse`, `DmsResponse` with an untyped `result`), and **`errors` is a `Record<string,string>`**, not an array. Branch your error handling accordingly.
+Base URL: `https://api.seliseblocks.com/data/v4`. Current routes are lowercase kebab-case.
 
-## What's where
+### Files
 
-| I need to… | Go to |
+| Operation | Method and route |
 |---|---|
-| Upload, download, browse folders, delete files | [flows/upload-files.md](flows/upload-files.md) |
-| Wire uploads/downloads into a React app | [references/react.md](references/react.md) |
-| Associate a file with a data record | store the `fileId` in a schema field — **[blocks-data-gateway-crud](../blocks-data-gateway-crud/SKILL.md)** |
+| Get one / many / info | `GET /files/get-file`, `POST /files/get-files`, `POST /files/get-files-info` |
+| Cloud upload metadata | `POST /files/get-pre-signed-url-for-upload` |
+| Local upload | `POST /files/upload-file-to-local-storage` multipart |
+| Additional properties | `POST /files/update-file-additional-info` |
+| Delete/trash | `POST /files/delete-file` |
+| Version history / create version | `GET /files/get-file-versions`, `POST /files/create-file-version` |
+| Copy / move / rename | `POST /files/copy-file`, `POST /files/move-file`, `POST /files/rename-file` |
 
-## Key concepts
+### Directories
 
-- **Pre-signed upload = two steps** — `POST /Files/GetPreSignedUrlForUpload` (get `uploadUrl` + `fileId`) → `PUT <uploadUrl>` (the raw file **binary**, straight to the storage provider, no Blocks headers, URL expires so upload promptly). **You do not call `/Files/UploadFile`** — presign + PUT is the whole upload. `GET /Files/GetFile` then returns the download `url`.
-- **Azure PUT header** — if the storage provider is Azure, the binary PUT **must** include `x-ms-blob-type: BlockBlob`. Detect Azure from the `uploadUrl` host (`*.blob.core.windows.net`) or the storage config's `storageStrategy: "Azure"`. Non-Azure providers don't need it.
-- **`accessModifier`** — `"Public"` or `"Private"` in the upload request (Public = readable without auth). It's an `AccessModifier` int enum in read responses.
-- **Required presign fields** — the `GetPreSignedUrlForUpload` body must include **`moduleName`** (an int; use `3` — recommended, though any int works) and **`parentDirectoryId`** as a **string, never `null`** (`""` = root, or a folder id). Omitting `moduleName` or sending `parentDirectoryId: null` is rejected.
-- **`configurationName`** — which storage config to use; `"Default"` for the project default, or a `name` from the storage-config list. Storage configs live on the **logic** service: `GET https://api.seliseblocks.com/logic/v4/Storage/Gets` → array of `{ name, storageStrategy, connectionString, itemId, … }` (the `name` is the `configurationName`; `storageStrategy` is the provider).
-- **Read/browse** — `GET /Files/GetFile` (query `FileId` + `ConfigurationName`), `POST /Files/GetFiles` (body `{ fileIds[], configurationName }`), `POST /Files/GetFilesInfo` (paginated info), `POST /Files/GetDmsFileAndFolder` (folder tree).
-- **Folders** — `POST /Files/CreateFolder` (`artifactName` = name, `parentId` to nest), remove with `POST /Files/DeleteFolder`.
+| Operation | Method and route |
+|---|---|
+| Create / get / update | `POST /directory/create-directory`, `GET /directory/get-directory`, `POST /directory/update-directory` |
+| Delete / move | `POST /directory/delete-directory`, `POST /directory/move-directory` |
+
+Root-directory creation exists as a separate owner-only internal capability. Do not expose it as a normal app action.
+
+### Object discovery and access
+
+| Operation | Method and route |
+|---|---|
+| Browse / search | `GET /objects/get-objects`, `GET /objects/search-objects` |
+| Trash / shared | `GET /objects/get-trash`, `GET /objects/get-shared-objects` |
+| Restore / purge | `POST /objects/restore-from-trash`, `POST /objects/delete-from-trash` |
+| Access entries / effective access | `GET /objects/get-access-policies`, `GET /objects/resolve-access` |
+| Grant / update / revoke | `POST /objects/grant-access`, `POST /objects/update-access-policy`, `POST /objects/revoke-access-policy` |
+| Inheritance / share | `POST /objects/toggle-inheritance`, `POST /objects/share-object` |
+
+## Routing
+
+| Need | Read |
+|---|---|
+| Upload and download | [flows/upload-files.md](flows/upload-files.md) |
+| Browse, folders, versions, trash, move/copy, sharing, ACLs | [flows/object-management.md](flows/object-management.md) |
+| React integration | [references/react.md](references/react.md) |
+| Associate a file with a record | Store `fileId` via [blocks-data-gateway-crud](../blocks-data-gateway-crud/SKILL.md) |
+
+## Core behavior
+
+- **Cloud upload:** the pre-sign call creates the file/version metadata and returns `uploadUrl` + `fileId`; PUT the bytes to the provider URL. No registration call follows.
+- **Local upload:** one authenticated multipart call creates metadata and stores version 1.
+- **Cloud parent resolution:** when `parentDirectoryId` is empty, `moduleName` resolves to that module's default directory. The backend default is `8` (`Default_Construct`); pass the intended module or a concrete directory id.
+- **Local parent resolution:** an empty parent stays at the top level.
+- **Existing `itemId`:** either upload path creates another version after an Edit check.
+- **Delete:** `permanent: false` moves an object to trash; `true` removes it. The backend DTO default is `true`, so always send the choice explicitly. The CLI defaults to safe soft deletion and requires `--permanent` for destructive removal.
+- **Object pages:** use opaque `cursor`, `nextCursor`, and `hasMore`. Limit is 1–200 (default 50); version history is 1–100 (default 25). Access filtering can return a short page while `hasMore` remains true.
+- **Object types:** use lowercase `"directory"` / `"file"` for list filters and discriminators.
+
+## Permission model
+
+Every request passes both endpoint authorization and an object ACL check. Permissions are ordered:
+
+`View` → `Download` → `Edit` → `Delete` → `Manage` → `Owner`
+
+Higher permissions imply lower ones. Children inherit ancestor access while `inheritsParentAccess` is true. New files inherit from their directory.
+
+Render UI actions from the returned `permissions` flags (`canView`, `canDownload`, `canEdit`, `canDelete`, `canManage`, `canOwner`) and still handle 403/404 races. Hidden reads may return 404 rather than reveal that an inaccessible id exists.
 
 ## Gotchas
 
-- **No `/Files/UploadFile`.** Uploading is presign → binary PUT. Don't add a metadata-commit step.
-- **Azure blob type** — an Azure PUT without `x-ms-blob-type: BlockBlob` fails; add it when the `uploadUrl` is an Azure Blob URL.
-- **`x-blocks-key` on every Blocks API request.** Browser/runtime: `PTENANT`. Admin/config scripts: **`ACCOUNT_TENANT`** (see get-into-project). The pre-signed PUT is pre-authorized so it needs **no Bearer token**.
-- **`GetFile` confirms the upload** — a successful `GetFile` (with `FileId` + `ConfigurationName`) returning your file means it's stored.
-- Flat responses — don't expect `{ isSuccess, data, errors[] }`; read the file fields directly and handle `errors` as a string map.
+- Do not use `/Files/GetDmsFileAndFolder`, `/Files/UploadFile`, `/Files/CreateFolder`, `/Files/DeleteFolder`, `data.dms.*`, or the old `dms-*` CLI commands.
+- The pre-sign call mutates metadata before the provider PUT. Handle a failed PUT as a partial workflow.
+- File names need an allowed extension; a directory may restrict extensions.
+- File names must be unique within a directory. Move/copy can fail on collision or extension policy.
+- `Private` is the safe upload default. Use `Public` only for intended unauthenticated download.
+- Never send Blocks auth headers to a pre-signed provider URL.
+- Access enums are JSON strings: resource `Directory|File`, principal `User|Role|Everyone|Organization`, effect `Allow|Deny`, and the permissions above.
+- `get-access-policies` currently returns direct entries; although its request model has `includeInherited`, the controller does not use it. Use `resolve-access` for effective permissions.
+- A Deny targeting the owner is rejected. Turning inheritance off is rejected until a direct Allow exists.

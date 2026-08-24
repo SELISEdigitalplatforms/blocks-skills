@@ -22,7 +22,7 @@ Preconditions: run **[get-into-project.md](get-into-project.md)** for **each** p
    - `exportOption` is a `0|1|2|3` int enum with unpublished member names — meanings unknown; `0` is the safest default, or compare with what the OS portal sends when exporting.
    - Per the swagger, the call "returns immediately with the fileId" and the exported JSON is delivered via notification. Keep `data.itemId` — verify live whether it is the fileId; the notification correlated by `messageCoRelationId` is authoritative — it comes from the OS service's notification API, which no skill in this repo covers yet; confirm the outcome in the portal or by checking the target project's schemas after import.
 
-3. Wait for the export notification (or poll the file): the exported JSON lands in blob storage as a file. Confirm it exists with `GET /data/v4/Files/GetFile?FileId=<fileId>&ConfigurationName=Default` (see **[blocks-data-storage](../../blocks-data-storage/SKILL.md)**) — the `url` lets you inspect the JSON before importing.
+3. Wait for the export notification (or poll the file): the exported JSON lands in blob storage as a file. Confirm it exists with `GET /data/v4/files/get-file?FileId=<fileId>&ConfigurationName=Default` (see **[blocks-data-storage](../../blocks-data-storage/SKILL.md)**) — the `url` lets you inspect the JSON before importing.
 
 4. `POST /data/v4/schema-exchange/import` — against the **target** project. Switch headers to the target's `x-blocks-key` (tenant_id) and a token valid there.
    ```json

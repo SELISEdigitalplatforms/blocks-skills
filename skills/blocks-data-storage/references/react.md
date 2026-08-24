@@ -1,129 +1,182 @@
-# Frontend integration — file upload/download (React 19 / Vite / TanStack Query)
+# React integration
 
-Targets the `blocks-construct-react` stack. The DMS upload is two steps — presign, then a binary PUT to the returned URL (with `x-ms-blob-type: BlockBlob` for Azure); **no `/Files/UploadFile`**. This wraps it in one hook. Files responses are **flat** (no `{ isSuccess, data, errors[] }` envelope) and `/Files/*` routes are PascalCase.
+Use `@seliseblocks/client` as the transport and TanStack Query for server state. Do not reproduce storage routes, token refresh, or Blocks headers in feature components.
 
-## Env
-
-```bash
-# If your frontend relies on the Blocks session cookie, the API host must be SAME-SITE with the app
-# domain or the cookie won't be stored/sent. Keep this default only for apps on *.seliseblocks.com;
-# otherwise use https://blocksapi.<your-registrable-domain> (app abc.slsblx.com → https://blocksapi.slsblx.com;
-# app xyz.blx10.com → https://blocksapi.blx10.com). On a custom domain, ASK THE USER (they may keep the default).
-VITE_BLOCKS_API_URL=https://api.seliseblocks.com
-VITE_BLOCKS_PROJECT_KEY=<tenant_id>   # project key = token tenant_id; sent as x-blocks-key
-```
-
-`VITE_BLOCKS_PROJECT_KEY` is the project's `tenant_id` (public identifier, safe to ship) — **not** the account login key. Access token from the auth store at runtime (`blocks-setup`).
-
-## Files client
+## Shared client
 
 ```ts
-// src/features/files/api.ts
-import { useAuthStore } from "@/stores/auth";
+// src/lib/blocks-client.ts
+import { createBlocksClient } from "@seliseblocks/client";
 
-const BASE = `${import.meta.env.VITE_BLOCKS_API_URL}/data/v4`;
-const KEY = import.meta.env.VITE_BLOCKS_PROJECT_KEY as string;
+export const blocksClient = createBlocksClient({
+  apiUrl: import.meta.env.VITE_BLOCKS_API_URL,
+  xBlocksKey: import.meta.env.VITE_BLOCKS_PROJECT_KEY,
+});
+```
 
-export interface PresignResponse { uploadUrl?: string; fileId?: string }
-export interface FileRecord { fileId?: string; name?: string; url?: string; sizeInBytes?: number; currentVersion?: number }
+`xBlocksKey` is the runtime project tenant key. The SDK sends it with session cookies to Blocks APIs and deliberately omits both from external pre-signed URL uploads. For an intentionally Bearer-based runtime, supply the caller-owned `accessToken` callback; the SDK does not store or refresh tokens.
 
-// Files endpoints are flat (no ApiEnvelope) and errors is a Record<string,string>.
-async function filesApi<T>(path: string, init: RequestInit = {}, _retried = false): Promise<T> {
-  const token = useAuthStore.getState().accessToken;
-  const res = await fetch(`${BASE}${path}`, {
-    ...init,
-    headers: {
-      "x-blocks-key": KEY, // = tenant_id
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
-      ...init.headers,
-    },
-  });
-  if (res.status === 401 && !_retried) {
-    await useAuthStore.getState().refreshSession();
-    return filesApi<T>(path, init, true);
-  }
-  if (!res.ok) throw new Error(`Files ${res.status}`);
-  return res.json() as Promise<T>;
-}
+## Upload hook
 
-export const files = {
-  presign: (name: string, accessModifier: "Public" | "Private" = "Private", configurationName = "Default") =>
-    filesApi<PresignResponse>(`/Files/GetPreSignedUrlForUpload`, {
-      method: "POST",
-      // moduleName must be an int (3 recommended); parentDirectoryId must be a string, never null ("" = root).
-      body: JSON.stringify({ name, projectKey: KEY, accessModifier, configurationName, moduleName: 3, parentDirectoryId: "", tags: "", metaData: "{}" }),
-    }),
-  // GetFile takes FileId + ConfigurationName (PascalCase query params)
-  get: (fileId: string, configurationName = "Default") =>
-    filesApi<FileRecord>(`/Files/GetFile?FileId=${fileId}&ConfigurationName=${configurationName}`),
-  getMany: (fileIds: string[], configurationName = "Default") =>
-    filesApi<FileRecord[]>(`/Files/GetFiles`, { method: "POST", body: JSON.stringify({ fileIds, configurationName }) }),
-  del: (fileId: string) =>
-    filesApi<{ isSuccess?: boolean }>(`/Files/DeleteFile`, {
-      method: "POST",
-      body: JSON.stringify({ fileId, projectKey: KEY }),
-    }),
+```ts
+// src/features/storage/use-upload-file.ts
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { blocksClient } from "@/lib/blocks-client";
+
+type PresignResult = {
+  uploadUrl?: string;
+  fileId?: string;
+  isSuccess?: boolean;
+  errors?: Record<string, string>;
 };
-```
 
-## Upload hook (presign → binary PUT). No `/Files/UploadFile`.
-
-```ts
-// src/features/files/hooks.ts
-import { useMutation } from "@tanstack/react-query";
-import { files } from "./api";
-
-const KEY = import.meta.env.VITE_BLOCKS_PROJECT_KEY as string;
-
-// x-blocks-key rides on every request (platform rule); Azure ignores non-x-ms headers, so it's safe on the SAS PUT.
-// Azure Blob also requires x-ms-blob-type — detect Azure from the upload URL host.
-function providerHeaders(uploadUrl: string, contentType: string): Record<string, string> {
-  const h: Record<string, string> = { "Content-Type": contentType || "application/octet-stream", "x-blocks-key": KEY };
-  if (/\.blob\.core\.windows\.net/i.test(uploadUrl)) h["x-ms-blob-type"] = "BlockBlob";
-  return h;
+function readPresign(value: unknown): Required<Pick<PresignResult, "uploadUrl" | "fileId">> {
+  if (!value || typeof value !== "object") throw new Error("Upload was not prepared");
+  const result = value as PresignResult;
+  if (result.isSuccess === false || !result.uploadUrl || !result.fileId) {
+    throw new Error(Object.values(result.errors ?? {})[0] ?? "Upload was not prepared");
+  }
+  return { uploadUrl: result.uploadUrl, fileId: result.fileId };
 }
 
-export function useUploadFile() {
+export function useUploadFile(parentDirectoryId?: string) {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (file: File) => {
-      const { uploadUrl, fileId } = await files.presign(file.name);
-      if (!uploadUrl || !fileId) throw new Error("Presign failed");
+      const prepared = readPresign(
+        await blocksClient.data.files.presignedUploadUrl({
+          name: file.name,
+          contentType: file.type,
+          accessModifier: "Private",
+          configurationName: "Default",
+          moduleName: 8,
+          parentDirectoryId,
+          tags: "",
+          metaData: "{}",
+        }),
+      );
 
-      // Raw bytes straight to the storage provider. The URL is pre-authorized (no Bearer token),
-      // but still send x-blocks-key; add x-ms-blob-type: BlockBlob for Azure.
-      const put = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: providerHeaders(uploadUrl, file.type),
-        body: file, // binary
+      await blocksClient.data.files.uploadToUrl({
+        url: prepared.uploadUrl,
+        body: file,
+        contentType: file.type || "application/octet-stream",
       });
-      if (!put.ok) throw new Error(`Storage upload failed: ${put.status}`);
 
-      return files.get(fileId); // GetFile confirms + returns the download url — no UploadFile step
+      return blocksClient.data.files.get(prepared.fileId, {
+        configurationName: "Default",
+      });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["storage", "objects", parentDirectoryId] });
     },
   });
 }
 ```
 
-## Component sketch
+The pre-sign operation creates metadata before the provider PUT. If the PUT fails, show a retry state and treat the file object as potentially incomplete. Never attach `Authorization`, cookies, or `x-blocks-key` to `uploadUrl` yourself.
 
-```tsx
-import { useUploadFile } from "./hooks";
+`uploadToUrl` currently supplies Azure's `x-ms-blob-type` header by default. If the selected storage configuration is not Azure and its signed policy rejects that header, perform a plain provider PUT with only that provider's prescribed headers. It still must not carry Blocks credentials.
 
-export function FileUpload() {
-  const upload = useUploadFile();
-  return (
-    <div className="space-y-2">
-      <input type="file" onChange={(e) => e.target.files?.[0] && upload.mutate(e.target.files[0])} />
-      {upload.isPending && <p className="text-muted-foreground text-sm">Uploading…</p>}
-      {upload.data?.url && (
-        <a className="text-sm underline" href={upload.data.url} target="_blank" rel="noreferrer">
-          {upload.data.name}
-        </a>
-      )}
-    </div>
-  );
+## Object browser hook
+
+```ts
+// src/features/storage/use-storage-objects.ts
+import { useInfiniteQuery } from "@tanstack/react-query";
+import type { BlocksStorageObjectsResponse } from "@seliseblocks/client";
+import { blocksClient } from "@/lib/blocks-client";
+
+export function useStorageObjects(parentDirectoryId?: string) {
+  return useInfiniteQuery({
+    queryKey: ["storage", "objects", parentDirectoryId],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) =>
+      blocksClient.data.objects.list({
+        parentDirectoryId,
+        cursor: pageParam,
+        limit: 50,
+      }),
+    getNextPageParam: (page: BlocksStorageObjectsResponse) =>
+      page.hasMore ? page.nextCursor : undefined,
+  });
 }
 ```
 
-To attach the file to a record, keep `upload.data.fileId` and set it on a schema field via **[blocks-data-gateway-crud](../../blocks-data-gateway-crud/SKILL.md)** (e.g. `insertProduct({ ..., ImageFileId: fileId })`).
+Render files and directories from the same list using `item.type`. Gate buttons with the returned flags:
+
+```tsx
+{item.permissions.canDownload && item.type === "file" && (
+  <button onClick={() => downloadFile(item.itemId)}>Download</button>
+)}
+{item.permissions.canEdit && <button onClick={() => openRename(item)}>Rename</button>}
+{item.permissions.canDelete && <button onClick={() => moveToTrash(item)}>Delete</button>}
+{item.permissions.canManage && <button onClick={() => openSharing(item)}>Share</button>}
+```
+
+Still handle 403 and 404 responses because access can change after rendering; protected reads may deliberately use 404 for inaccessible objects.
+
+## Common mutations
+
+```ts
+const createDirectory = useMutation({
+  mutationFn: (name: string) =>
+    blocksClient.data.directories.create({ name, parentDirectoryId, moduleName: 8 }),
+  onSuccess: invalidateDirectory,
+});
+
+const deleteFile = useMutation({
+  mutationFn: (fileId: string) =>
+    blocksClient.data.files.delete({ fileId, permanent: false }),
+  onSuccess: invalidateDirectory,
+});
+
+const restore = useMutation({
+  mutationFn: (resourceId: string) => blocksClient.data.objects.restore({ resourceId }),
+  onSuccess: () => {
+    void queryClient.invalidateQueries({ queryKey: ["storage"] });
+  },
+});
+
+const share = useMutation({
+  mutationFn: ({ resourceId, userId }: { resourceId: string; userId: string }) =>
+    blocksClient.data.objects.share({
+      resourceId,
+      resourceType: "File",
+      principalType: "User",
+      principalId: userId,
+      permission: "Download",
+    }),
+});
+```
+
+Make permanent deletion a distinct confirmed action. Always pass `permanent` because the backend's omitted-value default is destructive.
+
+## Download
+
+```ts
+type FileResult = { url?: string; name?: string };
+
+async function downloadFile(fileId: string) {
+  const value = await blocksClient.data.files.get(fileId, {
+    configurationName: "Default",
+  });
+  const file = value as FileResult;
+  if (!file.url) throw new Error("Download URL is unavailable");
+  window.open(file.url, "_blank", "noopener,noreferrer");
+}
+```
+
+Private download URLs may expire. Resolve them when needed instead of persisting the URL. Persist `fileId` when associating a file with another record.
+
+## Query keys
+
+Use a stable hierarchy so mutations can invalidate narrowly:
+
+- `["storage", "objects", parentDirectoryId]`
+- `["storage", "search", query, directoryId]`
+- `["storage", "trash"]`
+- `["storage", "shared"]`
+- `["storage", "file", fileId, version]`
+- `["storage", "access", resourceId]`
+
+Cursor responses may contain fewer visible items than the requested limit even when `hasMore` is true. Drive the next-page affordance from `hasMore` and `nextCursor`, not item count.
