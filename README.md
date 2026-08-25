@@ -27,11 +27,11 @@ Check your state and browse what's available:
 blocks auth status --json
 blocks doctor --json
 blocks skill list
-blocks skill show blocks-onboarding
+blocks skill show blocks-bootstrap
 blocks skill add <skill-name>     # vendor a skill into your project
 ```
 
-If login, project selection, or the app scaffold is in an unknown state, start with **`blocks-onboarding`** — it detects the gaps and closes them before any other skill runs.
+If login, project selection, or the app scaffold is in an unknown state, start with **`blocks-bootstrap`** — it detects the gaps and closes them before any other skill runs.
 
 ## The two surfaces
 
@@ -48,7 +48,7 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 
 | Skill | Covers |
 |---|---|
-| `blocks-onboarding` | Detect CLI/login/project state, close install and login gaps, resolve the app OIDC client, scaffold with `blocks new web`, and run `blocks init` in the app directory. Run this first whenever state is unknown. |
+| `blocks-bootstrap` | Detect CLI/login/project state, close install and login gaps, resolve the app OIDC client, scaffold with `blocks new web`, and run `blocks init` in the app directory. Run this first whenever state is unknown. |
 
 ### Data
 
@@ -104,7 +104,7 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 No skill name needed — these route on their own:
 
 ```
-I'm brand new to Blocks, get me set up                    → blocks-onboarding
+I'm brand new to Blocks, get me set up                    → blocks-bootstrap
 Create a Product schema with title and price              → blocks-data-gateway-configuration
 Fetch products and render them in a list                  → blocks-data-gateway-crud
 Let users attach a PDF to a record                        → blocks-data-storage
