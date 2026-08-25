@@ -23,7 +23,7 @@ The routing table exists so you can decide unaided. Treat a request that names n
 ## Workflow
 
 1. Understand the objective.
-2. If login/project/app state is unknown, probe (below) and start with **`blocks-onboarding`**.
+2. If login/project/app state is unknown, probe (below) and start with **`blocks-bootstrap`**.
 3. Match the request against the **Skill routing table** yourself, then load the skill: `blocks skill show <name>` (read it) or `blocks skill add <name>` (vendor it into the project).
 4. Inspect the existing implementation before changing it.
 5. Make the smallest correct change, then verify it.
@@ -66,7 +66,7 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 
 | Skill | Use when | Surface |
 |---|---|---|
-| `blocks-onboarding` | New user, or `not_logged_in` / `project_not_selected`. Detects state via `blocks auth status --json` / `doctor --json`, closes install/login/project gaps, resolves the app OIDC client, scaffolds with `blocks new web`, runs `blocks init` inside the app dir. **Run before any other skill when state is unknown.** | CLI |
+| `blocks-bootstrap` | New user, or `not_logged_in` / `project_not_selected`. Detects state via `blocks auth status --json` / `doctor --json`, closes install/login/project gaps, resolves the app OIDC client, scaffolds with `blocks new web`, runs `blocks init` inside the app dir. **Run before any other skill when state is unknown.** | CLI |
 
 ### Data
 

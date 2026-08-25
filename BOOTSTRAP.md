@@ -62,7 +62,7 @@ Relative links inside a skill (`flows/x.md`, `../SKILL.md`) keep resolving becau
 | Rules repo / ref | `SELISEdigitalplatforms/blocks-skills` @ `main` | |
 | Skills repo / ref | `SELISEdigitalplatforms/blocks-cli` @ `main` | Skills are under `blocks-skills/`. |
 
-Requires `git` and a writable target repo. Requires nothing from the `blocks` CLI — installing that is `blocks-onboarding`'s job, later, and only with the user's consent.
+Requires `git` and a writable target repo. Requires nothing from the `blocks` CLI — installing that is `blocks-bootstrap`'s job, later, and only with the user's consent.
 
 ---
 
@@ -329,7 +329,7 @@ Tell the user, plainly:
 
 Steps 0–8 are a file copy and stop there. Run this step **only** when the user asked to continue into project work — by supplying an `x-blocks-key`, or by asking to be signed in, set up, or shown around.
 
-This step does not reimplement onboarding. The skill you just installed owns that flow: read `.codex/skills/blocks-onboarding/SKILL.md` and follow it. What is below is only the entry point — which branch to enter on, and what to show at the end.
+This step does not reimplement onboarding. The skill you just installed owns that flow: read `.codex/skills/blocks-bootstrap/SKILL.md` and follow it. What is below is only the entry point — which branch to enter on, and what to show at the end.
 
 **The user never supplies a URL.** The CLI's endpoints are built in and self-correcting. The only URL you ever mention is the **portal**, `https://os.seliseblocks.com`, and only for the two things the CLI genuinely cannot do: create an account and create a project. Never ask "what's your Blocks OS URL" — there isn't one to ask for.
 
@@ -394,7 +394,7 @@ What re-running does **not** do: remove a skill dropped from the routing table. 
 
 ## Rules for the agent running this
 
-- **Steps 0–8 are a file copy — don't install the `blocks` CLI or log anything in during them.** Runtime setup happens only in Step 9, only when the user asked for it, and installing the CLI still needs their consent. The flow itself belongs to `blocks-onboarding`; Step 9 only enters it.
+- **Steps 0–8 are a file copy — don't install the `blocks` CLI or log anything in during them.** Runtime setup happens only in Step 9, only when the user asked for it, and installing the CLI still needs their consent. The flow itself belongs to `blocks-bootstrap`; Step 9 only enters it.
 - **Never ask the user for a Blocks OS or API URL.** The CLI's endpoints are built in. The portal (`https://os.seliseblocks.com`) is the only URL you ever name, and only for account or project creation.
 - **Don't edit skill content while copying.** No rewriting for the target repo's stack, no trimming. Skills are verified against the live platform; an edited copy is unverified.
 - **Don't import anything outside the distributable markers.**
