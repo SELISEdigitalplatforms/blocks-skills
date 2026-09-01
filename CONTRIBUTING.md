@@ -1,12 +1,12 @@
 # Contributing
 
-This repo is a source of **agent instructions**, not application code. Nobody builds a Blocks app here — other repos consume these skills by vendoring the tree with [BOOTSTRAP.md](./BOOTSTRAP.md), which is the only supported way to load one.
+This repo is a source of **agent instructions**, not application code. Nobody builds a Blocks app here — other repos consume these skills by vendoring the tree with [BOOTSTRAP.md](./BOOTSTRAP.md).
 
 The bar for every contribution is the same: **everything must be grounded in behavior you actually ran** — not inferred from source, not assumed from a help string, not invented to fill a gap.
 
 ## Where things live
 
-Skill *sources* are not in this repo. They live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills) under `blocks-skills/`, which is what `BOOTSTRAP.md` vendors. (The CLI's own `blocks skill list` / `show` / `add` commands were removed in `0.2.12`; vendoring replaced them.)
+Skill *sources* are not in this repo. They live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills) under `blocks-skills/`, which is what `BOOTSTRAP.md` vendors. The CLI does not bundle or serve the skill tree.
 
 | Change | Repo |
 |---|---|

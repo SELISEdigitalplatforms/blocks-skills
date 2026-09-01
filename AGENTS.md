@@ -49,13 +49,13 @@ blocks doctor --json
 
 If `blocks` is missing, stop the probe and ask before installing. Don't claim bootstrap is runnable until the CLI exists.
 
-**Never guess a command or a flag — ask the CLI.** `blocks help <command>` prints one command's exact positionals, flags, scope, and whether it mutates; `blocks help <family>` lists a family; `blocks --help` lists everything. Read that before running anything unfamiliar, and prefer it over any command spelling you remember, including one from this file. Set `BLOCKS_STRICT_FLAGS=1` in scripted runs so an unrecognized flag hard-fails instead of being silently ignored.
+**Never guess a command or a flag — ask the CLI.** `blocks help <command>` prints one command's exact positionals, flags, scope, and whether it mutates; `blocks help <family>` lists a family; `blocks --help --json` lists every command. Read that before running anything unfamiliar, and prefer it over any command spelling you remember, including one from this file. Set `BLOCKS_STRICT_FLAGS=1` in scripted runs so an unrecognized flag hard-fails instead of being warned and ignored.
 
 ## Loading a skill
 
 **Skills are vendored files, not a CLI command.** They live on disk as `.codex/skills/<name>/SKILL.md`, with Claude Code discovering the same set through `.claude/skills/`. Read the vendored copy directly.
 
-There is **no `blocks skill list`/`show`/`add`** — those commands were removed from the CLI in `0.2.12`, and the package no longer bundles the skill tree. Don't reach for them, and don't treat their absence as a broken install.
+There is **no `blocks skill list`/`show`/`add`**, and the package does not bundle the skill tree. Don't reach for those commands, and don't treat their absence as a broken install.
 
 If a skill named in the routing table isn't vendored here, the fix is to re-run the vendoring runbook (`BOOTSTRAP.md` in this repo's source) — not to fetch the file ad hoc or write a replacement from memory. The published catalog is [`blocks-cli/blocks-skills/`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills); read from there only to confirm a name, never as a substitute for vendoring.
 
@@ -64,8 +64,8 @@ If a skill named in the routing table isn't vendored here, the fix is to re-run 
 - **Never raw `fetch`/`curl` against `api.seliseblocks.com`.** Use the `blocks` CLI or the `@seliseblocks/client` SDK. Every skill states which surface it uses. Bypassing them with raw HTTP is the failure mode these skills exist to prevent.
 - **`--dry-run` before `--yes`** on every mutating CLI command. Get human confirmation before destructive or cloud-mutating operations.
 - **Never read the CLI's local storage files** (config/token/secret files on disk) or print anything inside them — client ids, root tenant id, account names, tokens. Interact only through `blocks` commands. To repair broken state use `blocks login`, `blocks auth remove <account>`, `blocks projects list --json`, `blocks use <tenantId>`.
-- **`blocks projects create` accepts the Blocks terms on the user's behalf** (`isAcceptBlocksTerms`, `isUseBlocksExclusively`). Never run it without explicit consent to that, and never to "try something" — it provisions real cloud tenancy. `--dry-run --json` first. It makes exactly one app in the `dev` environment; further environments are portal-only.
-- **Never expose secrets or credentials.** `blocks secrets get` returns raw unredacted values — treat that output as sensitive.
+- **`blocks projects create` accepts the Blocks terms on the user's behalf** (`isAcceptBlocksTerms`, `isUseBlocksExclusively`). Never run it without explicit consent to that, and never to "try something" — it provisions real cloud tenancy. Run `--dry-run --json` first, then `--yes` only after approval. It creates exactly one app in the `dev` environment; further environments are portal-only.
+- **Never expose secrets or credentials.** The former generic `blocks secrets` commands were removed because their backing API no longer accepts the CLI's authentication mode; do not work around their absence with raw HTTP.
 - **Don't attribute work to an AI tool** anywhere in this repo — no assistant names in docs, comments, or commit messages.
 
 ## Skill routing table
@@ -119,7 +119,6 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 | Skill | Use when | Surface |
 |---|---|---|
 | `blocks-release-deployment` | Triggering and inspecting Release builds/deploys: `release deploy`, `release status`, `builds get/list`. Triggers a configured pipeline only — no artifact upload. | CLI |
-| `blocks-secrets` | Saving, rotating, or reading arbitrary named secret values (captcha config, third-party API keys). Generic key/value; shape depends on the key. | CLI |
 
 ### Local development
 
@@ -139,7 +138,7 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 
 ## Where the skills live
 
-The 20 skills in the routing table live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills), under `blocks-skills/`. That is the source of truth for skill content and the tree [`BOOTSTRAP.md`](./BOOTSTRAP.md) vendors.
+The 19 skills in the routing table live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills), under `blocks-skills/`. That is the source of truth for skill content and the tree [`BOOTSTRAP.md`](./BOOTSTRAP.md) vendors.
 
 **This repo owns routing, not skills.** Editing a skill's content here is editing the wrong repository — there is no `skills/` directory to edit. What lives here is the routing table and rules above (inside the `blocks-skills:distributable` markers) and the vendoring runbook.
 

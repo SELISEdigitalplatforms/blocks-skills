@@ -26,11 +26,13 @@ Check your state and browse what's available:
 ```bash
 blocks auth status --json
 blocks doctor --json
-blocks help <command>             # exact flags and scope for any command
+blocks --help --json              # every implemented command
+blocks help <family> --json       # summaries for one command family
+blocks help <command> --json      # exact flags, scope, and mutation metadata
 ```
 
-Skills themselves are **vendored files**, not a CLI command — see [BOOTSTRAP.md](./BOOTSTRAP.md). The
-`blocks skill list` / `show` / `add` commands were removed from the CLI in `0.2.12`.
+Skills are **vendored files**, not CLI commands — see [BOOTSTRAP.md](./BOOTSTRAP.md). The CLI does not
+implement `blocks skill list` / `show` / `add` and does not bundle the skill tree.
 
 If login, project selection, or the app scaffold is in an unknown state, start with **`blocks-bootstrap`** — it detects the gaps and closes them before any other skill runs.
 
@@ -92,7 +94,6 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 | Skill | Covers |
 |---|---|
 | `blocks-release-deployment` | Triggering and inspecting Release builds and deployments. |
-| `blocks-secrets` | Saving, rotating, and reading named secret values such as captcha config or third-party API keys. |
 
 ### Local development
 
@@ -123,7 +124,6 @@ Add German translations for the login screen              → blocks-localizatio
 Add a language switcher to the app                        → blocks-localization-implementation
 Send a welcome email when someone signs up                → blocks-mail
 Notify a user when their order ships                      → blocks-notifier
-Rotate our captcha provider key                           → blocks-secrets
 Deploy the current branch and check the build             → blocks-release-deployment
 ```
 
@@ -131,7 +131,7 @@ Deploy the current branch and check the build             → blocks-release-dep
 
 - Mutating CLI commands are run `--dry-run` first, then `--yes` — destructive and cloud-mutating operations get explicit confirmation.
 - Local CLI storage files (config, tokens, secrets) are never read or printed directly; all state is inspected through `blocks` commands.
-- `blocks secrets get` returns raw unredacted values. Treat that output as sensitive.
+- Generic `blocks secrets` commands are no longer available; do not bypass their removal with raw API calls.
 
 ## Contributing
 
@@ -139,7 +139,7 @@ Skills are hand-authored and grounded in verified behavior — every command, fl
 
 ## Repository state
 
-The skills listed above are the current, CLI/SDK-based generation and live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills) under `blocks-skills/`. Consuming repos get them by vendoring that tree; the CLI no longer ships or serves them.
+The skills listed above are the current, CLI/SDK-based generation and live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills) under `blocks-skills/`. Consuming repos get them by vendoring that tree; the CLI does not ship or serve them.
 
 An earlier generation in this repository drove the platform API directly over HTTP with manual impersonation. That approach is superseded — the current skills route everything through the CLI and SDK.
 
