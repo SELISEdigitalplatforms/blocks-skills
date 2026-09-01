@@ -15,7 +15,7 @@ Skills are the ground truth for CLI/SDK usage. This file routes; the skill owns 
 - Do **not** ask "which skill should I use?" or list skills for the user to pick from. Reading the request and choosing is your work.
 - Do **not** wait to be told. Once the request matches a row in the routing table, load that skill and proceed.
 - If the request genuinely spans several skills, pick the one that owns the *first* concrete step, run it, then move to the next. Sequence them yourself.
-- If nothing matches, run `blocks skill list --json` before concluding no skill applies — the table below can lag the published set.
+- If nothing matches, check the vendored skill directories on disk before concluding no skill applies — the table below can lag the vendored set. The published catalog is [`blocks-cli/blocks-skills/`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills).
 - Ask the user only about things the routing table cannot settle: a destructive confirmation, a missing credential, or an ambiguous *goal* — never about which skill to run.
 
 The routing table exists so you can decide unaided. Treat a request that names no skill as the normal case, because it is.
@@ -24,7 +24,7 @@ The routing table exists so you can decide unaided. Treat a request that names n
 
 1. Understand the objective.
 2. If login/project/app state is unknown, probe (below) and start with **`blocks-bootstrap`**.
-3. Match the request against the **Skill routing table** yourself, then load the skill: `blocks skill show <name>` (read it) or `blocks skill add <name>` (vendor it into the project).
+3. Match the request against the **Skill routing table** yourself, then load the skill by reading its vendored `SKILL.md` (see **Loading a skill** below).
 4. Inspect the existing implementation before changing it.
 5. Make the smallest correct change, then verify it.
 
@@ -45,16 +45,26 @@ Read-only probe when state is unknown:
 blocks --version
 blocks auth status --json
 blocks doctor --json
-blocks skill list --json
 ```
 
-If `blocks` is missing, stop the probe and ask before installing. Don't claim onboarding is runnable until the CLI exists.
+If `blocks` is missing, stop the probe and ask before installing. Don't claim bootstrap is runnable until the CLI exists.
+
+**Never guess a command or a flag — ask the CLI.** `blocks help <command>` prints one command's exact positionals, flags, scope, and whether it mutates; `blocks help <family>` lists a family; `blocks --help` lists everything. Read that before running anything unfamiliar, and prefer it over any command spelling you remember, including one from this file. Set `BLOCKS_STRICT_FLAGS=1` in scripted runs so an unrecognized flag hard-fails instead of being silently ignored.
+
+## Loading a skill
+
+**Skills are vendored files, not a CLI command.** They live on disk as `.codex/skills/<name>/SKILL.md`, with Claude Code discovering the same set through `.claude/skills/`. Read the vendored copy directly.
+
+There is **no `blocks skill list`/`show`/`add`** — those commands were removed from the CLI in `0.2.12`, and the package no longer bundles the skill tree. Don't reach for them, and don't treat their absence as a broken install.
+
+If a skill named in the routing table isn't vendored here, the fix is to re-run the vendoring runbook (`BOOTSTRAP.md` in this repo's source) — not to fetch the file ad hoc or write a replacement from memory. The published catalog is [`blocks-cli/blocks-skills/`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills); read from there only to confirm a name, never as a substitute for vendoring.
 
 ## Hard rules
 
 - **Never raw `fetch`/`curl` against `api.seliseblocks.com`.** Use the `blocks` CLI or the `@seliseblocks/client` SDK. Every skill states which surface it uses. Bypassing them with raw HTTP is the failure mode these skills exist to prevent.
 - **`--dry-run` before `--yes`** on every mutating CLI command. Get human confirmation before destructive or cloud-mutating operations.
 - **Never read the CLI's local storage files** (config/token/secret files on disk) or print anything inside them — client ids, root tenant id, account names, tokens. Interact only through `blocks` commands. To repair broken state use `blocks login`, `blocks auth remove <account>`, `blocks projects list --json`, `blocks use <tenantId>`.
+- **`blocks projects create` accepts the Blocks terms on the user's behalf** (`isAcceptBlocksTerms`, `isUseBlocksExclusively`). Never run it without explicit consent to that, and never to "try something" — it provisions real cloud tenancy. `--dry-run --json` first. It makes exactly one app in the `dev` environment; further environments are portal-only.
 - **Never expose secrets or credentials.** `blocks secrets get` returns raw unredacted values — treat that output as sensitive.
 - **Don't attribute work to an AI tool** anywhere in this repo — no assistant names in docs, comments, or commit messages.
 
@@ -66,7 +76,7 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 
 | Skill | Use when | Surface |
 |---|---|---|
-| `blocks-bootstrap` | New user, or `not_logged_in` / `project_not_selected`. Detects state via `blocks auth status --json` / `doctor --json`, closes install/login/project gaps, resolves the app OIDC client, scaffolds with `blocks new web`, runs `blocks init` inside the app dir. **Run before any other skill when state is unknown.** | CLI |
+| `blocks-bootstrap` | New user, or `not_logged_in` / `project_not_selected`. Detects state via `blocks auth status --json` / `doctor --json`, closes install/login/project gaps, resolves the app OIDC client, scaffolds with `blocks new web`, and runs `blocks init` inside the app dir only when the work needs project-local Blocks files. **Run before any other skill when state is unknown.** | CLI |
 
 ### Data
 

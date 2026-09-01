@@ -107,17 +107,63 @@ Verify both exist before continuing — `$RULES/AGENTS.md` and `$SKILLS/blocks-s
 awk '/blocks-skills:distributable:start/,/blocks-skills:distributable:end/' "$RULES/AGENTS.md" \
   | grep -oE '`blocks-[a-z0-9-]+`' | tr -d '`' | sort -u > "$TMP/manifest.txt"
 ls -d "$SKILLS"/blocks-skills/*/ | xargs -n1 basename | sort > "$TMP/available.txt"
-
-comm -12 "$TMP/manifest.txt" "$TMP/available.txt" > "$TMP/install.txt"   # install these
-comm -23 "$TMP/manifest.txt" "$TMP/available.txt"                        # named, no source directory
-comm -13 "$TMP/manifest.txt" "$TMP/available.txt"                        # source directory, unrouted
 ```
 
+### Alias table — routed name vs. source directory
+
+A skill renamed in the routing table before its source directory is renamed would otherwise read as
+*two* faults at once: the routed name missing a directory, and the directory unrouted. The skill then
+silently doesn't install. One line per rename maps the routed name to the directory it comes from:
+
+```bash
+# routed-name  source-directory   — remove a row once the source tree catches up
+cat > "$TMP/aliases.txt" <<'ALIASES'
+blocks-bootstrap blocks-onboarding
+ALIASES
+```
+
+Aliases are **directory mappings only**. Content is still copied byte-for-byte, so the installed
+`SKILL.md` keeps the source's `name:` frontmatter — an aliased skill lands in a directory named for
+the routing table while its frontmatter still says the old name. That is expected, and editing it
+would violate "don't edit skill content while copying". It is also the reason every alias in play
+**must be named in the Step 8 report**: the mismatch is a temporary bridge, not an end state.
+
+Never add an alias to paper over a skill that genuinely has no source directory. An alias asserts
+"these are the same skill under two names" — verify that before adding a row.
+
+### Compare, with aliases applied
+
+```bash
+TAB=$(printf '\t')
+
+# routed name -> source directory (identity when unaliased); emit "source<TAB>routed"
+while IFS= read -r n; do
+  [ -n "$n" ] || continue
+  printf '%s\t%s\n' "$(awk -v n="$n" '$1==n {print $2; hit=1} END {if (!hit) print n}' "$TMP/aliases.txt")" "$n"
+done < "$TMP/manifest.txt" | sort > "$TMP/wanted.tsv"
+
+join -t"$TAB" "$TMP/wanted.tsv" "$TMP/available.txt" > "$TMP/install.tsv"   # install these
+join -t"$TAB" -v1 "$TMP/wanted.tsv" "$TMP/available.txt"                   # named, no source directory
+join -t"$TAB" -v2 "$TMP/wanted.tsv" "$TMP/available.txt"                   # source directory, unrouted
+```
+
+```bash
+cut -f2 "$TMP/install.tsv" > "$TMP/install.txt"    # installed names only, for Steps 5–7
+```
+
+`install.tsv` is two columns — **source directory**, then **installed name** — so the distinction
+survives to the copy: Step 4 reads from column 1 and writes to column 2. Everything after Step 4
+deals only in installed names and reads `install.txt`.
+
 - **In both** → install it (Steps 4–5).
-- **Named, no directory** → do not fabricate one. Collect it for the final report.
+- **Named, no directory** → do not fabricate one, and do not alias your way out of it. Collect it for the final report.
 - **Directory, not named** → skip it. Collect it for the final report. (Non-directory entries such as `lint.mjs` are tooling, not skills, and are excluded by construction.)
 
 Both mismatch lists go in the report to the user. A silent skip reads as "everything installed" when it didn't.
+
+Sanity-check the count before continuing: `wc -l < "$TMP/install.tsv"` should equal the number of
+skills in the routing table, and an alias should move a name *out* of both mismatch lists — if a row
+appears in a mismatch list anyway, the alias is wrong, not the tree.
 
 ---
 
@@ -130,14 +176,14 @@ awk '/blocks-skills:distributable:start/{f=1;next} /blocks-skills:distributable:
   "$RULES/AGENTS.md" > "$TMP/agents-block.md"
 ```
 
-The imported region tells the agent to load skills with `blocks skill show/add`. In a bootstrapped repo they are already vendored, so **prepend this scoping header** to the block before writing it:
+The imported region says skills are vendored files but not *where* this repo put them, so **prepend this scoping header** to the block before writing it:
 
 ```markdown
 ## SELISE Blocks
 
 These rules govern Blocks work in this repo. Skills are vendored at `.codex/skills/<name>/SKILL.md`
-(Claude Code discovers the same set via `.claude/skills/`). Read the vendored copy directly — you do
-not need `blocks skill show` or `blocks skill add` to load one here. Re-vendor with BOOTSTRAP.md.
+(Claude Code discovers the same set via `.claude/skills/`). Read the vendored copy directly; there is
+no CLI command that serves a skill. Re-vendor with BOOTSTRAP.md.
 ```
 
 Imported content always lives between markers, so re-runs are a block replacement instead of a merge conflict:
@@ -205,13 +251,16 @@ Never delete a path outside `.codex/skills/<installed-skill-name>` or `.claude/s
 
 ```bash
 mkdir -p .codex/skills
-while IFS= read -r s; do
+while IFS="$(printf '\t')" read -r src s; do
   [ -n "$s" ] || continue
   rm -rf ".codex/skills/$s"          # cleared by the guard above; replace, never merge
-  cp -R "$SKILLS/blocks-skills/$s" ".codex/skills/$s"
+  cp -R "$SKILLS/blocks-skills/$src" ".codex/skills/$s"
   [ -d ".codex/skills/$s/scripts" ] && chmod +x ".codex/skills/$s"/scripts/* 2>/dev/null
-done < "$TMP/install.txt"
+done < "$TMP/install.tsv"
 ```
+
+`$src` is the source directory and `$s` the installed name; they differ only for an aliased skill
+(Step 2). Everything downstream — guard, stubs, stamp, verify — keys off `$s`, the installed name.
 
 `chmod` runs inside the loop, against the skill just copied. A bare `.codex/skills/*/scripts/*` glob would also re-mark scripts belonging to skills this run never touched.
 
@@ -269,8 +318,13 @@ skills_repo=https://github.com/SELISEdigitalplatforms/blocks-cli.git
 skills_ref=$SKILLS_REF
 skills_commit=$(git -C "$SKILLS" rev-parse HEAD)
 skills=$(tr '\n' ' ' < "$TMP/install.txt")
+aliases=$(awk '{printf "%s=%s ", $1, $2}' "$TMP/aliases.txt")
 STAMP
 ```
+
+`aliases` records any routed-name→source-directory mapping this run applied, so the update path can
+tell an alias that is still needed from one the source tree has since caught up with. Omit the line
+when no alias was in play rather than stamping an empty value.
 
 Both commits are required — Step 4's collision guard and the update path depend on `skills_commit`.
 
@@ -317,6 +371,7 @@ Tell the user, plainly:
 
 - Skills installed (count + names).
 - Skills named in the routing table with no source directory, and source directories not named in it.
+- **Any alias applied** (Step 2): the routed name, the source directory it came from, and the fact that the installed `SKILL.md` still carries the old `name:` in its frontmatter. Say plainly that this is a bridge until the source tree is renamed — an unreported alias is how a rename gets forgotten.
 - Whether `AGENTS.md` / `CLAUDE.md` were created, block-replaced, or **appended to an existing file** — and if appended, any contradiction with what was already there.
 - Anything the collision guard flagged, and what you did about it.
 - Both source refs and commits.
@@ -331,7 +386,7 @@ Steps 0–8 are a file copy and stop there. Run this step **only** when the user
 
 This step does not reimplement onboarding. The skill you just installed owns that flow: read `.codex/skills/blocks-bootstrap/SKILL.md` and follow it. What is below is only the entry point — which branch to enter on, and what to show at the end.
 
-**The user never supplies a URL.** The CLI's endpoints are built in and self-correcting. The only URL you ever mention is the **portal**, `https://os.seliseblocks.com`, and only for the two things the CLI genuinely cannot do: create an account and create a project. Never ask "what's your Blocks OS URL" — there isn't one to ask for.
+**The user never supplies a URL.** The CLI's endpoints are built in and self-correcting. The only URL you ever mention is the **portal**, `https://os.seliseblocks.com`, and only for what the CLI genuinely cannot do: **create an account**, and add further environments to a project that already exists. Creating the project itself is no longer portal-only — `blocks projects create` does it. Never ask "what's your Blocks OS URL" — there isn't one to ask for.
 
 ### Prerequisite — the CLI
 
@@ -350,7 +405,7 @@ Run `blocks --version`. If it's missing, **ask before installing** (`npm install
 2. **No account yet?** Signing up is the one thing the CLI can't do. Send them to `https://os.seliseblocks.com` to create an account and wait — don't proceed on the assumption it worked.
 3. `blocks login` (device-code, as above).
 4. `blocks projects list --json`. Show the full list; never silently adopt a prior session's selection.
-   - **Empty?** `projects create` is disabled in this CLI build — a project has to be created in the portal (`https://os.seliseblocks.com`). Say that plainly, wait for them to confirm it exists, then re-run `blocks projects list --json`.
+   - **Empty?** Create one with the CLI — `blocks projects create "<name>"`. Ask for a name (3–100 characters) and get explicit consent before running it: the call **accepts the Blocks terms on the user's behalf** (`isAcceptBlocksTerms`, `isUseBlocksExclusively`), which is not yours to accept silently. `--dry-run --json` first, then `--yes`. It creates exactly one app in the `dev` environment — environment, domain, and cookie domain are fixed, and the domain the platform assigns is not the one sent. It does not select the project, so continue to step 5. Add further environments from the portal (`https://os.seliseblocks.com`); there is no CLI path for that.
    - **One or more?** Ask which project, and which environment. Don't pick for them.
 5. `blocks use <x-blocks-key>` with the chosen project's key.
 6. Continue to **The brief**.
@@ -388,6 +443,8 @@ Re-running this runbook is the update path. It is idempotent by construction:
 3. Steps 4–5 replace each skill directory and regenerate each stub wholesale.
 4. Step 3 replaces only the marker block, so target-repo instructions written outside the markers survive.
 
+5. The stamped `aliases` line says which routed-name→source-directory mappings the last run needed. On each re-run, re-check every alias against the new source tree: once the directory has been renamed, the alias row becomes a no-op that hides a real mismatch — **delete it** and confirm the skill still resolves.
+
 What re-running does **not** do: remove a skill dropped from the routing table. Report those as stale and let the user decide — a repo may still depend on one.
 
 ---
@@ -395,7 +452,7 @@ What re-running does **not** do: remove a skill dropped from the routing table. 
 ## Rules for the agent running this
 
 - **Steps 0–8 are a file copy — don't install the `blocks` CLI or log anything in during them.** Runtime setup happens only in Step 9, only when the user asked for it, and installing the CLI still needs their consent. The flow itself belongs to `blocks-bootstrap`; Step 9 only enters it.
-- **Never ask the user for a Blocks OS or API URL.** The CLI's endpoints are built in. The portal (`https://os.seliseblocks.com`) is the only URL you ever name, and only for account or project creation.
+- **Never ask the user for a Blocks OS or API URL.** The CLI's endpoints are built in. The portal (`https://os.seliseblocks.com`) is the only URL you ever name, and only for account creation or adding an environment to an existing project.
 - **Don't edit skill content while copying.** No rewriting for the target repo's stack, no trimming. Skills are verified against the live platform; an edited copy is unverified.
 - **Don't import anything outside the distributable markers.**
 - **Don't commit or push** unless the user asks.

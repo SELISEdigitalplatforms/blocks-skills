@@ -26,10 +26,11 @@ Check your state and browse what's available:
 ```bash
 blocks auth status --json
 blocks doctor --json
-blocks skill list
-blocks skill show blocks-bootstrap
-blocks skill add <skill-name>     # vendor a skill into your project
+blocks help <command>             # exact flags and scope for any command
 ```
+
+Skills themselves are **vendored files**, not a CLI command — see [BOOTSTRAP.md](./BOOTSTRAP.md). The
+`blocks skill list` / `show` / `add` commands were removed from the CLI in `0.2.12`.
 
 If login, project selection, or the app scaffold is in an unknown state, start with **`blocks-bootstrap`** — it detects the gaps and closes them before any other skill runs.
 
@@ -138,7 +139,7 @@ Skills are hand-authored and grounded in verified behavior — every command, fl
 
 ## Repository state
 
-The skills listed above are the current, CLI/SDK-based generation and live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills), where they're published for `blocks skill list` / `show` / `add`.
+The skills listed above are the current, CLI/SDK-based generation and live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills) under `blocks-skills/`. Consuming repos get them by vendoring that tree; the CLI no longer ships or serves them.
 
 An earlier generation in this repository drove the platform API directly over HTTP with manual impersonation. That approach is superseded — the current skills route everything through the CLI and SDK.
 
