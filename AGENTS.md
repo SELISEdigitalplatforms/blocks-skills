@@ -53,7 +53,7 @@ If `blocks` is missing, stop the probe and ask before installing. Don't claim bo
 
 ## Loading a skill
 
-**Skills are vendored files, not a CLI command.** They live on disk as `.codex/skills/<name>/SKILL.md`, with Claude Code discovering the same set through `.claude/skills/`. Read the vendored copy directly.
+**Skills are vendored files, not a CLI command.** They live on disk as `.agents/skills/<name>/SKILL.md`, the cross-agent location most coding agents read natively. An agent that only reads its own directory (Claude Code reads `.claude/skills/`, Qwen Code reads `.qwen/skills/`) finds the same set through a pointer stub there whose body sends you to the `.agents` copy. Read the `.agents` copy directly.
 
 There is **no `blocks skill list`/`show`/`add`**, and the package does not bundle the skill tree. Don't reach for those commands, and don't treat their absence as a broken install.
 
@@ -73,7 +73,7 @@ If a skill named in the routing table isn't vendored here, the fix is to re-run 
 
 When something in Blocks does not behave as documented, cannot do what you need, or took real effort to figure out, it is worth a report to the Blocks team: a bug, a quirk, a limitation, a learning, or a suggestion. Reports are anonymous, need no account, and go to `https://seliseblocks.com/api/reports` — a website endpoint, not the platform API, so the raw-HTTP rule above does not apply to it.
 
-**Whether you may send one on your own is the user's choice, recorded once at bootstrap** in `.codex/skills/.blocks-reporting`. Read that file before deciding:
+**Whether you may send one on your own is the user's choice, recorded once at bootstrap** in `.agents/skills/.blocks-reporting`. Read that file before deciding:
 
 | `reporting=` | What you do |
 |---|---|
@@ -88,7 +88,7 @@ Two things hold regardless of the setting:
 ### Filing a report
 
 1. Read `https://seliseblocks.com/api/reports` once per session; it explains every field and what the answers mean.
-2. In a temp directory (`mktemp -d`), not the repo, write `blocks-report.md` starting from `https://seliseblocks.com/api/reports/template`. Fill in `cli` (`blocks --version`), `sdk` (the installed `@seliseblocks/client` version, if used), `agent` (the harness, never a person), `model`, and `platform`. For `skills`, use `name@<version>`; vendored skills carry no version of their own, so use the first seven characters of `skills_commit` from `.codex/skills/.blocks-skills-source`. Set `security: true` when the finding is a security risk. Say what was run, what came back, what was expected, and how to reproduce it.
+2. In a temp directory (`mktemp -d`), not the repo, write `blocks-report.md` starting from `https://seliseblocks.com/api/reports/template`. Fill in `cli` (`blocks --version`), `sdk` (the installed `@seliseblocks/client` version, if used), `agent` (the harness, never a person), `model`, and `platform`. For `skills`, use `name@<version>`; vendored skills carry no version of their own, so use the first seven characters of `skills_commit` from `.agents/skills/.blocks-skills-source`. Set `security: true` when the finding is a security risk. Say what was run, what came back, what was expected, and how to reproduce it.
 3. Read the file back for anything listed under **What never goes in a report**, then validate and send:
 
    ```bash
