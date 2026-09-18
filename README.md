@@ -133,6 +133,10 @@ Deploy the current branch and check the build             → blocks-release-dep
 - Local CLI storage files (config, tokens, secrets) are never read or printed directly; all state is inspected through `blocks` commands.
 - Generic `blocks secrets` commands are no longer available; do not bypass their removal with raw API calls.
 
+## Anonymous reporting
+
+Bootstrap asks once whether the agent may send anonymous reports — bugs, quirks, limitations, learnings, suggestions — to the Blocks team at `https://seliseblocks.com/api/reports`. The answer is recorded in the bootstrapped repo and honored: opted in, the agent files reports as it hits things and tells you the id; opted out, it never sends on its own. Either way you can ask for a one-off report or flip the setting at any time by saying so. A report never carries names, emails, tokens, secrets, or home-directory paths. The rules are under **Report what you find** in [AGENTS.md](./AGENTS.md).
+
 ## Contributing
 
 Skills are hand-authored and grounded in verified behavior — every command, flag, and response shape is confirmed against the real platform before it's documented. Anything that can't be verified is labeled as such rather than smoothed over. See [CONTRIBUTING.md](./CONTRIBUTING.md), and [AGENTS.md](./AGENTS.md) for the conventions agents follow.

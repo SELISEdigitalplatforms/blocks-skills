@@ -46,6 +46,7 @@ Rules and skills live in different repos. Both are read-only inputs here.
       flows/*.md                             # only the skills that ship flows
   .claude/skills/<skill>/SKILL.md            # pointer stub -> the .codex copy
   .codex/skills/.blocks-skills-source        # provenance: repos, refs, commits, skill list
+  .codex/skills/.blocks-reporting            # the user's anonymous-reporting choice: opt-in or opt-out
 ```
 
 **One copy of the content, two front doors.** Codex reads `.codex/skills/<skill>/SKILL.md` directly. Claude Code discovers `.claude/skills/<skill>/SKILL.md`, which carries the same frontmatter — so it routes identically — but whose body does nothing except send the agent to the `.codex` file. Content is never duplicated, so the two cannot drift.
@@ -66,7 +67,9 @@ Requires `git` and a writable target repo. Requires nothing from the `blocks` CL
 
 ---
 
-## Step 0 — Confirm before writing
+## Step 0 — Ask before writing
+
+### Confirm it is safe to proceed
 
 Stop and ask the user if any of these hold:
 
@@ -76,6 +79,16 @@ Stop and ask the user if any of these hold:
 - `.codex/skills/` contains skill directories but there is **no** provenance stamp — something else authored them. See the collision guard in Step 4.
 
 Otherwise proceed. Everything below is additive or marker-scoped; nothing outside the markers and the two skill directories is touched.
+
+### Ask about anonymous reporting
+
+Every bootstrap asks this once, in the same breath as the confirmations above, so the rest of the run is uninterrupted:
+
+> While working with Blocks, the agent will sometimes hit bugs, quirks, limitations, or things that took real effort to figure out. May it send those to the SELISE Blocks team as anonymous reports? A report never contains names, emails, tokens, secrets, or paths under your home directory — only what happened on the platform and how to reproduce it. You can change this at any time, and you can always ask for a one-off report whether or not you opt in.
+
+Record the answer as `opt-in` or `opt-out` for Step 6. A clear yes is `opt-in`; anything else — a no, a "later", no answer — is `opt-out`. Never write `opt-in` on the user's behalf.
+
+On a re-run, ask **only if** `.codex/skills/.blocks-reporting` is missing (a repo bootstrapped before the file existed). If it is present, read it, mention the current value in the Step 8 report, and leave it alone — changing it is the user's request to make, at any time, and takes one sentence (see **Report what you find** in the imported rules).
 
 ---
 
@@ -277,6 +290,17 @@ Both commits are required — Step 4's collision guard and the update path depen
 
 No timestamp, no author, and **no mention of which AI tool ran this** — a hard rule inherited from `AGENTS.md` that applies to the target repo too, including commit messages.
 
+### Record the reporting choice
+
+Write the answer from Step 0 to its own file, next to the stamp. It is deliberately not a line in the stamp: the stamp is regenerated on every run, while this choice must survive re-runs untouched.
+
+```bash
+REPORTING="opt-out"   # or opt-in — the literal answer from Step 0
+[ -f .codex/skills/.blocks-reporting ] || printf 'reporting=%s\n' "$REPORTING" > .codex/skills/.blocks-reporting
+```
+
+The `[ -f ]` guard is what keeps an earlier choice across re-runs. The file holds exactly one line, `reporting=opt-in` or `reporting=opt-out`, and it is the whole preference — the imported rules in `AGENTS.md` read it before any report is sent, and rewrite it when the user asks to switch.
+
 ---
 
 ## Step 7 — Verify
@@ -306,6 +330,9 @@ done
 
 # no source-only marker leaked into the target
 grep -c 'blocks-skills:distributable' AGENTS.md    # must be 0
+
+# reporting choice recorded, with one of the two accepted values
+grep -qxE 'reporting=(opt-in|opt-out)' .codex/skills/.blocks-reporting || echo "REPORTING CHOICE MISSING OR INVALID"
 ```
 
 Then spot-check one skill by hand: open a `.claude` stub, follow its link, and confirm a `flows/` link inside the `.codex` copy resolves.
@@ -320,6 +347,7 @@ Tell the user, plainly:
 - Skills named in the routing table with no source directory, and source directories not named in it.
 - Whether `AGENTS.md` / `CLAUDE.md` were created, block-replaced, or **appended to an existing file** — and if appended, any contradiction with what was already there.
 - Anything the collision guard flagged, and what you did about it.
+- The anonymous-reporting choice recorded (`opt-in` or `opt-out`), that it lives in `.codex/skills/.blocks-reporting`, and that they can flip it or ask for a one-off report at any time by just saying so.
 - Both source refs and commits.
 - That nothing was committed. Leave the commit to the user unless they asked for one.
 - If Step 9 was not requested, say the install is complete and that they can start work by giving you a project key ("get me set up on project `<x-blocks-key>`") or by asking to be signed in from scratch.
@@ -388,6 +416,7 @@ Re-running this runbook is the update path. It is idempotent by construction:
 2. The Step 4 guard catches any skill edited locally since the last run, before anything is removed.
 3. Steps 4–5 replace each skill directory and regenerate each stub wholesale.
 4. Step 3 replaces only the marker block, so target-repo instructions written outside the markers survive.
+5. The reporting choice in `.codex/skills/.blocks-reporting` is kept as it is and the question is not asked again. It is asked only when the file is missing.
 
 What re-running does **not** do: remove a skill dropped from the routing table. Report those as stale and let the user decide — a repo may still depend on one.
 
@@ -399,6 +428,7 @@ What re-running does **not** do: remove a skill dropped from the routing table. 
 - **Never ask the user for a Blocks OS or API URL.** The CLI's endpoints are built in. The portal (`https://os.seliseblocks.com`) is the only URL you ever name, and only for account creation or adding an environment to an existing project.
 - **Don't edit skill content while copying.** No rewriting for the target repo's stack, no trimming. Skills are verified against the live platform; an edited copy is unverified.
 - **Don't import anything outside the distributable markers.**
+- **Ask the reporting question once and record exactly what was answered.** Never write `opt-in` without a clear yes, and never send a report on your own authority under `opt-out`. What a report may and may not contain is set by **Report what you find** in the imported rules, and that applies to this run too.
 - **Don't commit or push** unless the user asks.
 - **Don't attribute the work to an AI tool** anywhere — files, comments, or commit messages.
 - **Stop and ask** on anything ambiguous: an existing unmarked `AGENTS.md` that contradicts the import, a skill directory with no provenance, a target that isn't a git repo, a manifest that doesn't match the source tree.
