@@ -53,7 +53,7 @@ If `blocks` is missing, stop the probe and ask before installing. Don't claim bo
 
 ## Loading a skill
 
-**Skills are vendored files, not a CLI command.** They live on disk as `.codex/skills/<name>/SKILL.md`, with Claude Code discovering the same set through `.claude/skills/`. Read the vendored copy directly.
+**Skills are vendored files, not a CLI command.** They live on disk as `.agents/skills/<name>/SKILL.md`, the cross-agent location most coding agents read natively. An agent that only reads its own directory (Claude Code reads `.claude/skills/`, Qwen Code reads `.qwen/skills/`) finds the same set through a pointer stub there whose body sends you to the `.agents` copy. Read the `.agents` copy directly.
 
 There is **no `blocks skill list`/`show`/`add`**, and the package does not bundle the skill tree. Don't reach for those commands, and don't treat their absence as a broken install.
 
@@ -61,12 +61,46 @@ If a skill named in the routing table isn't vendored here, the fix is to re-run 
 
 ## Hard rules
 
-- **Never raw `fetch`/`curl` against `api.seliseblocks.com`.** Use the `blocks` CLI or the `@seliseblocks/client` SDK. Every skill states which surface it uses. Bypassing them with raw HTTP is the failure mode these skills exist to prevent.
+- **Never raw `fetch`/`curl` against `api.seliseblocks.com`.** Use the `blocks` CLI or the `@seliseblocks/client` SDK. Every skill states which surface it uses. Bypassing them with raw HTTP is the failure mode these skills exist to prevent. The one sanctioned raw `curl` is the anonymous report endpoint at `seliseblocks.com/api/reports` (see **Report what you find**), which is not the platform API.
+- **Never send a report to Blocks unless reporting is `opt-in` or the user asked for that report**, and never put anything identifying or secret in one. The rules are in **Report what you find** below.
 - **`--dry-run` before `--yes`** on every mutating CLI command. Get human confirmation before destructive or cloud-mutating operations.
 - **Never read the CLI's local storage files** (config/token/secret files on disk) or print anything inside them — client ids, root tenant id, account names, tokens. Interact only through `blocks` commands. To repair broken state use `blocks login`, `blocks auth remove <account>`, `blocks projects list --json`, `blocks use <tenantId>`.
 - **`blocks projects create` accepts the Blocks terms on the user's behalf** (`isAcceptBlocksTerms`, `isUseBlocksExclusively`). Never run it without explicit consent to that, and never to "try something" — it provisions real cloud tenancy. Run `--dry-run --json` first, then `--yes` only after approval. It creates exactly one app in the `dev` environment; further environments are portal-only.
 - **Never expose secrets or credentials.** The former generic `blocks secrets` commands were removed because their backing API no longer accepts the CLI's authentication mode; do not work around their absence with raw HTTP.
 - **Don't attribute work to an AI tool** anywhere in this repo — no assistant names in docs, comments, or commit messages.
+
+## Report what you find
+
+When something in Blocks does not behave as documented, cannot do what you need, or took real effort to figure out, it is worth a report to the Blocks team: a bug, a quirk, a limitation, a learning, or a suggestion. Reports are anonymous, need no account, and go to `https://seliseblocks.com/api/reports` — a website endpoint, not the platform API, so the raw-HTTP rule above does not apply to it.
+
+**Whether you may send one on your own is the user's choice, recorded once at bootstrap** in `.agents/skills/.blocks-reporting`. Read that file before deciding:
+
+| `reporting=` | What you do |
+|---|---|
+| `opt-in` | File a report whenever you hit something worth reporting, without asking each time. Tell the user what you sent and the id that came back. |
+| `opt-out`, or the file is missing | Never send anything on your own initiative. You may still say that something looks worth reporting and offer to file it. |
+
+Two things hold regardless of the setting:
+
+- **The user can ask for a one-off report at any time** ("report this to Blocks", "send them this finding"). File it, following the steps below.
+- **The user can change the setting at any time** ("turn Blocks reporting on", "stop sending reports"). Rewrite the file with the new value — the only accepted values are `reporting=opt-in` and `reporting=opt-out` — and confirm what it now says. Nothing else needs to change; the file is the whole preference.
+
+### Filing a report
+
+1. Read `https://seliseblocks.com/api/reports` once per session; it explains every field and what the answers mean.
+2. In a temp directory (`mktemp -d`), not the repo, write `blocks-report.md` starting from `https://seliseblocks.com/api/reports/template`. Fill in `cli` (`blocks --version`), `sdk` (the installed `@seliseblocks/client` version, if used), `agent` (the harness, never a person), `model`, and `platform`. For `skills`, use `name@<version>`; vendored skills carry no version of their own, so use the first seven characters of `skills_commit` from `.agents/skills/.blocks-skills-source`. Set `security: true` when the finding is a security risk. Say what was run, what came back, what was expected, and how to reproduce it.
+3. Read the file back for anything listed under **What never goes in a report**, then validate and send:
+
+   ```bash
+   curl -fsS -X POST https://seliseblocks.com/api/reports/validate -H "Content-Type: text/markdown" --data-binary @blocks-report.md
+   curl -fsS -X POST https://seliseblocks.com/api/reports -H "Content-Type: text/markdown" --data-binary @blocks-report.md
+   ```
+
+   Fix anything `validate` returns as an error before sending. A `201` means it is recorded; tell the user the `id` from the answer. On `429` wait for `Retry-After`; on `503` keep the file and retry later rather than dropping the report.
+
+### What never goes in a report
+
+Nothing that identifies a person or grants access: no names, emails, tokens, secrets, cookies, or paths under a home directory. Trim logs to the relevant lines and read them for leaks before sending — the endpoint strips some of this as a safety net, but you are the guard, not it. Tenant ids and project keys are public and fine. Keep the user's application code and business data out unless a minimal excerpt is needed to reproduce the finding, and strip anything identifying from that excerpt too.
 
 ## Skill routing table
 
