@@ -26,12 +26,15 @@ Check your state and browse what's available:
 ```bash
 blocks auth status --json
 blocks doctor --json
-blocks skill list
-blocks skill show blocks-onboarding
-blocks skill add <skill-name>     # vendor a skill into your project
+blocks --help --json              # every implemented command
+blocks help <family> --json       # summaries for one command family
+blocks help <command> --json      # exact flags, scope, and mutation metadata
 ```
 
-If login, project selection, or the app scaffold is in an unknown state, start with **`blocks-onboarding`** — it detects the gaps and closes them before any other skill runs.
+Skills are **vendored files**, not CLI commands — see [BOOTSTRAP.md](./BOOTSTRAP.md). The CLI does not
+implement `blocks skill list` / `show` / `add` and does not bundle the skill tree.
+
+If login, project selection, or the app scaffold is in an unknown state, start with **`blocks-bootstrap`** — it detects the gaps and closes them before any other skill runs.
 
 ## The two surfaces
 
@@ -48,7 +51,7 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 
 | Skill | Covers |
 |---|---|
-| `blocks-onboarding` | Detect CLI/login/project state, close install and login gaps, resolve the app OIDC client, scaffold with `blocks new web`, and run `blocks init` in the app directory. Run this first whenever state is unknown. |
+| `blocks-bootstrap` | Detect CLI/login/project state, close install and login gaps, resolve the app OIDC client, scaffold with `blocks new web`, and run `blocks init` in the app directory. Run this first whenever state is unknown. |
 
 ### Data
 
@@ -91,7 +94,6 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 | Skill | Covers |
 |---|---|
 | `blocks-release-deployment` | Triggering and inspecting Release builds and deployments. |
-| `blocks-secrets` | Saving, rotating, and reading named secret values such as captcha config or third-party API keys. |
 
 ### Local development
 
@@ -104,7 +106,7 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 No skill name needed — these route on their own:
 
 ```
-I'm brand new to Blocks, get me set up                    → blocks-onboarding
+I'm brand new to Blocks, get me set up                    → blocks-bootstrap
 Create a Product schema with title and price              → blocks-data-gateway-configuration
 Fetch products and render them in a list                  → blocks-data-gateway-crud
 Let users attach a PDF to a record                        → blocks-data-storage
@@ -122,7 +124,6 @@ Add German translations for the login screen              → blocks-localizatio
 Add a language switcher to the app                        → blocks-localization-implementation
 Send a welcome email when someone signs up                → blocks-mail
 Notify a user when their order ships                      → blocks-notifier
-Rotate our captcha provider key                           → blocks-secrets
 Deploy the current branch and check the build             → blocks-release-deployment
 ```
 
@@ -130,7 +131,11 @@ Deploy the current branch and check the build             → blocks-release-dep
 
 - Mutating CLI commands are run `--dry-run` first, then `--yes` — destructive and cloud-mutating operations get explicit confirmation.
 - Local CLI storage files (config, tokens, secrets) are never read or printed directly; all state is inspected through `blocks` commands.
-- `blocks secrets get` returns raw unredacted values. Treat that output as sensitive.
+- Generic `blocks secrets` commands are no longer available; do not bypass their removal with raw API calls.
+
+## Anonymous reporting
+
+Bootstrap asks once whether the agent may send anonymous reports — bugs, quirks, limitations, learnings, suggestions — to the Blocks team at `https://seliseblocks.com/api/reports`. The answer is recorded in the bootstrapped repo and honored: opted in, the agent files reports as it hits things and tells you the id; opted out, it never sends on its own. Either way you can ask for a one-off report or flip the setting at any time by saying so. A report never carries names, emails, tokens, secrets, or home-directory paths. The rules are under **Report what you find** in [AGENTS.md](./AGENTS.md).
 
 ## Contributing
 
@@ -138,7 +143,7 @@ Skills are hand-authored and grounded in verified behavior — every command, fl
 
 ## Repository state
 
-The skills listed above are the current, CLI/SDK-based generation and live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills), where they're published for `blocks skill list` / `show` / `add`.
+The skills listed above are the current, CLI/SDK-based generation and live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills) under `blocks-skills/`. Consuming repos get them by vendoring that tree; the CLI does not ship or serve them.
 
 An earlier generation in this repository drove the platform API directly over HTTP with manual impersonation. That approach is superseded — the current skills route everything through the CLI and SDK.
 
