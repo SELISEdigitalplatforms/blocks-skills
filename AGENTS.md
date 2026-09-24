@@ -182,9 +182,11 @@ The 21 skills in the routing table live in [`SELISEdigitalplatforms/blocks-cli`]
 |---|---|
 | A skill's `SKILL.md`, flows, or references | `blocks-cli`, under `blocks-skills/` |
 | Routing table, hard rules, workflow | this repo, inside the distributable markers |
-| The vendoring procedure | this repo, `BOOTSTRAP.md` |
+| The vendoring procedure | this repo, `BOOTSTRAP.md` (entry point and task map) and `bootstrap/` (one file per step or task) |
 
-A new skill needs both halves: content in `blocks-cli`, and a routing-table row here. A skill missing from that table is invisible to agents and is never vendored — `BOOTSTRAP.md` treats the table as its manifest.
+A new skill needs both halves: content in `blocks-cli`, and a routing-table row here. A skill missing from that table is invisible to agents and is never vendored — the runbook treats the table as its manifest.
+
+**Changing the runbook.** `BOOTSTRAP.md` is the only file a consumer's agent is pointed at; it reads a `bootstrap/` file only when `BOOTSTRAP.md`'s **Pick your task** or **The full install** table names it. So when you add, rename, split, or remove a file under `bootstrap/`, update both tables in the same change, and fix every link to it from the other `bootstrap/` files. Keep each fact in one file — link to it from the others rather than restating it. When an agent's behavior changes, the only file to edit is `bootstrap/agents.md`.
 
 An older generation of these skills lived in this repo's `skills/` directory and drove `api.seliseblocks.com` over raw HTTP with manual impersonation (`x-blocks-key`/`PTOK`). That generation is **superseded and removed** — the current skills forbid raw HTTP outright.
 
