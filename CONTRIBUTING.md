@@ -12,7 +12,7 @@ Skill *sources* are not in this repo. They live in [`SELISEdigitalplatforms/bloc
 |---|---|
 | A skill's content — `SKILL.md`, flows, references | `blocks-cli`, under `blocks-skills/` |
 | Routing table, hard rules, workflow | this repo, inside the `blocks-skills:distributable` markers in [AGENTS.md](./AGENTS.md) |
-| The vendoring procedure | this repo, [BOOTSTRAP.md](./BOOTSTRAP.md) |
+| The vendoring procedure | this repo, [BOOTSTRAP.md](./BOOTSTRAP.md) (entry point and task map) and [`bootstrap/`](./bootstrap/) (one file per step or task) — see **Changing the runbook** in [AGENTS.md](./AGENTS.md) |
 
 A new skill needs both: the content in `blocks-cli`, and a routing-table row here. **A skill missing from the routing table is invisible to agents and is never vendored** — `BOOTSTRAP.md` treats that table as its manifest.
 
