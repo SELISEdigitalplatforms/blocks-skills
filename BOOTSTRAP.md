@@ -29,7 +29,7 @@ Rules and skills live in different repos. Both are read-only inputs here.
 | What | Where | Path |
 |---|---|---|
 | Routing rules, hard rules, workflow | `SELISEdigitalplatforms/blocks-skills` | the region of `AGENTS.md` between the `blocks-skills:distributable` markers |
-| Skill content (19 skills) | `SELISEdigitalplatforms/blocks-cli` | `blocks-skills/<skill>/` |
+| Skill content (21 skills) | `SELISEdigitalplatforms/blocks-cli` | `blocks-skills/<skill>/` |
 
 `blocks-skills` has **no `skills/` directory** — the older raw-HTTP generation that lived there is removed. Do not look for one, and do not fall back to an older commit that still has it.
 
