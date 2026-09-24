@@ -66,7 +66,7 @@ If a skill named in the routing table isn't vendored here, the fix is to re-run 
 - **`--dry-run` before `--yes`** on every mutating CLI command. Get human confirmation before destructive or cloud-mutating operations.
 - **Never read the CLI's local storage files** (config/token/secret files on disk) or print anything inside them — client ids, root tenant id, account names, tokens. Interact only through `blocks` commands. To repair broken state use `blocks login`, `blocks auth remove <account>`, `blocks projects list --json`, `blocks use <tenantId>`.
 - **`blocks projects create` accepts the Blocks terms on the user's behalf** (`isAcceptBlocksTerms`, `isUseBlocksExclusively`). Never run it without explicit consent to that, and never to "try something" — it provisions real cloud tenancy. Run `--dry-run --json` first, then `--yes` only after approval. It creates exactly one app in the `dev` environment; further environments are portal-only.
-- **Never expose secrets or credentials.** The former generic `blocks secrets` commands were removed because their backing API no longer accepts the CLI's authentication mode; do not work around their absence with raw HTTP.
+- **Never expose secrets or credentials.** `blocks secrets get` and friends exist for operating the store, not for printing values into a conversation or a file the user did not ask for. Never work around a missing capability with raw HTTP.
 - **Don't attribute work to an AI tool** anywhere in this repo — no assistant names in docs, comments, or commit messages.
 
 ## Report what you find
@@ -132,6 +132,7 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 | `blocks-iam-mfa` | Self-service MFA for the signed-in user (TOTP enroll/verify, OTP, method switch, disable, backup codes) plus tenant-wide MFA **policy** admin. Not admin-forcing MFA onto another user. | Both |
 | `blocks-iam-sso-oidc-configuration` | **Enabling** SSO: register an OIDC client and identity provider. Portal remains a valid alternative, especially for federated providers (Google/Azure/Okta). Not `blocks login` — that's the CLI's own login. | CLI |
 | `blocks-iam-sso-oidc-implementation` | Extending or debugging the hosted login flow the scaffold already ships: `redirectToProvider` → `/login/callback` → session, `AuthProvider`, `RequireAuth` guards, token refresh, redirect loops, sessions that don't stick. | SDK |
+| `blocks-captcha` | Login CAPTCHA for the project: register a reCAPTCHA or hCaptcha site key and secret, enable/disable, list and inspect configs via `captcha list/get/save/enable/disable/delete`. Not the frontend widget itself. | CLI |
 
 ### Localization
 
@@ -153,6 +154,7 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 | Skill | Use when | Surface |
 |---|---|---|
 | `blocks-release-deployment` | Triggering and inspecting Release builds/deploys: `release deploy`, `release status`, `builds get/list`. Triggers a configured pipeline only — no artifact upload. | CLI |
+| `blocks-secrets` | The project secret store: create named secrets from a value, file or dotenv, rotate, lock/unlock, delete/restore, access checks and audit via `secrets *`. Values are never echoed back. | CLI |
 
 ### Local development
 
@@ -172,7 +174,7 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 
 ## Where the skills live
 
-The 19 skills in the routing table live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills), under `blocks-skills/`. That is the source of truth for skill content and the tree [`BOOTSTRAP.md`](./BOOTSTRAP.md) vendors.
+The 21 skills in the routing table live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills), under `blocks-skills/`. That is the source of truth for skill content and the tree [`BOOTSTRAP.md`](./BOOTSTRAP.md) vendors.
 
 **This repo owns routing, not skills.** Editing a skill's content here is editing the wrong repository — there is no `skills/` directory to edit. What lives here is the routing table and rules above (inside the `blocks-skills:distributable` markers) and the vendoring runbook.
 
