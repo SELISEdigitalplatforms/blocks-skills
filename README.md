@@ -73,6 +73,7 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 | `blocks-iam-mfa` | Self-service MFA for the signed-in user — TOTP, OTP, method switching, backup codes — plus tenant-wide MFA policy. |
 | `blocks-iam-sso-oidc-configuration` | Enabling SSO: registering an OIDC client and identity provider so users can sign in through hosted login. |
 | `blocks-iam-sso-oidc-implementation` | The hosted login flow in app code: the redirect, the callback, session handling, route guards, and token refresh. |
+| `blocks-captcha` | The login captcha: register a reCAPTCHA or hCaptcha site key and secret, enable or disable it, see which configuration blocks-iam actually enforces at login, and retire one. |
 
 ### Localization
 
@@ -94,6 +95,7 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 | Skill | Covers |
 |---|---|
 | `blocks-release-deployment` | Triggering and inspecting Release builds and deployments. |
+| `blocks-secrets` | The project secret store: create named secrets from a value, file, env var, or dotenv; rotate, lock/unlock, delete/restore; control who may read them; and read the audit trail. Values are never printed. |
 
 ### Local development
 
@@ -118,6 +120,7 @@ Create an editor role and grant it these permissions      → blocks-iam-access-
 Hide this button unless the user can approve invoices     → blocks-iam-access-control
 Invite a user and set their roles                         → blocks-iam-users
 Add a password reset page                                 → blocks-iam-account
+Turn on reCAPTCHA for the login page                      → blocks-captcha
 Let users turn on two-factor auth                         → blocks-iam-mfa
 Add an organization switcher                              → blocks-iam-organizations
 Add German translations for the login screen              → blocks-localization-configuration
@@ -125,13 +128,16 @@ Add a language switcher to the app                        → blocks-localizatio
 Send a welcome email when someone signs up                → blocks-mail
 Notify a user when their order ships                      → blocks-notifier
 Deploy the current branch and check the build             → blocks-release-deployment
+Store our Stripe API key and rotate it                    → blocks-secrets
 ```
 
 ## Safety
 
 - Mutating CLI commands are run `--dry-run` first, then `--yes` — destructive and cloud-mutating operations get explicit confirmation.
 - Local CLI storage files (config, tokens, secrets) are never read or printed directly; all state is inspected through `blocks` commands.
-- Generic `blocks secrets` commands are no longer available; do not bypass their removal with raw API calls.
+- Secrets are managed only through `blocks secrets` (see `blocks-secrets`). The CLI never prints a secret value — `get`, `list`, and `audit` return metadata only, and dry-run output redacts values. Pass values in with `--value-file`, `--value-env`, or `--env-file` rather than inline, and never echo a value into the conversation or a file the user did not ask for. Reading a value happens in the Blocks portal, not through the CLI or an agent.
+- Captcha provider secrets are stored server-side and never returned; reads show a `secretId` reference only.
+- Never work around a missing capability with raw HTTP against the platform API.
 
 ## Anonymous reporting
 
