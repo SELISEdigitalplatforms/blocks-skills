@@ -73,6 +73,7 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 | `blocks-iam-mfa` | Self-service MFA for the signed-in user — TOTP, OTP, method switching, backup codes — plus tenant-wide MFA policy. |
 | `blocks-iam-sso-oidc-configuration` | Enabling SSO: registering an OIDC client and identity provider so users can sign in through hosted login. |
 | `blocks-iam-sso-oidc-implementation` | The hosted login flow in app code: the redirect, the callback, session handling, route guards, and token refresh. |
+| `blocks-captcha` | Login captcha configuration: register a reCAPTCHA or hCaptcha site key and secret, switch it on or off, see which configuration is enforced at login, and retire one. |
 
 ### Localization
 
@@ -94,6 +95,7 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 | Skill | Covers |
 |---|---|
 | `blocks-release-deployment` | Triggering and inspecting Release builds and deployments. |
+| `blocks-secrets` | The project's secret store: create, rotate, lock, soft-delete/restore secrets, set who may read them, and review the audit trail. |
 
 ### Local development
 
@@ -131,7 +133,7 @@ Deploy the current branch and check the build             → blocks-release-dep
 
 - Mutating CLI commands are run `--dry-run` first, then `--yes` — destructive and cloud-mutating operations get explicit confirmation.
 - Local CLI storage files (config, tokens, secrets) are never read or printed directly; all state is inspected through `blocks` commands.
-- Generic `blocks secrets` commands are no longer available; do not bypass their removal with raw API calls.
+- `blocks secrets` commands never print a secret value — `list`, `get`, and `audit` return metadata only, and dry-run output redacts values. `set` and `rotate` take a value only from `--value-file` or `--value-env` (never read the file or variable back yourself) so it never appears in a transcript or shell history.
 
 ## Anonymous reporting
 
