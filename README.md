@@ -90,6 +90,12 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 | `blocks-notifier` | Sending real-time and offline notifications, and a user's own notification inbox. |
 | `blocks-notification` | Tenant notification-channel configuration — a separate service from `blocks-notifier`, and not for sending. |
 
+### Backend logic
+
+| Skill | Covers |
+|---|---|
+| `blocks-workflow` | Event-driven backend logic without a separate backend — data triggers, webhooks, schedules — authored as a JSON graph and imported, published, and exported from the terminal. |
+
 ### Platform operations
 
 | Skill | Covers |
@@ -126,6 +132,7 @@ Add German translations for the login screen              → blocks-localizatio
 Add a language switcher to the app                        → blocks-localization-implementation
 Send a welcome email when someone signs up                → blocks-mail
 Notify a user when their order ships                      → blocks-notifier
+When an order is created, call our fulfilment API         → blocks-workflow
 Deploy the current branch and check the build             → blocks-release-deployment
 ```
 
