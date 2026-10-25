@@ -95,6 +95,8 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 | Skill | Covers |
 |---|---|
 | `blocks-workflow` | Event-driven backend logic without a separate backend — data triggers, webhooks, schedules — authored as a JSON graph and imported, published, and exported from the terminal. |
+| `blocks-functions` | Custom backend code: write a Node handler, save, test and deploy it from the terminal, inspect runs and logs, and call it from the app through the SDK or from a workflow step. |
+| `blocks-proxy` | Calling a third-party API without shipping its URL or keys: proxy routes, secret-backed headers, access rules, timeouts/retries, OpenAPI import, and calling it from the app. |
 
 ### Platform operations
 
@@ -133,6 +135,8 @@ Add a language switcher to the app                        → blocks-localizatio
 Send a welcome email when someone signs up                → blocks-mail
 Notify a user when their order ships                      → blocks-notifier
 When an order is created, call our fulfilment API         → blocks-workflow
+Write a function that prices a cart at checkout           → blocks-functions
+Call the weather API from the browser without its key     → blocks-proxy
 Deploy the current branch and check the build             → blocks-release-deployment
 ```
 

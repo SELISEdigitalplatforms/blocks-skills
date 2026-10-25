@@ -154,6 +154,8 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 | Skill | Use when | Surface |
 |---|---|---|
 | `blocks-workflow` | Event-driven backend logic without a separate backend: react to Data Gateway inserts/updates/deletes, expose a webhook, run on a schedule, call external APIs. Authors the workflow graph as JSON and loads it with `logic workflow import/export/save/publish/unpublish`. No SDK path. | CLI |
+| `blocks-functions` | **Custom backend code**: a Node handler the platform runs on demand. Write `index.js`, then `logic function save/test/deploy` (plus runs, logs, replay); call it from app code with `blocksClient.logic.functions.call()/invoke()` or from a workflow `function` step. Triggers (methods, Public vs Token, sync vs async), variables and `{{secret.<id>}}` references. | Both |
+| `blocks-proxy` | **Calling a third-party API without exposing its URL or keys**: configure a proxy with `logic proxy *` (routes, `{{$VAR.name}}` secret headers, access, timeout/retry/breaker, rate limit, OpenAPI import, versions, request logs), then call it with `blocksClient.logic.proxy.request()`. | Both |
 
 ### Platform operations
 
@@ -174,6 +176,7 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 - **Configuration vs. implementation** — most areas split in two: a CLI skill that defines the thing and an SDK skill that consumes it at runtime. "Create a schema" is configuration; "fetch products" is implementation.
 - **`notifier` sends, `notification` configures.** Different services.
 - **Inline call vs. workflow** — a single call the app makes itself ("send this email", "save this record") belongs to that service's skill. Reach for `blocks-workflow` only when the logic must run server-side on an event, webhook, or schedule.
+- **Proxy vs. function vs. workflow** — forwarding to one third-party API with a hidden key is `blocks-proxy`; code you write (validation, computation, several calls, a webhook handler) is `blocks-functions`; a multi-step graph started by a data event or schedule is `blocks-workflow`, which can call both as steps.
 - **`blocks-data-storage` operates on files; `blocks-storage-configuration` chooses the provider underneath.**
 - Dependencies: schema work must be reloaded before CRUD sees it; SSO implementation needs a registered OIDC client and HTTPS on the real domain to test.
 
@@ -181,7 +184,7 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 
 ## Where the skills live
 
-The 22 skills in the routing table live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills), under `blocks-skills/`. That is the source of truth for skill content and the tree [`BOOTSTRAP.md`](./BOOTSTRAP.md) vendors.
+The 24 skills in the routing table live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills), under `blocks-skills/`. That is the source of truth for skill content and the tree [`BOOTSTRAP.md`](./BOOTSTRAP.md) vendors.
 
 **This repo owns routing, not skills.** Editing a skill's content here is editing the wrong repository — there is no `skills/` directory to edit. What lives here is the routing table and rules above (inside the `blocks-skills:distributable` markers) and the vendoring runbook.
 
