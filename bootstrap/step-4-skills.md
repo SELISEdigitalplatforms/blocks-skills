@@ -23,7 +23,22 @@ Then, for each skill about to be installed, check `.agents/skills/<s>` **and** e
 
 "Matches what the stamp implies" means:
 
-- **`.agents/skills/<s>`** — identical to that directory at `skills_commit`. Check the stamped commit out into a temp dir and `diff -r` against it.
+- **`.agents/skills/<s>`** — identical to that skill at the stamped commit. Check the stamped commit out into a temp dir and `diff -r` against it. A stamp written before skills moved out of `blocks-cli` names that repo instead (`skills_repo=`, `skills_commit=`), with skills under `blocks-skills/`; read whichever the stamp has:
+
+  ```bash
+  STAMP_FILE=.agents/skills/.blocks-skills-source
+  if grep -q '^skills_repo=' "$STAMP_FILE"; then        # stamped before the move
+    OLD_REPO=$(sed -n 's/^skills_repo=//p' "$STAMP_FILE"); OLD_COMMIT=$(sed -n 's/^skills_commit=//p' "$STAMP_FILE")
+  else
+    OLD_REPO=$(sed -n 's/^repo=//p' "$STAMP_FILE");        OLD_COMMIT=$(sed -n 's/^commit=//p' "$STAMP_FILE")
+  fi
+  case "$OLD_REPO" in *blocks-cli*) OLD_DIR=blocks-skills ;; *) OLD_DIR=skills ;; esac
+  git clone --quiet --filter=blob:none --no-checkout "$OLD_REPO" "$TMP/stamped"
+  git -C "$TMP/stamped" checkout --quiet "$OLD_COMMIT"
+  diff -r "$TMP/stamped/$OLD_DIR/<s>" ".agents/skills/<s>"   # once per skill
+  ```
+
+  If the stamped commit can't be checked out, you can't prove the copy is unmodified: treat it like a changed destination — list it and ask.
 - **`<front>/<s>/SKILL.md`** — byte-identical to the stub [Step 5](step-5-stubs.md) would regenerate from the **currently installed** `.agents/skills/<s>/SKILL.md`. Generate it to a temp file and `diff`. Run this check *before* Step 4 replaces the content copy, or the comparison is against the wrong source.
 
 Never delete a path outside `.agents/skills/<installed-skill-name>` or `<front>/<installed-skill-name>` for a front the stamp names — no globs that could reach wider.
@@ -35,7 +50,7 @@ mkdir -p .agents/skills
 while IFS= read -r s; do
   [ -n "$s" ] || continue
   rm -rf ".agents/skills/$s"         # cleared by the guard above; replace, never merge
-  cp -R "$SKILLS/blocks-skills/$s" ".agents/skills/$s"
+  cp -R "$SKILLS/$s" ".agents/skills/$s"
   [ -d ".agents/skills/$s/scripts" ] && chmod +x ".agents/skills/$s"/scripts/* 2>/dev/null
 done < "$TMP/install.txt"
 ```

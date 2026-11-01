@@ -4,7 +4,7 @@ Part of the [BOOTSTRAP.md](../BOOTSTRAP.md) runbook. Read this first, then run t
 
 Re-running the runbook is the update path. It is idempotent by construction:
 
-1. Read `.agents/skills/.blocks-skills-source` and report each old commit vs. the new one.
+1. Read `.agents/skills/.blocks-skills-source` and report the old commit vs. the new one. A stamp with `skills_repo=…/blocks-cli.git` predates skills moving to this repo: report its `rules_commit` and `skills_commit` against the new `commit`, and tell the user the stamp moves to the one-repo format. Nothing else differs — the [Step 4](step-4-skills.md) guard reads the old repo for its check.
 2. [Step 0](step-0-ask.md) re-detects agents, **starting from the stamp's `agents=` line** — an agent already set up stays set up unless the user drops it. Show the user any newcomer the probes found.
 3. The [Step 4](step-4-skills.md) guard catches any skill or stub edited locally since the last run, before anything is removed.
 4. [Steps 4](step-4-skills.md)–[5](step-5-stubs.md) replace each skill directory and regenerate each stub wholesale.
@@ -13,7 +13,7 @@ Re-running the runbook is the update path. It is idempotent by construction:
 
 ## Why there is no skills-only or rules-only update
 
-The routing table in the rules is the manifest of which skills get installed, and the stamp records the rules commit and the skills commit as one pair. A new skill needs a new routing-table row, and a rules change can add or drop a skill, so updating one side without the other leaves the stamp describing an install that does not exist. Pulling new skill content, picking up a newly added skill, or refreshing the imported rules is always this full re-run.
+The routing table in the rules is the manifest of which skills get installed, and the stamp records one commit for rules and skills together. A new skill needs a new routing-table row, and a rules change can add or drop a skill, so updating one side without the other leaves the stamp describing an install that does not exist. Pulling new skill content, picking up a newly added skill, or refreshing the imported rules is always this full re-run.
 
 ## What re-running does **not** do
 

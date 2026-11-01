@@ -10,6 +10,6 @@ Tell the user, plainly:
 - Whether `AGENTS.md` and each pointer file were created, block-replaced, or **appended to an existing file** — and if appended, any contradiction with what was already there.
 - Anything the collision guard flagged, and what you did about it.
 - The anonymous-reporting choice recorded (`opt-in` or `opt-out`), that it lives in `.agents/skills/.blocks-reporting`, and that they can flip it or ask for a one-off report at any time by just saying so.
-- Both source refs and commits.
+- The source ref and commit (and, when updating a pre-move install, the old rules and skills commits it replaced).
 - That nothing was committed. Leave the commit to the user unless they asked for one.
 - If Step 9 was not requested, say the install is complete and that they can start work by giving you a project key ("get me set up on project `<x-blocks-key>`") or by asking to be signed in from scratch.

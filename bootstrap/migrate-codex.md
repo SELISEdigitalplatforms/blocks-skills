@@ -4,7 +4,7 @@ Part of the [BOOTSTRAP.md](../BOOTSTRAP.md) runbook. [Step 0](step-0-ask.md) sen
 
 Earlier versions of this runbook put the content at `.codex/skills/` with Claude Code stubs at `.claude/skills/`, and nothing else. Codex never read a repo-level `.codex/skills/` — its project location is `.agents/skills/` — so that layout served exactly one agent. A repo with `.codex/skills/.blocks-skills-source` is on it. On such a repo:
 
-1. Treat it as a re-run ([update.md](update.md)): read the old stamp for `skills_commit` and the skill list.
+1. Treat it as a re-run ([update.md](update.md)): read the old stamp for the stamped commit (`skills_commit` in a stamp this old) and the skill list.
 2. Run the [Step 4](step-4-skills.md) collision guard against the **old** locations — `.codex/skills/<s>` against the stamped commit, and `.claude/skills/<s>/SKILL.md` against a stub generated with `.codex/skills` as the content root, since that is what the old stubs point at.
 3. Move the two dotfiles, then delete only what the old stamp names:
 

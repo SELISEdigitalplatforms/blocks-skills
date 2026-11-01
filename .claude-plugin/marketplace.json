@@ -1,0 +1,14 @@
+{
+  "name": "selise-blocks",
+  "description": "SELISE Blocks agent skills",
+  "owner": {
+    "name": "SELISE Digital Platforms"
+  },
+  "plugins": [
+    {
+      "name": "selise-blocks",
+      "source": "./",
+      "description": "Skills for building on SELISE Blocks through the blocks CLI and the @seliseblocks/client SDK."
+    }
+  ]
+}

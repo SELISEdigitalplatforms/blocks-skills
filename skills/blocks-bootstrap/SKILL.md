@@ -25,6 +25,8 @@ Once the CLI is logged in, a project is selected, and the user is asking for a s
 
 ## State detection — probe, don't interrogate
 
+Minimum CLI version: `0.11.0`. Every Blocks skill is checked against this version of `blocks` or newer; an older CLI is missing commands and flags they cite.
+
 Run all four before asking the user anything. None of them mutates, and none prints a token value. (`npm view` is a public registry lookup; if it fails offline, continue without the comparison.)
 
 ```bash
@@ -48,6 +50,7 @@ normal project mode, not a broken login. Read it like this:
 | Signal | State | Do this |
 |---|---|---|
 | `blocks --version` fails with command not found | CLI not installed | Ask before installing `npm install -g @seliseblocks/cli-os@latest`, then re-probe |
+| `blocks --version` is below the minimum CLI version above | CLI too old for these skills | Tell the user both versions and ask confirmation to run `npm install -g @seliseblocks/cli-os@latest`; never update without a yes. If they decline, say plainly which skill steps may fail, and don't work around a missing command |
 | `blocks --version` is behind `npm view @seliseblocks/cli-os version` | CLI outdated | Tell the user both versions and ask confirmation to run `npm install -g @seliseblocks/cli-os@latest`; never update without a yes. If they decline, continue on the old version and expect missing commands/flags/defaults relative to these skills — name the gap instead of silently working around it |
 | All four tokens `missing` | No login in this resolved context | Local: `blocks login --account <name>`; Studio: report missing launcher bootstrap/context |
 | Account AT and RT valid/available; project pair missing | Account mode | List/select a project or perform an account-only operation |

@@ -1,8 +1,18 @@
 #!/usr/bin/env node
-// Consistency lint for blocks-skills/. Run: node blocks-skills/lint.mjs
+// Consistency lint for skills/. Run: npm run lint
 //
 // A skill is consumed by an AI that has ONLY the globally-installed `blocks`
-// CLI and a project-local `@seliseblocks/client` -- never this monorepo.
+// CLI and a project-local `@seliseblocks/client` -- never the CLI's source
+// repo. So the command checks below ask a real `blocks` binary what it
+// registers (`blocks --help --json`, `blocks help <command> --json`) instead of
+// reading CLI source. Which binary:
+//   - BLOCKS_CLI_DIR=<path> -- a blocks-cli checkout (monorepo root or the
+//     blocks-cli/ package inside it), built with `npm run build`. Use this for
+//     a skill that documents a command not published yet.
+//   - otherwise `blocks` on PATH -- the published CLI users actually have. It
+//     must be at least the minimum in package.json (blocksCli.minVersion).
+// With neither available the lint fails; pass --no-cli to run only the checks
+// that need no CLI (a warning says what was skipped).
 // Checks:
 // 1. Every skill directory has a SKILL.md with frontmatter: `name` matches the
 //    directory name, `name` <= 64 chars, `description` present, non-empty,
@@ -27,30 +37,90 @@
 //    own root files under a `blocks-cli/`-style prefix (that prefix is this
 //    monorepo's layout, not the installed package's). Point to a live
 //    `blocks help <command>` instead, or restate the fact locally.
-// 6. Possible prose duplication of blocks-cli/command-docs.json (WARN only,
-//    never fails the build -- word-shingle overlap is a heuristic, and some
-//    overlap is legitimate skill-specific depth, not waste; a human decides
-//    whether to trim it, same as the manual sweep that motivated this check).
+// 6. Possible prose duplication of the CLI's own `blocks help <command>` text
+//    (WARN only, never fails the build -- word-shingle overlap is a heuristic,
+//    and some overlap is legitimate skill-specific depth, not waste; a human
+//    decides whether to trim it, same as the manual sweep that motivated this
+//    check).
+// 7. Every `blocks ...` command a skill cites is registered in the CLI.
+// 8. blocks-bootstrap states the same minimum CLI version as package.json, and
+//    the published CLI being linted against meets it.
 // Exit 0 = clean, 1 = problems found (all listed, not just the first).
 import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
+import { execFile, execFileSync } from "node:child_process";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
 
-const skillsDir = dirname(fileURLToPath(import.meta.url));
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const skillsDir = join(repoRoot, "skills");
 const errors = [];
 const warnings = [];
+const minCliVersion = JSON.parse(readFileSync(join(repoRoot, "package.json"), "utf8")).blocksCli.minVersion;
 
 const DESCRIPTION_HARD_LIMIT = 1024;
 const DESCRIPTION_WARN_LIMIT = 700;
 const NAME_LIMIT = 64;
 const ENDPOINT_PATTERN = /\/(iam|data|os|logic|release|localization)\/v4\/[A-Za-z0-9/{}._-]*/g;
-const MONOREPO_PATH_PATTERN = /\b(?:blocks-cli|blocks-client|blocks-skills)\/[A-Za-z0-9_.\/-]*|\bdocs\/AI_[A-Za-z_]*\.md|\bcommand-docs\.json\b/g;
-const cliIndexPath = join(skillsDir, "..", "blocks-cli", "src", "index.ts");
-const registeredCommands = existsSync(cliIndexPath)
-  ? [...readFileSync(cliIndexPath, "utf8").matchAll(/^\s*"([a-z0-9:-]+)"\s*:/gm)]
-      .map((match) => match[1].replaceAll(":", " "))
+const MONOREPO_PATH_PATTERN = /(?<!\/)\b(?:blocks-cli|blocks-client|blocks-skills)\/[A-Za-z0-9_.\/-]*|\bdocs\/AI_[A-Za-z_]*\.md|\bcommand-docs\.json\b/g;
+const cli = resolveCli();
+const registeredCommands = cli
+  ? Object.values(JSON.parse(cli.runSync(["--help", "--json"])).families)
+      .flat()
       .sort((a, b) => b.length - a.length)
   : [];
+
+/**
+ * The `blocks` binary to lint against: a checkout named by BLOCKS_CLI_DIR, or
+ * the published CLI on PATH. Returns null only under --no-cli.
+ */
+function resolveCli() {
+  const checkout = process.env.BLOCKS_CLI_DIR;
+  if (checkout) {
+    const bin = [join(checkout, "blocks-cli", "bin", "run.js"), join(checkout, "bin", "run.js")].find(existsSync);
+    if (!bin) {
+      console.error(`BLOCKS_CLI_DIR=${checkout} has no bin/run.js (or blocks-cli/bin/run.js); point it at a blocks-cli checkout`);
+      process.exit(1);
+    }
+    return describeCli(process.execPath, [bin], `checkout ${checkout}`);
+  }
+
+  try {
+    const found = describeCli("blocks", [], "blocks on PATH");
+    if (compareVersions(found.version, minCliVersion) < 0) {
+      errors.push(
+        `blocks on PATH is ${found.version}, below the minimum ${minCliVersion} in package.json -- ` +
+          `install @seliseblocks/cli-os@${minCliVersion} or newer, or set BLOCKS_CLI_DIR`
+      );
+    }
+    return found;
+  } catch {
+    if (process.argv.includes("--no-cli")) {
+      warnings.push("--no-cli: skipped command-registration and duplication checks");
+      return null;
+    }
+    console.error(
+      "no blocks CLI found: install @seliseblocks/cli-os on PATH, set BLOCKS_CLI_DIR to a built " +
+        "blocks-cli checkout, or pass --no-cli to skip the checks that need one"
+    );
+    process.exit(1);
+  }
+}
+
+function describeCli(command, prefix, label) {
+  const runSync = (args) => execFileSync(command, [...prefix, ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  const run = async (args) => (await promisify(execFile)(command, [...prefix, ...args], { encoding: "utf8" })).stdout;
+  const version = runSync(["--version"]).trim();
+  console.log(`linting against blocks ${version} (${label})`);
+  return { runSync, run, version };
+}
+
+function compareVersions(a, b) {
+  const pa = a.split(/[.-]/).map(Number);
+  const pb = b.split(/[.-]/).map(Number);
+  for (let i = 0; i < 3; i += 1) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) - (pb[i] || 0);
+  return 0;
+}
 
 const skillDirs = readdirSync(skillsDir, { withFileTypes: true })
   .filter((entry) => entry.isDirectory())
@@ -62,8 +132,21 @@ const SHINGLE_SIZE = 7;
 const MIN_WORDS = 10;
 const OVERLAP_THRESHOLD = 0.6;
 
-const commandDocsPath = join(skillsDir, "..", "blocks-cli", "command-docs.json");
-const commandDocs = existsSync(commandDocsPath) ? JSON.parse(readFileSync(commandDocsPath, "utf8")) : {};
+const commandDocs = cli ? await loadCommandDocs(cli) : {};
+
+/** `blocks help <command> --json` for every registered command, a few at a time. */
+async function loadCommandDocs({ run }) {
+  const docs = {};
+  const queue = [...registeredCommands];
+  const worker = async () => {
+    for (let command = queue.shift(); command; command = queue.shift()) {
+      const { summary, details } = JSON.parse(await run(["help", command, "--json"]));
+      docs[command] = { summary, details };
+    }
+  };
+  await Promise.all(Array.from({ length: 16 }, worker));
+  return docs;
+}
 
 function normalizeSentence(text) {
   return text
@@ -171,7 +254,7 @@ function checkDuplication(filePath) {
     if (best) {
       const snippet = sentence.length > 100 ? `${sentence.slice(0, 100)}...` : sentence;
       warnings.push(
-        `${rel}: possibly duplicates command-docs.json["${best.command}"].${best.field} ` +
+        `${rel}: possibly duplicates 'blocks help ${best.command}' ${best.field} ` +
           `(${Math.round(best.ratio * 100)}% word-shingle overlap) -- "${snippet}"`
       );
     }
@@ -198,15 +281,24 @@ for (const skillName of skillDirs) {
   }
 }
 
-const consumerDocs = [
-  join(skillsDir, "..", "blocks-cli", "README.md"),
-  join(skillsDir, "..", "blocks-cli", "AGENT_GUIDE.md"),
-  join(skillsDir, "..", "docs", "AI_ROUTING_GUIDE.md")
-];
-for (const markdownPath of consumerDocs.filter(existsSync)) {
-  checkTextHygiene(markdownPath);
-  checkExecutableCommands(markdownPath);
-  checkDuplication(markdownPath);
+checkMinCliVersionStated();
+
+/**
+ * blocks-bootstrap is the skill that compares the installed CLI against what
+ * these skills need, so it must name the same floor package.json declares.
+ */
+function checkMinCliVersionStated() {
+  const bootstrapPath = join(skillsDir, "blocks-bootstrap", "SKILL.md");
+  if (!existsSync(bootstrapPath)) return;
+  const stated = readFileSync(bootstrapPath, "utf8").match(/Minimum CLI version: `([0-9][0-9.]*)`/);
+  if (!stated) {
+    errors.push("blocks-bootstrap/SKILL.md: no 'Minimum CLI version: `x.y.z`' line");
+  } else if (stated[1] !== minCliVersion) {
+    errors.push(
+      `blocks-bootstrap/SKILL.md: states minimum CLI version ${stated[1]}, ` +
+        `but package.json blocksCli.minVersion is ${minCliVersion}`
+    );
+  }
 }
 
 function markdownFiles(directory) {

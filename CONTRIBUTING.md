@@ -6,20 +6,22 @@ The bar for every contribution is the same: **everything must be grounded in beh
 
 ## Where things live
 
-Skill *sources* are not in this repo. They live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills) under `blocks-skills/`, which is what `BOOTSTRAP.md` vendors. The CLI does not bundle or serve the skill tree.
+Everything for the skills lives in this repo:
 
-| Change | Repo |
+| Change | Where |
 |---|---|
-| A skill's content — `SKILL.md`, flows, references | `blocks-cli`, under `blocks-skills/` |
-| Routing table, hard rules, workflow | this repo, inside the `blocks-skills:distributable` markers in [AGENTS.md](./AGENTS.md) |
-| The vendoring procedure | this repo, [BOOTSTRAP.md](./BOOTSTRAP.md) (entry point and task map) and [`bootstrap/`](./bootstrap/) (one file per step or task) — see **Changing the runbook** in [AGENTS.md](./AGENTS.md) |
+| A skill's content — `SKILL.md`, flows, references, scripts | `skills/<name>/` |
+| Routing table, hard rules, workflow | inside the `blocks-skills:distributable` markers in [AGENTS.md](./AGENTS.md); then `npm run generate:router` |
+| The vendoring procedure | [BOOTSTRAP.md](./BOOTSTRAP.md) (entry point and task map) and [`bootstrap/`](./bootstrap/) (one file per step or task) — see **Changing the runbook** in [AGENTS.md](./AGENTS.md) |
 
-A new skill needs both: the content in `blocks-cli`, and a routing-table row here. **A skill missing from the routing table is invisible to agents and is never vendored** — `BOOTSTRAP.md` treats that table as its manifest.
+A new skill is one PR here: the directory and its routing-table row. **A skill missing from the routing table is invisible to agents and is never vendored** — `BOOTSTRAP.md` treats that table as its manifest.
+
+The `blocks` CLI lives in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli). When a CLI feature changes a command a skill cites, open the matching PR here.
 
 A skill directory looks like this:
 
 ```
-blocks-skills/blocks-<name>/
+skills/blocks-<name>/
 ├── SKILL.md            ← required: frontmatter + surface, key concepts, gotchas
 ├── flows/*.md          ← step-by-step procedures, where the job has them
 ├── references/*.md     ← app-code patterns (typed hooks, components, config)
@@ -68,7 +70,7 @@ The body then covers the surface, key concepts, and gotchas. Keep the conversati
 ## Adding or improving a flow
 
 1. Pick a real multi-step sequence a developer actually needs.
-2. Create `blocks-skills/blocks-<name>/flows/<kebab-name>.md`:
+2. Create `skills/blocks-<name>/flows/<kebab-name>.md`:
    - **When to use, plus preconditions** — what must already be true (logged in, project selected, schema reloaded).
    - **Numbered steps** with the real, runnable command or call: why the step exists, and what to carry forward from its output.
    - **Branches and error paths**, including what the failure actually looks like.
@@ -86,6 +88,15 @@ The body then covers the surface, key concepts, and gotchas. Keep the conversati
 3. **Write `SKILL.md`** — frontmatter first; it decides whether the skill is ever used.
 4. **Disclaim** the siblings it borders — name them in the description so misrouting between neighbors is caught. Do not link across skill directories; vendoring copies them independently.
 5. **Add it to the routing table in [AGENTS.md](./AGENTS.md)** — inside the distributable markers — and to the skills list in [README.md](./README.md). A skill missing from the routing table is invisible to agents and is never vendored.
+
+## Checks
+
+Run `npm test` before opening a PR (Node 20+, no install step):
+
+- `npm run lint` — frontmatter, links that stay inside the skill, no raw API paths, and every `blocks …` command cited is registered. It runs the published `blocks` on PATH, which must be at least `blocksCli.minVersion` in `package.json`. For a command that isn't published yet, build a blocks-cli checkout and set `BLOCKS_CLI_DIR=<path>`.
+- `npm run lint:router` — the generated `blocks` router skill and plugin manifest versions match `AGENTS.md` and `package.json`, and every skill has a routing row.
+
+When a skill needs a newer CLI than `blocksCli.minVersion`, raise it in `package.json` and in the **Minimum CLI version** line of `skills/blocks-bootstrap/SKILL.md` — the lint fails if the two disagree.
 
 ## PR expectations
 
