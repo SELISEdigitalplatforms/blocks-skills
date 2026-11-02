@@ -1,6 +1,6 @@
 # Adding or dropping one agent's front door
 
-Part of the [BOOTSTRAP.md](../BOOTSTRAP.md) runbook. Use this when a repo is already bootstrapped and the user has started (or stopped) using one agent — "set Blocks up for Gemini too", "we don't use Qwen any more". The skills and rules don't change, so nothing is fetched beyond this runbook and the stamp's commits stay exactly as they are.
+Part of the [BOOTSTRAP.md](../BOOTSTRAP.md) runbook. Use this when a repo is already bootstrapped and the user has started (or stopped) using one agent — "set Blocks up for Gemini too", "we don't use Qwen any more". The skills and rules don't change, so nothing is fetched beyond this runbook and the stamp's commit lines stay exactly as they are.
 
 **Preconditions** — check these first:
 
@@ -24,7 +24,7 @@ Then rebuild the working lists from the stamp — [Step 6 → Reading an existin
    ```
 
 4. **Pointer file**, if needed. Append it to `$TMP/instruction-fronts.txt` and write it per [Step 3 → Pointer files](step-3-rules.md#pointer-files-are-generated-not-copied), using the same three-state table: create, replace between markers, or append and report. Touch no other instruction file.
-5. **Stamp.** Append the agent's name to `$TMP/agents.txt`, then rewrite the three front-door lines with the in-place `awk` from [Step 6 → Reading an existing stamp](step-6-stamp.md#reading-an-existing-stamp). Never re-run the full Step 6 script here: it would stamp the commits of your fresh clone over the commits that are actually installed.
+5. **Stamp.** Append the agent's name to `$TMP/agents.txt`, then rewrite the three front-door lines with the in-place `awk` from [Step 6 → Reading an existing stamp](step-6-stamp.md#reading-an-existing-stamp). Never re-run the full Step 6 script here: it would stamp the commit of your fresh clone over the commit that is actually installed.
 6. **Verify** with [Step 7](step-7-verify.md), then report what was added and where.
 
 ## Dropping an agent

@@ -24,16 +24,18 @@ The agent executing this runbook does the work with its own shell and file tools
 
 ---
 
-## Two sources, one install
+## One source
 
-Rules and skills live in different repos. Both are read-only inputs here.
+Rules and skills come from the same repo and the same commit. It is a read-only input here.
 
-| What | Where | Path |
-|---|---|---|
-| Routing rules, hard rules, workflow | `SELISEdigitalplatforms/blocks-skills` | the region of `AGENTS.md` between the `blocks-skills:distributable` markers |
-| Skill content (24 skills) | `SELISEdigitalplatforms/blocks-cli` | `blocks-skills/<skill>/` |
+| What | Where in `SELISEdigitalplatforms/blocks-skills` |
+|---|---|
+| Routing rules, hard rules, workflow | the region of `AGENTS.md` between the `blocks-skills:distributable` markers |
+| Skill content | `skills/<skill>/` |
 
-`blocks-skills` has **no `skills/` directory** — the older raw-HTTP generation that lived there is removed. Do not look for one, and do not fall back to an older commit that still has it.
+Skills used to live in `SELISEdigitalplatforms/blocks-cli` under `blocks-skills/`. An install stamped from there is still updated by this runbook — [update.md](bootstrap/update.md) covers it. Never vendor from `blocks-cli` now, and never from a `blocks-skills` commit older than the move: the `skills/` directory there is an earlier raw-HTTP generation.
+
+`skills/blocks` is the router skill for plugin installs. It repeats the imported `AGENTS.md` region, so a vendored install never copies it.
 
 ---
 
@@ -70,8 +72,7 @@ Relative links inside a skill (`flows/x.md`, `../SKILL.md`) keep resolving becau
 | Input | Default | Notes |
 |---|---|---|
 | Target repo root | current working directory | Must be the repo being bootstrapped, not a source repo. |
-| Rules repo / ref | `SELISEdigitalplatforms/blocks-skills` @ `main` | Also where the `bootstrap/` files come from. |
-| Skills repo / ref | `SELISEdigitalplatforms/blocks-cli` @ `main` | Skills are under `blocks-skills/`. |
+| Source repo / ref | `SELISEdigitalplatforms/blocks-skills` @ `main` | Rules, skills under `skills/`, and the `bootstrap/` files. |
 | Agents in use | detected in Step 0, confirmed by the user | Decides which front doors are built. |
 
 Requires `git` and a writable target repo. Requires nothing from the `blocks` CLI — installing that is `blocks-bootstrap`'s job, later, and only with the user's consent.
@@ -122,7 +123,7 @@ Steps 0–8 always run, in order. Read each file in full before running any of i
 | Step | File | What it does |
 |---|---|---|
 | 0 | [step-0-ask.md](bootstrap/step-0-ask.md) | One prompt to the user: safety confirmations, which agents are in use (with [agents.md](bootstrap/agents.md)), anonymous reporting |
-| 1 | [step-1-fetch.md](bootstrap/step-1-fetch.md) | Clone the skills repo; verify both sources |
+| 1 | [step-1-fetch.md](bootstrap/step-1-fetch.md) | Verify the source clone |
 | 2 | [step-2-manifest.md](bootstrap/step-2-manifest.md) | Resolve the skill list from the routing table |
 | 3 | [step-3-rules.md](bootstrap/step-3-rules.md) | Import the rules into `AGENTS.md`; write pointer files for agents that don't read it |
 | 4 | [step-4-skills.md](bootstrap/step-4-skills.md) | Collision guard, then copy the skills into `.agents/skills/` |

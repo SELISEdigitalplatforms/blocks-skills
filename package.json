@@ -1,0 +1,19 @@
+{
+  "name": "blocks-skills",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Agent skills for building on SELISE Blocks.",
+  "type": "module",
+  "blocksCli": {
+    "minVersion": "0.11.0"
+  },
+  "scripts": {
+    "lint": "node scripts/lint-skills.mjs",
+    "generate:router": "node scripts/generate-router.mjs",
+    "lint:router": "node scripts/generate-router.mjs --check",
+    "test": "npm run lint && npm run lint:router"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

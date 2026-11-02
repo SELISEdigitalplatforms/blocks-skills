@@ -1,0 +1,76 @@
+name: Lint skills
+
+# Skills cite blocks CLI commands, but live in a different repo from the CLI, so
+# nothing in blocks-cli fails when a skill goes stale. These jobs are the check:
+#   - pull_request / push: against the minimum CLI the skills declare
+#     (package.json blocksCli.minVersion), so a skill can't quietly need more.
+#   - schedule: against the latest published CLI; opens an issue on failure.
+#   - workflow_dispatch: against a blocks-cli branch, for skills written ahead
+#     of an unreleased command.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      cli_ref:
+        description: "blocks-cli branch or tag to lint against (empty = published minimum)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Pick the CLI to lint against
+        id: cli
+        run: |
+          if [ -n "${{ inputs.cli_ref }}" ]; then
+            echo "mode=checkout" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "mode=published" >> "$GITHUB_OUTPUT"
+            echo "version=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=published" >> "$GITHUB_OUTPUT"
+            echo "version=$(node -p 'require("./package.json").blocksCli.minVersion')" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install published CLI
+        if: steps.cli.outputs.mode == 'published'
+        run: npm install -g "@seliseblocks/cli-os@${{ steps.cli.outputs.version }}"
+
+      - name: Build CLI from blocks-cli@${{ inputs.cli_ref }}
+        if: steps.cli.outputs.mode == 'checkout'
+        run: |
+          git clone --depth 1 --branch "${{ inputs.cli_ref }}" https://github.com/SELISEdigitalplatforms/blocks-cli.git "$RUNNER_TEMP/blocks-cli"
+          (cd "$RUNNER_TEMP/blocks-cli" && npm ci && npm run build)
+          echo "BLOCKS_CLI_DIR=$RUNNER_TEMP/blocks-cli" >> "$GITHUB_ENV"
+
+      - run: npm test
+
+      - name: Open an issue when the latest CLI breaks a skill
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Skills lint fails against the latest blocks CLI"
+          if ! gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number' | grep -q .; then
+            gh issue create --title "$title" --body "The nightly lint against \`@seliseblocks/cli-os@latest\` failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          A CLI release renamed, removed, or changed a command a skill cites. Update the skill, and raise \`blocksCli.minVersion\` if it now needs the new release."
+          fi

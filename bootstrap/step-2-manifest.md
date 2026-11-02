@@ -7,7 +7,7 @@ Part of the [BOOTSTRAP.md](../BOOTSTRAP.md) runbook. Previous: [Step 1](step-1-f
 ```bash
 awk '/blocks-skills:distributable:start/,/blocks-skills:distributable:end/' "$RULES/AGENTS.md" \
   | grep -oE '`blocks-[a-z0-9-]+`' | tr -d '`' | sort -u > "$TMP/manifest.txt"
-ls -d "$SKILLS"/blocks-skills/*/ | xargs -n1 basename | sort > "$TMP/available.txt"
+ls -d "$SKILLS"/*/ | xargs -n1 basename | grep -vx blocks | sort > "$TMP/available.txt"
 comm -12 "$TMP/manifest.txt" "$TMP/available.txt" > "$TMP/install.txt"   # install these
 comm -23 "$TMP/manifest.txt" "$TMP/available.txt"                        # named, no source directory
 comm -13 "$TMP/manifest.txt" "$TMP/available.txt"                        # source directory, unrouted
@@ -15,7 +15,7 @@ comm -13 "$TMP/manifest.txt" "$TMP/available.txt"                        # sourc
 
 - **In both** → install it ([Steps 4](step-4-skills.md)–[5](step-5-stubs.md)).
 - **Named, no directory** → do not fabricate one. Collect it for the final report.
-- **Directory, not named** → skip it. Collect it for the final report. (Non-directory entries such as `lint.mjs` are tooling, not skills, and are excluded by construction.)
+- **Directory, not named** → skip it. Collect it for the final report. (The `blocks` router skill is excluded by construction, not skipped: it repeats the region Step 3 imports into `AGENTS.md`, and exists only for plugin installs.)
 
 Both mismatch lists go in the report to the user. A silent skip reads as "everything installed" when it didn't.
 
