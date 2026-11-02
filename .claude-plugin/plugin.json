@@ -1,0 +1,12 @@
+{
+  "name": "selise-blocks",
+  "description": "Build on SELISE Blocks: sign-in and projects, IAM, SSO, MFA, Data Gateway, file storage, localization, mail, notifications, workflows, functions, proxies, secrets and deployments, driven through the blocks CLI and the @seliseblocks/client SDK.",
+  "version": "1.0.0",
+  "author": {
+    "name": "SELISE Digital Platforms"
+  },
+  "homepage": "https://github.com/SELISEdigitalplatforms/blocks-skills",
+  "repository": "https://github.com/SELISEdigitalplatforms/blocks-skills",
+  "license": "MIT",
+  "keywords": ["selise", "blocks", "iam", "sso", "data", "localization", "workflow", "cli"]
+}

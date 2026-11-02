@@ -31,8 +31,17 @@ blocks help <family> --json       # summaries for one command family
 blocks help <command> --json      # exact flags, scope, and mutation metadata
 ```
 
-Skills are **vendored files**, not CLI commands — see [BOOTSTRAP.md](./BOOTSTRAP.md). The CLI does not
-implement `blocks skill list` / `show` / `add` and does not bundle the skill tree.
+## Install the skills
+
+Skills are files, not CLI commands — the CLI does not implement `blocks skill list` / `show` / `add` and does not bundle them. Pick **one** way per repo; with both, your agent sees every skill twice.
+
+| Your agent | Install |
+|---|---|
+| **Claude Code** | `/plugin install selise-blocks --marketplace SELISEdigitalplatforms/blocks-skills` (Claude Code 2.1.275+), or `/plugin marketplace add SELISEdigitalplatforms/blocks-skills` then `/plugin install selise-blocks@selise-blocks` |
+| **Cursor** | Install the `selise-blocks` plugin from this repo. To try a local checkout, symlink it to `~/.cursor/plugins/local/selise-blocks` and run **Developer: Reload Window**. |
+| **Anything else** — Codex, Gemini CLI, Copilot, Qwen Code, OpenCode, … — or a repo you want pinned to a reviewed commit | Ask your agent: *Read `https://raw.githubusercontent.com/SELISEdigitalplatforms/blocks-skills/main/BOOTSTRAP.md` and follow it to bootstrap this repo.* See [BOOTSTRAP.md](./BOOTSTRAP.md). |
+
+The plugin adds a `blocks` router skill that carries the routing table and hard rules below; a vendored install gets the same text in its `AGENTS.md` instead.
 
 If login, project selection, or the app scaffold is in an unknown state, start with **`blocks-bootstrap`** — it detects the gaps and closes them before any other skill runs.
 
@@ -90,6 +99,14 @@ Most areas of the platform split into a pair of skills, and knowing which half y
 | `blocks-notifier` | Sending real-time and offline notifications, and a user's own notification inbox. |
 | `blocks-notification` | Tenant notification-channel configuration — a separate service from `blocks-notifier`, and not for sending. |
 
+### Backend logic
+
+| Skill | Covers |
+|---|---|
+| `blocks-workflow` | Event-driven backend logic without a separate backend — data triggers, webhooks, schedules — authored as a JSON graph and imported, published, and exported from the terminal. |
+| `blocks-functions` | Custom backend code: write a Node handler, save, test and deploy it from the terminal, inspect runs and logs, and call it from the app through the SDK or from a workflow step. |
+| `blocks-proxy` | Calling a third-party API without shipping its URL or keys: proxy routes, secret-backed headers, access rules, timeouts/retries, OpenAPI import, and calling it from the app. |
+
 ### Platform operations
 
 | Skill | Covers |
@@ -126,6 +143,9 @@ Add German translations for the login screen              → blocks-localizatio
 Add a language switcher to the app                        → blocks-localization-implementation
 Send a welcome email when someone signs up                → blocks-mail
 Notify a user when their order ships                      → blocks-notifier
+When an order is created, call our fulfilment API         → blocks-workflow
+Write a function that prices a cart at checkout           → blocks-functions
+Call the weather API from the browser without its key     → blocks-proxy
 Deploy the current branch and check the build             → blocks-release-deployment
 ```
 
@@ -143,13 +163,19 @@ Bootstrap asks once whether the agent may send anonymous reports — bugs, quirk
 
 Skills are hand-authored and grounded in verified behavior — every command, flag, and response shape is confirmed against the real platform before it's documented. Anything that can't be verified is labeled as such rather than smoothed over. See [CONTRIBUTING.md](./CONTRIBUTING.md), and [AGENTS.md](./AGENTS.md) for the conventions agents follow.
 
-## Repository state
+## Repository layout
 
-The skills listed above are the current, CLI/SDK-based generation and live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills) under `blocks-skills/`. Consuming repos get them by vendoring that tree; the CLI does not ship or serve them.
+```
+skills/<name>/          # one directory per skill — the source of truth
+skills/blocks/          # router skill for plugin installs, generated from AGENTS.md
+AGENTS.md               # routing table and hard rules (the region vendored into consumer repos)
+BOOTSTRAP.md, bootstrap/ # the vendoring runbook
+.claude-plugin/         # Claude Code plugin + marketplace manifests
+.cursor-plugin/         # Cursor plugin manifest
+scripts/                # lint-skills.mjs, generate-router.mjs
+```
 
-An earlier generation in this repository drove the platform API directly over HTTP with manual impersonation. That approach is superseded — the current skills route everything through the CLI and SDK.
-
-To vendor these skills into another repository, see [BOOTSTRAP.md](./BOOTSTRAP.md).
+Skills lived in [`blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli) under `blocks-skills/` until Nov 2026 and moved here with their history. An earlier generation in this repository drove the platform API directly over HTTP with manual impersonation; that approach is superseded — the current skills route everything through the CLI and SDK.
 
 ## License
 

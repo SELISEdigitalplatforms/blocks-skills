@@ -15,7 +15,7 @@ Skills are the ground truth for CLI/SDK usage. This file routes; the skill owns 
 - Do **not** ask "which skill should I use?" or list skills for the user to pick from. Reading the request and choosing is your work.
 - Do **not** wait to be told. Once the request matches a row in the routing table, load that skill and proceed.
 - If the request genuinely spans several skills, pick the one that owns the *first* concrete step, run it, then move to the next. Sequence them yourself.
-- If nothing matches, check the vendored skill directories on disk before concluding no skill applies — the table below can lag the vendored set. The published catalog is [`blocks-cli/blocks-skills/`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills).
+- If nothing matches, check the installed skills (see **Loading a skill**) before concluding no skill applies — the table below can lag the installed set. The published catalog is [`skills/`](https://github.com/SELISEdigitalplatforms/blocks-skills/tree/main/skills) in the blocks-skills repo.
 - Ask the user only about things the routing table cannot settle: a destructive confirmation, a missing credential, or an ambiguous *goal* — never about which skill to run.
 
 The routing table exists so you can decide unaided. Treat a request that names no skill as the normal case, because it is.
@@ -53,11 +53,14 @@ If `blocks` is missing, stop the probe and ask before installing. Don't claim bo
 
 ## Loading a skill
 
-**Skills are vendored files, not a CLI command.** They live on disk as `.agents/skills/<name>/SKILL.md`, the cross-agent location most coding agents read natively. An agent that only reads its own directory (Claude Code reads `.claude/skills/`, Qwen Code reads `.qwen/skills/`) finds the same set through a pointer stub there whose body sends you to the `.agents` copy. Read the `.agents` copy directly.
+**Skills are files, not a CLI command.** They reach an agent one of two ways, and a given repo uses one, not both — with both, the agent sees every skill twice:
 
-There is **no `blocks skill list`/`show`/`add`**, and the package does not bundle the skill tree. Don't reach for those commands, and don't treat their absence as a broken install.
+- **Plugin** (Claude Code, Cursor). The `selise-blocks` plugin installs every skill, and the agent lists and loads them by name like any other plugin skill.
+- **Vendored** (every other agent, or any repo set up with `BOOTSTRAP.md`). Skills live on disk as `.agents/skills/<name>/SKILL.md`, the cross-agent location most coding agents read natively. An agent that only reads its own directory (Claude Code reads `.claude/skills/`, Qwen Code reads `.qwen/skills/`) finds the same set through a pointer stub there whose body sends you to the `.agents` copy. Read the `.agents` copy directly.
 
-If a skill named in the routing table isn't vendored here, the fix is to re-run the vendoring runbook (`BOOTSTRAP.md` in this repo's source) — not to fetch the file ad hoc or write a replacement from memory. The published catalog is [`blocks-cli/blocks-skills/`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills); read from there only to confirm a name, never as a substitute for vendoring.
+There is no `blocks skill list`/`show`/`add` command, and the CLI package does not bundle the skill tree. Don't reach for those commands, and don't treat their absence as a broken install.
+
+If a skill named in the routing table isn't installed, the fix is to update the plugin, or re-run the vendoring runbook (`BOOTSTRAP.md` in the blocks-skills repo) — not to fetch the file ad hoc or write a replacement from memory. The published catalog is [`skills/`](https://github.com/SELISEdigitalplatforms/blocks-skills/tree/main/skills) in the blocks-skills repo; read from there only to confirm a name, never as a substitute for installing.
 
 ## Hard rules
 
@@ -80,6 +83,8 @@ When something in Blocks does not behave as documented, cannot do what you need,
 | `opt-in` | File a report whenever you hit something worth reporting, without asking each time. Tell the user what you sent and the id that came back. |
 | `opt-out`, or the file is missing | Never send anything on your own initiative. You may still say that something looks worth reporting and offer to file it. |
 
+A plugin install has no such file until the user asks for one, so it starts as opt-out. Turning reporting on writes `.agents/skills/.blocks-reporting` in the repo the same way.
+
 Two things hold regardless of the setting:
 
 - **The user can ask for a one-off report at any time** ("report this to Blocks", "send them this finding"). File it, following the steps below.
@@ -88,7 +93,7 @@ Two things hold regardless of the setting:
 ### Filing a report
 
 1. Read `https://seliseblocks.com/api/reports` once per session; it explains every field and what the answers mean.
-2. In a temp directory (`mktemp -d`), not the repo, write `blocks-report.md` starting from `https://seliseblocks.com/api/reports/template`. Fill in `cli` (`blocks --version`), `sdk` (the installed `@seliseblocks/client` version, if used), `agent` (the harness, never a person), `model`, and `platform`. For `skills`, use `name@<version>`; vendored skills carry no version of their own, so use the first seven characters of `skills_commit` from `.agents/skills/.blocks-skills-source`. Set `security: true` when the finding is a security risk. Say what was run, what came back, what was expected, and how to reproduce it.
+2. In a temp directory (`mktemp -d`), not the repo, write `blocks-report.md` starting from `https://seliseblocks.com/api/reports/template`. Fill in `cli` (`blocks --version`), `sdk` (the installed `@seliseblocks/client` version, if used), `agent` (the harness, never a person), `model`, and `platform`. For `skills`, use `name@<version>`. Skills carry no version of their own: when vendored, use the first seven characters of `commit` (`skills_commit` in an older stamp) from `.agents/skills/.blocks-skills-source`; when installed as a plugin, use `plugin-<version>` with the plugin version stated in the `blocks` skill. Set `security: true` when the finding is a security risk. Say what was run, what came back, what was expected, and how to reproduce it.
 3. Read the file back for anything listed under **What never goes in a report**, then validate and send:
 
    ```bash
@@ -149,6 +154,14 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 | `blocks-notifier` | **Sending** real-time/offline notifications and managing a user's own notification inbox (notify, list, unread, mark-read). | Both |
 | `blocks-notification` | **Configuring** tenant notification *channels* — a different backing service from `notifier`, and not for sending. No SDK path exists. | CLI |
 
+### Backend logic
+
+| Skill | Use when | Surface |
+|---|---|---|
+| `blocks-workflow` | Event-driven backend logic without a separate backend: react to Data Gateway inserts/updates/deletes, expose a webhook, run on a schedule, call external APIs. Authors the workflow graph as JSON and loads it with `logic workflow import/export/save/publish/unpublish`. No SDK path. | CLI |
+| `blocks-functions` | **Custom backend code**: a Node handler the platform runs on demand. Write `index.js`, then `logic function save/test/deploy` (plus runs, logs, replay); call it from app code with `blocksClient.logic.functions.call()/invoke()` or from a workflow `function` step. Triggers (methods, Public vs Token, sync vs async), variables and `{{secret.<id>}}` references. | Both |
+| `blocks-proxy` | **Calling a third-party API without exposing its URL or keys**: configure a proxy with `logic proxy *` (routes, `{{$VAR.name}}` secret headers, access, timeout/retry/breaker, rate limit, OpenAPI import, versions, request logs), then call it with `blocksClient.logic.proxy.request()`. | Both |
+
 ### Platform operations
 
 | Skill | Use when | Surface |
@@ -167,30 +180,41 @@ Surface: **CLI** = terminal/admin, project-scoped · **SDK** = `@seliseblocks/cl
 - **Own account vs. other users vs. role definitions** — `blocks-iam-account` / `blocks-iam-users` / `blocks-iam-access-control`. Pick by whose record changes.
 - **Configuration vs. implementation** — most areas split in two: a CLI skill that defines the thing and an SDK skill that consumes it at runtime. "Create a schema" is configuration; "fetch products" is implementation.
 - **`notifier` sends, `notification` configures.** Different services.
+- **Inline call vs. workflow** — a single call the app makes itself ("send this email", "save this record") belongs to that service's skill. Reach for `blocks-workflow` only when the logic must run server-side on an event, webhook, or schedule.
+- **Proxy vs. function vs. workflow** — forwarding to one third-party API with a hidden key is `blocks-proxy`; code you write (validation, computation, several calls, a webhook handler) is `blocks-functions`; a multi-step graph started by a data event or schedule is `blocks-workflow`, which can call both as steps.
 - **`blocks-data-storage` operates on files; `blocks-storage-configuration` chooses the provider underneath.**
 - Dependencies: schema work must be reloaded before CRUD sees it; SSO implementation needs a registered OIDC client and HTTPS on the real domain to test.
 
 <!-- blocks-skills:distributable:end -->
 
-## Where the skills live
+## What lives here
 
-The 21 skills in the routing table live in [`SELISEdigitalplatforms/blocks-cli`](https://github.com/SELISEdigitalplatforms/blocks-cli/tree/main/blocks-skills), under `blocks-skills/`. That is the source of truth for skill content and the tree [`BOOTSTRAP.md`](./BOOTSTRAP.md) vendors.
+This repo is the single source for the SELISE Blocks skills and everything that ships them:
 
-**This repo owns routing, not skills.** Editing a skill's content here is editing the wrong repository — there is no `skills/` directory to edit. What lives here is the routing table and rules above (inside the `blocks-skills:distributable` markers) and the vendoring runbook.
-
-| Change | Repo |
+| Change | Where |
 |---|---|
-| A skill's `SKILL.md`, flows, or references | `blocks-cli`, under `blocks-skills/` |
-| Routing table, hard rules, workflow | this repo, inside the distributable markers |
-| The vendoring procedure | this repo, `BOOTSTRAP.md` |
+| A skill's `SKILL.md`, flows, references, scripts | `skills/<name>/` |
+| Routing table, hard rules, workflow | `AGENTS.md`, inside the distributable markers |
+| The `blocks` router skill (plugin installs) | **generated** — edit the distributable region, then `npm run generate:router`. Never hand-edit `skills/blocks/SKILL.md`. |
+| Plugin manifests | `.claude-plugin/` (Claude Code plugin and marketplace), `.cursor-plugin/` (Cursor). `version` follows `package.json`; `npm run generate:router` syncs it. |
+| The vendoring procedure | `BOOTSTRAP.md` (entry point and task map) and `bootstrap/` (one file per step or task) |
+| The minimum `blocks` CLI the skills are checked against | `package.json` `blocksCli.minVersion`, restated in `skills/blocks-bootstrap/SKILL.md` |
 
-A new skill needs both halves: content in `blocks-cli`, and a routing-table row here. A skill missing from that table is invisible to agents and is never vendored — `BOOTSTRAP.md` treats the table as its manifest.
+A new skill is one PR: its directory under `skills/` plus its routing-table row. A skill missing from that table is invisible to agents and is never vendored — the runbook treats the table as its manifest, and `npm run lint:router` fails on a directory with no row.
 
-An older generation of these skills lived in this repo's `skills/` directory and drove `api.seliseblocks.com` over raw HTTP with manual impersonation (`x-blocks-key`/`PTOK`). That generation is **superseded and removed** — the current skills forbid raw HTTP outright.
+**Checks.** `npm test` runs both lints. `npm run lint` checks every skill, including that each `blocks …` command it cites is registered in the CLI. It asks a real binary: the published `blocks` on PATH (at least `blocksCli.minVersion`), or a built blocks-cli checkout named by `BLOCKS_CLI_DIR` for a command that isn't published yet. Requires Node 20+.
+
+**The CLI is a separate repo.** Skills depend on `SELISEdigitalplatforms/blocks-cli`; it never reads them. A CLI change that renames, removes, or changes a command a skill cites needs a matching PR here — nothing in the CLI repo fails when a skill goes stale. The nightly CI run against the latest published CLI is what catches it.
+
+Skills lived in `blocks-cli` under `blocks-skills/` until they moved here with their history (tag `skills-last-in-cli` there marks the last commit that had them). Installs vendored before the move are stamped with that repo; `bootstrap/update.md` handles them, so keep that history intact.
+
+**Changing the runbook.** `BOOTSTRAP.md` is the only file a consumer's agent is pointed at; it reads a `bootstrap/` file only when `BOOTSTRAP.md`'s **Pick your task** or **The full install** table names it. So when you add, rename, split, or remove a file under `bootstrap/`, update both tables in the same change, and fix every link to it from the other `bootstrap/` files. Keep each fact in one file — link to it from the others rather than restating it. When an agent's behavior changes, the only file to edit is `bootstrap/agents.md`.
+
+An older generation of skills lived in this repo's `skills/` directory before Aug 2026 and drove `api.seliseblocks.com` over raw HTTP with manual impersonation (`x-blocks-key`/`PTOK`). That generation is **superseded** — the current skills forbid raw HTTP outright. Never restore anything from a commit before the move.
 
 ## Skill authoring conventions
 
-These govern skills authored in `blocks-cli`, and the routing-table row that accompanies them here:
+These govern every skill under `skills/` and the routing-table row that accompanies it:
 
 - **`SKILL.md` frontmatter** is `name` + a trigger-rich, third-person `description`. The description is what routes a request — say what the skill does *and* the phrases and contexts that should invoke it, plus what it is **not** (name the sibling skill). Lean slightly pushy; under-triggering is the common failure.
 - **Ground every claim in verified behavior.** Drive the real command or SDK call before documenting it. Capture real request/response shapes. If you can't verify something, mark it unverified rather than smoothing it over — never fabricate output or invent flags. Honesty beats completeness.
